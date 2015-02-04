@@ -1,0 +1,48 @@
+#Visual studio junk file
+**/bin/*/
+**/bin/*
+**/build/*
+**/build/*/
+**/temp/*
+**/temp/*/
+
+**/*.tlog
+**/*.log
+**/*.pdb
+**/*.idb
+**/*.lastbuildstate
+**/*.opensdf
+**/*.sdf
+**/*.suo
+**/*.user
+**/*.cache
+**/*.obj
+**/*.ilk
+**/*.pdb
+
+#.obj in resouces are 3d models, save them.
+!*/res/models/*.obj
+
+#Doxygen
+docs/html/
+
+#PS3 Specific ignores
+**/*.o
+**/*.d
+**/*.map
+**/*.pch
+**/*.gch
+**/*.tmp
+**/*.rsp
+**/*.tlog
+**/*.xml
+**/*.unsuccessfulbuild
+#Don't save compiled shaders
+**/*.fpo
+**/*.vpo
+#Don't save compiled programs
+**/*.self
+**/*.elf
+
+#Project  Specific ignores
+**/ipch/*
