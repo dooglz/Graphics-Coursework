@@ -1,4 +1,4 @@
-#include <libENUgraphics\graphics_framework.h>
+#include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 
 using namespace std;
@@ -174,7 +174,7 @@ bool render()
 void main()
 {
 	// Create application
-	app application;
+	app application(1280,720,0);
 	// Set load content, update and render methods
 	application.set_load_content(load_content);
 	application.set_initialise(initialise);

@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GraphicsCoursework", "GraphicsCoursework.vcxproj", "{62862C84-DD25-4997-A6DB-D65CA0122BE4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1} = {ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libENUgraphics", "libENUgraphics\Graphics Framework.vcxproj", "{ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +20,10 @@ Global
 		{62862C84-DD25-4997-A6DB-D65CA0122BE4}.Debug|Win32.Build.0 = Debug|Win32
 		{62862C84-DD25-4997-A6DB-D65CA0122BE4}.Release|Win32.ActiveCfg = Release|Win32
 		{62862C84-DD25-4997-A6DB-D65CA0122BE4}.Release|Win32.Build.0 = Release|Win32
+		{ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1}.Debug|Win32.Build.0 = Debug|Win32
+		{ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1}.Release|Win32.ActiveCfg = Release|Win32
+		{ED9C3A19-7047-44EF-B493-A1F2BB3D5AB1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

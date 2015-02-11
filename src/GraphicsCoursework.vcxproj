@@ -39,8 +39,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>../bin/$(Platform)_$(Configuration)\</OutDir>
-    <IntDir>../temp/$(Platform)_$(Configuration)\</IntDir>
+    <OutDir>../bin/$(Platform)_$(Configuration)/</OutDir>
+    <IntDir>temp/$(Platform)_$(Configuration)/</IntDir>
+    <IncludePath>../include;/libENUgraphics;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -51,8 +52,8 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../lib/$(Platform)_$(Configuration)\; ../lib/$(Platform)/</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Graphics Framework.lib;OpenGL32.lib;GLU32.lib;glew32.lib;glfw3dll.lib;FreeImage.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../lib/$(Platform)_$(Configuration)/; ../lib/$(Platform)/</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libENUgraphics.lib;OpenGL32.lib;GLU32.lib;glew32.lib;glfw3dll.lib;FreeImage.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
