@@ -1,5 +1,6 @@
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
+#include <glm\gtx\rotate_vector.hpp>
 
 using namespace std;
 using namespace graphics_framework;
@@ -48,8 +49,8 @@ bool load_content()
 	meshes["box"].get_transform().translate(vec3(-10.0f, 2.5f, -30.0f));
 	meshes["tetra"].get_transform().scale = vec3(4.0f, 4.0f, 4.0f);
 	meshes["tetra"].get_transform().translate(vec3(-30.0f, 10.0f, -10.0f));
-	meshes["pyramid"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
-	meshes["pyramid"].get_transform().translate(vec3(-10.0f, 7.5f, -30.0f));
+	meshes["pyramid"].get_transform().scale = vec3(5.0f, 50.0f, 5.0f);
+	meshes["pyramid"].get_transform().translate(vec3(0, 25, 0));
 	meshes["disk"].get_transform().scale = vec3(3.0f, 1.0f, 3.0f);
 	meshes["disk"].get_transform().translate(vec3(-10.0f, 11.5f, -30.0f));
 	meshes["disk"].get_transform().rotate(vec3(half_pi<float>(), 0.0f, 0.0f));
@@ -161,7 +162,6 @@ bool render()
 	// Render meshes
 	for (auto &e : meshes)
 	{
-		break;
 		auto m = e.second;
 		// Bind effect
 		renderer::bind(eff);
@@ -186,9 +186,30 @@ bool render()
 	}
 	//Render Sky
 	{
-		vec3 camview = cam.get_target();
+		float verticleFov = 0.392699082f; //45/2 in radians
+
+		vec3 camview = cam.get_target() - cam.get_position();
+		camview = normalize(camview);
+
+		vec3 topofscreentoplayer = glm::rotate(camview, verticleFov * 0.5f, vec3(0,0,1.0f));
+		topofscreentoplayer = normalize(topofscreentoplayer);
+		vec3 bottomofscreentoplayer = glm::rotate(camview, verticleFov * -0.5f, vec3(0,0,1.0f));
+		bottomofscreentoplayer = normalize(bottomofscreentoplayer);
+
+		float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
+		float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
+
+
+		float dt = dot(camview, vec3(0, 1.0, 0));
+
+		//camview *= 1 / pi<float>();
+		//printf("x: %f y: %f z:%f\n", camview.x, camview.y, camview.z);
+		//printf("dot: %f\n", dt);
+
 		renderer::bind(skyeffect);
-		glUniform3f(eff.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
+		glUniform1f(skyeffect.get_uniform_location("topDot"), topDot);
+		glUniform1f(skyeffect.get_uniform_location("bottomDot"), bottomDot);
+		glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
 
 		graphics_framework::geometry geo;
 		std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),	vec2(1, 1), vec2(1, -1), vec2(-1, -1) };

@@ -13,6 +13,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{10916fba-d03a-48df-81d0-6d972591c242}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Main.h">
@@ -23,5 +26,13 @@
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\res\shaders\sky.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\res\shaders\sky.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
