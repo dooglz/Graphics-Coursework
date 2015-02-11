@@ -7,8 +7,10 @@ using namespace glm;
 
 map<string, mesh> meshes;
 effect eff;
+effect skyeffect;
 texture tex;
 free_camera cam;
+mesh quadmesh;
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 
@@ -72,6 +74,20 @@ bool load_content()
 	cam.set_target(vec3(0.0f, 0.0f, 0.0f));
 	auto aspect = static_cast<float>(renderer::get_screen_width()) / static_cast<float>(renderer::get_screen_height());
 	cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 1000.0f);
+
+
+	//sky shader props.
+	skyeffect.add_shader("shaders\\sky.vert", GL_VERTEX_SHADER);
+	skyeffect.add_shader("shaders\\sky.frag", GL_FRAGMENT_SHADER);
+	// Build effect
+	skyeffect.build();
+
+	graphics_framework::geometry geo;
+	std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1) };
+	geo.add_buffer(v,0);
+	quadmesh.set_geometry(geo);
+
+	glDisable(GL_CULL_FACE);
 	return true;
 }
 
@@ -145,6 +161,7 @@ bool render()
 	// Render meshes
 	for (auto &e : meshes)
 	{
+		break;
 		auto m = e.second;
 		// Bind effect
 		renderer::bind(eff);
@@ -166,6 +183,18 @@ bool render()
 
 		// Render mesh
 		renderer::render(m);
+	}
+	//Render Sky
+	{
+		vec3 camview = cam.get_target();
+		renderer::bind(skyeffect);
+		glUniform3f(eff.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
+
+		graphics_framework::geometry geo;
+		std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),	vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+		geo.add_buffer(v, 0);
+
+		renderer::render(geo);
 	}
 
 	return true;
