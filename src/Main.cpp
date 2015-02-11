@@ -191,9 +191,9 @@ bool render()
 		vec3 camview = cam.get_target() - cam.get_position();
 		camview = normalize(camview);
 
-		vec3 topofscreentoplayer = glm::rotate(camview, verticleFov * 0.5f, vec3(0,0,1.0f));
+		vec3 topofscreentoplayer = glm::rotate(camview, verticleFov * 0.5f, vec3(1.0f, 0,0));
 		topofscreentoplayer = normalize(topofscreentoplayer);
-		vec3 bottomofscreentoplayer = glm::rotate(camview, verticleFov * -0.5f, vec3(0,0,1.0f));
+		vec3 bottomofscreentoplayer = glm::rotate(camview, verticleFov * -0.5f, vec3(1.0f,0,0));
 		bottomofscreentoplayer = normalize(bottomofscreentoplayer);
 
 		float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
@@ -204,11 +204,11 @@ bool render()
 
 		//camview *= 1 / pi<float>();
 		//printf("x: %f y: %f z:%f\n", camview.x, camview.y, camview.z);
-		//printf("dot: %f\n", dt);
+		printf("dot: %f, topd: %f, botd: %f \n", dt, topDot, bottomDot);
 
 		renderer::bind(skyeffect);
-		glUniform1f(skyeffect.get_uniform_location("topDot"), topDot);
-		glUniform1f(skyeffect.get_uniform_location("bottomDot"), bottomDot);
+		glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
+		glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
 		glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
 
 		graphics_framework::geometry geo;

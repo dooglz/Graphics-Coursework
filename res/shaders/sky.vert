@@ -11,7 +11,7 @@ vec3 bottomcol = vec3(0,1,0);
 
 void main()
 {
-	if(vertexIn.x >0){
+	if(vertexIn.y >0){
 		out_colour = vec4(mix(bottomcol,topcol,topdot),1.0);
 	}else{
 		out_colour = vec4(mix(bottomcol,topcol,bottomdot),1.0);
