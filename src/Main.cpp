@@ -186,25 +186,27 @@ bool render()
 	}
 	//Render Sky
 	{
-		float verticleFov = 0.392699082f; //45/2 in radians
+		//vertaical fov = 25.3125deg = 0.441786467 radians
+		float verticleFov = 0.2208932335; //vfov/2 in radians
+		
+		vec3 camview = normalize(cam.get_target() - cam.get_position());
+		vec3 camUp = normalize(cam.get_up());
+		
+		float r = atanf(verticleFov) * camview.length();
 
-		vec3 camview = cam.get_target() - cam.get_position();
-		camview = normalize(camview);
-
-		vec3 topofscreentoplayer = glm::rotate(camview, verticleFov * 0.5f, vec3(1.0f, 0,0));
-		topofscreentoplayer = normalize(topofscreentoplayer);
-		vec3 bottomofscreentoplayer = glm::rotate(camview, verticleFov * -0.5f, vec3(1.0f,0,0));
-		bottomofscreentoplayer = normalize(bottomofscreentoplayer);
+		vec3 topofscreentoplayer = normalize((r * camUp) + camview);
+		vec3 bottomofscreentoplayer = normalize((-r * camUp) + camview);
 
 		float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
 		float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
-
+		//topDot = abs(topDot);
+		//bottomDot = abs(bottomDot);
 
 		float dt = dot(camview, vec3(0, 1.0, 0));
 
 		//camview *= 1 / pi<float>();
 		//printf("x: %f y: %f z:%f\n", camview.x, camview.y, camview.z);
-		printf("dot: %f, topd: %f, botd: %f \n", dt, topDot, bottomDot);
+		//printf("dot: %f, topd: %f, botd: %f \n", dt, topDot, bottomDot);
 
 		renderer::bind(skyeffect);
 		glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
