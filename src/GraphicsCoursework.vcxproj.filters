@@ -21,18 +21,20 @@
     <ClInclude Include="Main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DesertGen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DesertGen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\res\shaders\sky.frag">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\res\shaders\sky.vert">
-      <Filter>Shaders</Filter>
-    </None>
+    <CustomBuild Include="..\res\shaders\sky.frag" />
+    <CustomBuild Include="..\res\shaders\sky.vert" />
   </ItemGroup>
 </Project>
