@@ -629,14 +629,13 @@ namespace graphics_framework
     float delta_T = dims.y / static_cast<float>(stacks);
     float delta_S = dims.x / static_cast<float>(slices);
     float t = dims.y;
-    float s = 0.0f;
 
     // Iterate through each stack
     for (unsigned int i = 0; i < stacks; ++i)
     {
       // Set starting values for stack
       float rho = i * delta_rho;
-      s = 0.0f;
+      float s = 0.0f;
       // Vertex data generated
       std::array<glm::vec3, 4> verts;
       std::array<glm::vec2, 4> coords;

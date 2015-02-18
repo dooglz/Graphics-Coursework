@@ -39,4 +39,6 @@ namespace graphics_framework
 	{
 		_relative_rotation += delta_rotation;
 	}
+
+  chase_camera::chase_camera() { _springiness = 0.0f; }
 }

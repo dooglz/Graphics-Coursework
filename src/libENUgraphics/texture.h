@@ -20,7 +20,7 @@ namespace graphics_framework
 		GLenum _type;
 	public:
 		// Default constructor
-		texture() : _id(0) { }
+    texture() : _id(0), _width(0), _height(0),_type(0){ }
 		// Creates an empty texture of the given width and height
 		texture(GLuint width, GLuint height) throw (...);
 		// Loads a texture from the given filename

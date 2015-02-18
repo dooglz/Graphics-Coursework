@@ -29,6 +29,7 @@ namespace graphics_framework
 	// Creates an effect object
 	effect::effect()
 	{
+    _program = -1;
 	}
 
 	// Adds a shader to the effect object

@@ -11,9 +11,11 @@ map<string, mesh> meshes;
 effect eff;
 effect skyeffect;
 texture tex;
+texture tex2;
 free_camera cam;
 mesh quadmesh;
 graphics_framework::geometry* desert;
+mesh desertm;
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 
@@ -66,7 +68,7 @@ bool load_content(){
 
   // Load texture
   tex = texture("textures\\checked.gif");
-
+  tex2 = texture("textures\\sand_512_1.png");
   // Load in shaders
   eff.add_shader("shaders\\simple_texture.vert", GL_VERTEX_SHADER);
   eff.add_shader("shaders\\simple_texture.frag", GL_FRAGMENT_SHADER);
@@ -91,11 +93,11 @@ bool load_content(){
   geo.add_buffer(v,0);
   quadmesh.set_geometry(geo);
 
-  glDisable(GL_CULL_FACE);
+
 
     //build desert
- // desert =  DesertGen::CreateDesert();
-  meshes["yolo"] = mesh(*DesertGen::CreateDesert());
+  desert =  DesertGen::CreateDesert();
+  desertm = mesh(*desert);
   return true;
 }
 
@@ -210,14 +212,6 @@ bool render()
 
       float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
       float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
-      //topDot = abs(topDot);
-      //bottomDot = abs(bottomDot);
-
-      float dt = dot(camview, vec3(0, 1.0, 0));
-
-      //camview *= 1 / pi<float>();
-      //printf("x: %f y: %f z:%f\n", camview.x, camview.y, camview.z);
-      //printf("dot: %f, topd: %f, botd: %f \n", dt, topDot, bottomDot);
 
       renderer::bind(skyeffect);
       glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
@@ -227,12 +221,14 @@ bool render()
       graphics_framework::geometry geo;
       std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
       geo.add_buffer(v, 0);
-
+      glDisable(GL_CULL_FACE);
       renderer::render(geo);
+      glEnable(GL_CULL_FACE);
   }
   
   //render desert
   {
+
       renderer::bind(eff);
       auto V = cam.get_view();
       auto P = cam.get_projection();
@@ -243,11 +239,17 @@ bool render()
           1, // Number of values - 1 mat4
           GL_FALSE, // Transpose the matrix?
           value_ptr(MVP)); // Pointer to matrix data
+
+      // Bind and set texture
+      renderer::bind(tex2, 0);
+      glUniform1i(eff.get_uniform_location("tex"), 0);
+
+
      // glPolygonMode(GL_FRONT, GL_LINE);
      // glPolygonMode(GL_BACK, GL_LINE);
-    //  renderer::render(*desert);
-    //  glPolygonMode(GL_FRONT, GL_FILL);
-   //   glPolygonMode(GL_BACK, GL_FILL);
+      renderer::render(desertm);
+     // glPolygonMode(GL_FRONT, GL_FILL);
+     // glPolygonMode(GL_BACK, GL_FILL);
   }
 
   return true;
