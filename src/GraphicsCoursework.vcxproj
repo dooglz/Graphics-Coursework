@@ -74,10 +74,12 @@
   <ItemGroup>
     <ClInclude Include="DesertGen.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Perlin.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DesertGen.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Perlin.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\sky.frag">

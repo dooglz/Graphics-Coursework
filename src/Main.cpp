@@ -32,10 +32,11 @@ bool initialise()
   return true;
 }
 
-bool load_content()
-{
+bool load_content(){
+
+ // meshes["desert"] = mesh(geometry("models\\desert.obj"));
   // Create plane mesh
-  meshes["plane"] = mesh(geometry_builder::create_plane());
+  //meshes["plane"] = mesh(geometry_builder::create_plane());
 
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());
@@ -102,7 +103,11 @@ bool update(float delta_time)
 {
   // The ratio of pixels to rotation - remember the fov
   static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
-  static double ratio_height = (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) / static_cast<float>(renderer::get_screen_width()))) / static_cast<float>(renderer::get_screen_height());
+  static double ratio_height =
+      (quarter_pi<float>() *
+       (static_cast<float>(renderer::get_screen_height()) /
+        static_cast<float>(renderer::get_screen_width()))) /
+      static_cast<float>(renderer::get_screen_height());
 
   double current_x;
   double current_y;
@@ -225,6 +230,7 @@ bool render()
 
       renderer::render(geo);
   }
+  
   //render desert
   {
       renderer::bind(eff);
