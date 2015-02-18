@@ -1,6 +1,7 @@
 #pragma once
 namespace graphics_framework{
     class geometry;
+    class mesh;
 }
 
 class DesertGen
@@ -8,8 +9,11 @@ class DesertGen
 public:
     DesertGen();
     ~DesertGen();
-    static graphics_framework::geometry* CreateDesert();
+    static void CreateDesert();
+    static graphics_framework::mesh farMesh;
 private:
-    static graphics_framework::geometry _geo;
+    static graphics_framework::geometry _farGeo;
+    static graphics_framework::geometry _nearGeo;
+    static void makefarGeometry();
 };
 

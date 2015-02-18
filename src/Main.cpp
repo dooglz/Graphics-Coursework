@@ -14,8 +14,9 @@ texture tex;
 texture tex2;
 free_camera cam;
 mesh quadmesh;
-graphics_framework::geometry* desert;
-mesh desertm;
+
+mesh* desertM;
+
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 
@@ -93,11 +94,9 @@ bool load_content(){
   geo.add_buffer(v,0);
   quadmesh.set_geometry(geo);
 
-
-
-    //build desert
-  desert =  DesertGen::CreateDesert();
-  desertm = mesh(*desert);
+  //build 
+  DesertGen::CreateDesert();
+  desertM = &DesertGen::farMesh;
   return true;
 }
 
@@ -150,11 +149,15 @@ bool update(float delta_time)
     translation.x -= 5.0f * delta_time;
   if (glfwGetKey(renderer::get_window(), 'D'))
     translation.x += 5.0f * delta_time;
+  
+  float moveSpeed = 2.0f;
+  if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT))
+    moveSpeed = 6.0f;
 
   // ***********
   // Move camera
   // ***********
-  cam.move(translation* 2.0f);
+  cam.move(translation* moveSpeed);
 
   // *****************
   // Update the camera
@@ -230,9 +233,10 @@ bool render()
   {
 
       renderer::bind(eff);
+      auto M = desertM->get_transform().get_transform_matrix();
       auto V = cam.get_view();
       auto P = cam.get_projection();
-      auto MVP = P * V;
+      auto MVP = P * V * M;
       // Set MVP matrix uniform
       glUniformMatrix4fv(
           eff.get_uniform_location("MVP"), // Location of uniform
@@ -245,11 +249,11 @@ bool render()
       glUniform1i(eff.get_uniform_location("tex"), 0);
 
 
-     // glPolygonMode(GL_FRONT, GL_LINE);
-     // glPolygonMode(GL_BACK, GL_LINE);
-      renderer::render(desertm);
-     // glPolygonMode(GL_FRONT, GL_FILL);
-     // glPolygonMode(GL_BACK, GL_FILL);
+    //  glPolygonMode(GL_FRONT, GL_LINE);
+    //  glPolygonMode(GL_BACK, GL_LINE);
+      renderer::render(*desertM);
+     //glPolygonMode(GL_FRONT, GL_FILL);
+    //  glPolygonMode(GL_BACK, GL_FILL);
   }
 
   return true;
