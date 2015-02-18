@@ -94,8 +94,8 @@ bool load_content(){
   glDisable(GL_CULL_FACE);
 
     //build desert
-  desert = DesertGen::CreateDesert();
-
+ // desert =  DesertGen::CreateDesert();
+  meshes["yolo"] = mesh(*DesertGen::CreateDesert());
   return true;
 }
 
@@ -152,7 +152,7 @@ bool update(float delta_time)
   // ***********
   // Move camera
   // ***********
-  cam.move(translation);
+  cam.move(translation* 2.0f);
 
   // *****************
   // Update the camera
@@ -243,11 +243,11 @@ bool render()
           1, // Number of values - 1 mat4
           GL_FALSE, // Transpose the matrix?
           value_ptr(MVP)); // Pointer to matrix data
-      glPolygonMode(GL_FRONT, GL_LINE);
-      glPolygonMode(GL_BACK, GL_LINE);
-      renderer::render(*desert);
-      glPolygonMode(GL_FRONT, GL_FILL);
-      glPolygonMode(GL_BACK, GL_FILL);
+     // glPolygonMode(GL_FRONT, GL_LINE);
+     // glPolygonMode(GL_BACK, GL_LINE);
+    //  renderer::render(*desert);
+    //  glPolygonMode(GL_FRONT, GL_FILL);
+   //   glPolygonMode(GL_BACK, GL_FILL);
   }
 
   return true;
