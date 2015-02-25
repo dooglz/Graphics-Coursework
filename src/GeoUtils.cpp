@@ -1,47 +1,47 @@
 #include "GeoUtils.h"
 #include <set>
-
+#include <unordered_map>
 
 void CalculateNormals(std::vector<glm::vec3> &verts,
-  std::vector<glm::vec3> &normals,
-  std::vector<unsigned int> &indices){
+                      std::vector<glm::vec3> &normals,
+                      std::vector<unsigned int> &indices) {
 
-  if (normals.size() != verts.size())
-  {
+  if (normals.size() != verts.size()) {
     normals.resize(verts.size());
   }
 
-  //for each vert
-  for (int i = 0; i < verts.size(); i++) {
-    //find every face that uses it
+  // for each vert
+  for (unsigned int i = 0; i < verts.size(); i++) {
+    // find every face that uses it
     std::vector<unsigned int> faces;
-    for (int j = 0; j < indices.size(); j++) {
-      if (indices[j] == i){
+    for (unsigned int j = 0; j < indices.size(); j++) {
+      if (indices[j] == i) {
         unsigned int rem = j % 3;
-        if (rem == 0){
+        if (rem == 0) {
           faces.push_back(j);
           faces.push_back(j + 1);
           faces.push_back(j + 2);
-        }else if (rem == 1){
+        } else if (rem == 1) {
           faces.push_back(j - 1);
           faces.push_back(j);
           faces.push_back(j + 1);
-        }else if (rem == 3){
+        } else if (rem == 3) {
           faces.push_back(j - 2);
           faces.push_back(j - 1);
           faces.push_back(j);
         }
       }
     }
-    //for each face, add it's nomrmal.
+    // for each face, add it's nomrmal.
     normals[i] = glm::vec3(0, 0, 0);
-    for (int j = 0; j < faces.size(); j+=3) {
-      normals[i] += glm::normalize(glm::cross(verts[faces[j]] - verts[faces[j + 1]], verts[faces[j]] - verts[faces[j + 2]]));
+    for (unsigned int j = 0; j < faces.size(); j += 3) {
+      normals[i] +=
+          glm::normalize(glm::cross(verts[faces[j]] - verts[faces[j + 1]],
+                                    verts[faces[j]] - verts[faces[j + 2]]));
     }
     normals[i] = glm::normalize(normals[i]);
   }
 }
-
 
 typedef std::pair<glm::vec3, int> VPair;
 float eps = 0.001f;
@@ -66,7 +66,7 @@ void IndexVerticies(std::vector<glm::vec3> &Vinput,
   std::set<VPair, CmpClass> vertices;
   int index = 0;
 
-  for (int i = 0; i < Vinput.size(); i++) {
+  for (unsigned int i = 0; i < Vinput.size(); i++) {
     std::set<VPair>::iterator it = vertices.find(
         std::make_pair(Vinput[i], 0 /*this value doesn't matter*/));
     if (it != vertices.end())
@@ -93,6 +93,7 @@ void VerifyIndices(std::vector<glm::vec3> &verts,
                    std::vector<unsigned int> &indices, const bool fix) {
   std::set<VPair, CmpClass> vertices;
   std::vector<unsigned int> removedVerts;
+  std::unordered_map<unsigned int, unsigned int> remappedIndices;
   bool *vcheck = new bool[verts.size()];
 
   if (!fix && normals != NULL && normals->size() != verts.size()) {
@@ -105,7 +106,7 @@ void VerifyIndices(std::vector<glm::vec3> &verts,
   }
 
   // check all indices are valid
-  for (int i = 0; i < indices.size(); i++) {
+  for (unsigned int i = 0; i < indices.size(); i++) {
     unsigned int ind = indices[i];
     if (ind > verts.size()) {
       if (!fix) {
@@ -118,13 +119,17 @@ void VerifyIndices(std::vector<glm::vec3> &verts,
   // check for duplicate verts
   for (unsigned int i = 0; i < verts.size(); i++) {
     std::set<VPair>::iterator it = vertices.find(std::make_pair(verts[i], 0));
-    if (!fix) {
-      if (it != vertices.end()) {
+    if (it != vertices.end()) {
+      if (!fix) {
         printf("duplicate vert [%i] and [%u], at (%f,%f,%f)\n", it->second, i,
                it->first.x, it->first.y, it->first.z);
       } else {
-        vertices.insert(std::make_pair(verts[i], i));
+        // TODO check remapped doesn't already have this
+        remappedIndices.insert(std::make_pair(i, (unsigned int)it->second));
+        removedVerts.push_back(i);
       }
+    } else {
+      vertices.insert(std::make_pair(verts[i], i));
     }
     // check all verts are indiced atleast once
     if (vcheck[i] != true) {
@@ -133,6 +138,17 @@ void VerifyIndices(std::vector<glm::vec3> &verts,
         printf("Vert[%u], is never indiced!\n", i);
       } else {
         removedVerts.push_back(i);
+      }
+    }
+  }
+
+  for (auto itr = remappedIndices.begin(); itr != remappedIndices.end();
+       ++itr) {
+    unsigned int find = (*itr).first;
+    unsigned int replace = (*itr).second;
+    for (auto &i : indices) {
+      if (i == find) {
+        i = replace;
       }
     }
   }

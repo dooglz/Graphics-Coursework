@@ -15,8 +15,6 @@ DesertGen::DesertGen() {}
 
 DesertGen::~DesertGen() {}
 
-
-
 void create_plane(const unsigned int &width, const unsigned int &depth,
                   const float &resolution, const float &uvScale,
                   std::vector<glm::vec3> &positions,
@@ -25,18 +23,21 @@ void create_plane(const unsigned int &width, const unsigned int &depth,
                   std::vector<GLuint> &indices) {
 
   // amount of verts in each dimension
-  unsigned int amountD = (unsigned int)((float)depth * resolution);
-  unsigned int amountW = (unsigned int)((float)width * resolution);
+  unsigned int amountD = static_cast<unsigned int>((float)depth * resolution);
+  unsigned int amountW = static_cast<unsigned int>((float)width * resolution);
   float amountDf = static_cast<float>(amountD);
   float amountWf = static_cast<float>(amountW);
-  unsigned int amountQuads = pow(sqrt(amountD * amountW) - 1, 2);
+  unsigned int amountQuads =
+      static_cast<unsigned int>(pow(sqrt(amountD * amountW) - 1, 2));
 
   for (unsigned int x = 0; x < amountD; ++x) {
     float xf = static_cast<float>(x);
     for (unsigned int z = 0; z < amountW; ++z) {
       float zf = static_cast<float>(z);
-      positions.push_back(glm::vec3((xf / amountWf) * width - (width/2), 0, (zf / amountDf) * depth - (depth/2)));
-      tex_coords.push_back(glm::vec2((xf*uvScale) / amountWf, (zf*uvScale) / amountDf));
+      positions.push_back(glm::vec3((xf / amountWf) * width - (width / 2), 0,
+                                    (zf / amountDf) * depth - (depth / 2)));
+      tex_coords.push_back(
+          glm::vec2((xf * uvScale) / amountWf, (zf * uvScale) / amountDf));
       normals.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
     }
   }
@@ -67,7 +68,7 @@ void create_plane(const unsigned int &width, const unsigned int &depth,
 #define farSize 256
 #define farRes 0.25f
 #define prelinscaleXZ 0.15f
-#define prelinscaleY 3.0f
+#define prelinscaleY 4.0f
 #define dunedistance (farSize / 5)
 #define groundcutoff (farSize / 9)
 
@@ -79,11 +80,12 @@ void create_plane2(const unsigned int &width, const unsigned int &depth,
                    std::vector<GLuint> &indices) {
 
   // amount of verts in each dimension
-  unsigned int amountD = (unsigned int)((float)depth * resolution);
-  unsigned int amountW = (unsigned int)((float)width * resolution);
+  unsigned int amountD = static_cast<unsigned int>((float)depth * resolution);
+  unsigned int amountW = static_cast<unsigned int>((float)width * resolution);
   float amountDf = static_cast<float>(amountD);
   float amountWf = static_cast<float>(amountW);
-  unsigned int amountQuads = pow(sqrt(amountD * amountW) - 1, 2);
+  unsigned int amountQuads =
+      static_cast<unsigned int>(pow(sqrt(amountD * amountW) - 1, 2));
 
   for (unsigned int x = 0; x < amountD; ++x) {
     float xf = static_cast<float>(x);
@@ -130,7 +132,7 @@ void create_plane2(const unsigned int &width, const unsigned int &depth,
 
     if (abs(center1.x) > groundcutoff || abs(center1.z) > groundcutoff) {
       const float dt1 = glm::dot(n1, center1);
-      if (dt1 < -0.5f) {
+      if (dt1 < -0.2f) {
         k++;
       } else {
         indices.push_back(j);
@@ -141,7 +143,7 @@ void create_plane2(const unsigned int &width, const unsigned int &depth,
         normals[j + amountW + 1] += normal;
         normals[j + amountW] += normal;
       }
-    }else {
+    } else {
       k++;
     }
 
@@ -153,7 +155,6 @@ void create_plane2(const unsigned int &width, const unsigned int &depth,
       if (dt2 < -0.5f) {
         k++;
       } else {
-
         indices.push_back(j);
         indices.push_back(j + 1);
         indices.push_back(j + amountW + 1);
@@ -167,6 +168,28 @@ void create_plane2(const unsigned int &width, const unsigned int &depth,
     }
     j++;
   }
+
+  // add a single flat traingle in the center
+  auto l = positions.size();
+  positions.push_back(glm::vec3(1, 0, 1) * (float)groundcutoff);
+  positions.push_back(glm::vec3(1, 0, -1) * (float)groundcutoff);
+  positions.push_back(glm::vec3(-1, 0, 1) * (float)groundcutoff);
+  positions.push_back(glm::vec3(-1, 0, -1) * (float)groundcutoff);
+  tex_coords.push_back(glm::vec2(1, 1) * (float)groundcutoff);
+  tex_coords.push_back(glm::vec2(1, -1) * (float)groundcutoff);
+  tex_coords.push_back(glm::vec2(-1, 1) * (float)groundcutoff);
+  tex_coords.push_back(glm::vec2(-1, -1) * (float)groundcutoff);
+  indices.push_back(l);
+  indices.push_back(l + 1);
+  indices.push_back(l + 2);
+  indices.push_back(l + 1);
+  indices.push_back(l + 3);
+  indices.push_back(l + 2);
+  normals.push_back(glm::vec3(0, 1, 0));
+  normals.push_back(glm::vec3(0, 1, 0));
+  normals.push_back(glm::vec3(0, 1, 0));
+  normals.push_back(glm::vec3(0, 1, 0));
+
   printf("%i faces removed\n", k);
   for (unsigned int i = 0; i < normals.size(); ++i) {
     normals[i] = glm::normalize(normals[i]);
@@ -175,18 +198,17 @@ void create_plane2(const unsigned int &width, const unsigned int &depth,
 
 #define resolution 256
 
-void DesertGen::makefarGeometry()
-{
+void DesertGen::makefarGeometry() {
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> normals;
   std::vector<glm::vec2> tex_coords;
   std::vector<GLuint> indices;
-  //get a flat plane
-  create_plane2(farSize, farSize, farRes, 24.0f, positions, normals, tex_coords, indices);
+  // get a flat plane
+  create_plane2(farSize, farSize, farRes, 24.0f, positions, normals, tex_coords,
+                indices);
   VerifyIndices(positions, &normals, &tex_coords, indices, true);
-  printf("yololo\n");
-  VerifyIndices(positions,NULL,NULL, indices, 0);
-
+  printf("\nyololo\n");
+  VerifyIndices(positions, NULL, NULL, indices, 0);
 
   _farGeo = geometry();
   _farGeo.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
@@ -197,7 +219,4 @@ void DesertGen::makefarGeometry()
   farMesh.get_transform().scale = glm::vec3(10.0f, 10.0f, 10.0f);
 }
 
-
-void DesertGen::CreateDesert() {
-  makefarGeometry();
-}
+void DesertGen::CreateDesert() { makefarGeometry(); }
