@@ -2,6 +2,7 @@
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
 #include "DesertGen.h"
+#include "Math.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -50,7 +51,8 @@ bool load_content() {
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
   mirror.get_transform().translate(vec3(25.0f, 1.0f, 25.0f));
   mirror.get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
-  mirror.get_transform().rotate(vec3(half_pi<float>() * 0.5f, pi<float>(), 0.0f));
+  // mirror.get_transform().rotate(vec3(half_pi<float>() * 0.5f, pi<float>(),
+  // 0.0f));
 
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());
@@ -96,8 +98,8 @@ bool load_content() {
   glGenRenderbuffers(1, &depthrenderbuffer);
   glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
-
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                            GL_RENDERBUFFER, depthrenderbuffer);
 
   // Lights
   light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
@@ -278,34 +280,57 @@ void renderWater() {
   // render the reflected scene into a texture
   {
     // TODO, add free camera get target.
-    bouncecam.set_position(
-        vec3(cam.get_position().x,
-             cam.get_position().y -
-                 (cam.get_target().y + mirror.get_transform().position.y * 2),
-             cam.get_position().z));
-    bouncecam.set_target(
-        vec3(cam.get_target().x,
-             cam.get_position().y -
-                 (cam.get_target().y + mirror.get_transform().position.y * 2),
-             cam.get_target().z));
-    bouncecam.update(0);
+    // bouncecam.set_position(
+    //    vec3(cam.get_position().x,
+    //         cam.get_position().y - ((mirror.get_transform().position.y -
+    //         cam.get_position().y)*2),
+    //         cam.get_position().z));
+    // bouncecam.set_target(
+    //    vec3(cam.get_target().x,
+    //         cam.get_target().y - (cam.get_target().y +
+    //         mirror.get_transform().position.y * 2),
+    //         cam.get_target().z));
+    // bouncecam.update(0);
 
+    vec3 mirrorPos = mirror.get_transform().position;
+    vec3 mirrorNormal =
+        normalize(GetUpVector(mirror.get_transform().orientation));
+    vec3 vectorToMirror = vec3(mirrorPos.x - cam.get_position().x,
+                               mirrorPos.y - cam.get_position().y,
+                               mirrorPos.z - cam.get_position().z);
+    vec3 mirrorReflectionVector =
+        normalize(vectorToMirror -
+                  (2 * (dot(vectorToMirror, mirrorNormal)) * mirrorNormal));
+
+    bouncecam.set_position(vec3(
+        cam.get_position().x,
+        cam.get_position().y -
+            ((mirror.get_transform().position.y - cam.get_position().y) * 2),
+        cam.get_position().z));
+    bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
+
+    bouncecam.update(1);
+
+    printf("%f,%f%,%f\n",bouncecam.get_position().x, bouncecam.get_position().y, bouncecam.get_position().z);
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
                          0);
-     activeCam = &bouncecam;
+    //activeCam = &bouncecam;
 
     // rerender scene
 
     glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
     for (auto &e : meshes) {
       rendermesh(e.second, checkedTexture);
     }
     rendermesh(*desertM, sandTexture);
-   // renderSky();
+    // renderSky();
 
     // end render
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     // renderer::set_render_target();
     activeCam = &cam;

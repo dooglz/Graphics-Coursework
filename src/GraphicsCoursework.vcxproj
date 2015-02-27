@@ -75,12 +75,14 @@
     <ClInclude Include="DesertGen.h" />
     <ClInclude Include="GeoUtils.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="Perlin.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DesertGen.cpp" />
     <ClCompile Include="GeoUtils.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MAth.cpp" />
     <ClCompile Include="Perlin.cpp" />
   </ItemGroup>
   <ItemGroup>
