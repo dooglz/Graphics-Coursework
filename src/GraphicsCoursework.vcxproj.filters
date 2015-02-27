@@ -48,5 +48,7 @@
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\sky.frag" />
     <CustomBuild Include="..\res\shaders\sky.vert" />
+    <CustomBuild Include="..\res\shaders\water.frag" />
+    <CustomBuild Include="..\res\shaders\water.vert" />
   </ItemGroup>
 </Project>

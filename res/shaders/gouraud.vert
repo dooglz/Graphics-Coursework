@@ -64,7 +64,8 @@ void main()
 	// Calculate k
 	float k = max(dot(transformed_normal, light.light_dir), 0.0);
 	// Calculate diffuse
-	vec4 diffuse = k * (mat.diffuse_reflection * light.light_colour);
+	k = pow(k,1);
+	vec4 diffuse = k* (mat.diffuse_reflection * light.light_colour);
 	// **********************************
 	// Calculate world position of vertex
 	// **********************************
