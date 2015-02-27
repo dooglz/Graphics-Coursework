@@ -280,38 +280,36 @@ void renderWater() {
   // render the reflected scene into a texture
   {
     // TODO, add free camera get target.
-    // bouncecam.set_position(
-    //    vec3(cam.get_position().x,
-    //         cam.get_position().y - ((mirror.get_transform().position.y -
-    //         cam.get_position().y)*2),
-    //         cam.get_position().z));
-    // bouncecam.set_target(
-    //    vec3(cam.get_target().x,
-    //         cam.get_target().y - (cam.get_target().y +
-    //         mirror.get_transform().position.y * 2),
-    //         cam.get_target().z));
-    // bouncecam.update(0);
+     bouncecam.set_position(
+        vec3(cam.get_position().x,
+             cam.get_position().y - ((mirror.get_transform().position.y -
+             cam.get_position().y)*2),
+             cam.get_position().z));
+     bouncecam.set_target(
+        vec3(cam.get_target().x,
+             cam.get_target().y - (cam.get_target().y +
+             mirror.get_transform().position.y * 2),
+             cam.get_target().z));
+     bouncecam.update(0);
 
-    vec3 mirrorPos = mirror.get_transform().position;
-    vec3 mirrorNormal =
-        normalize(GetUpVector(mirror.get_transform().orientation));
-    vec3 vectorToMirror = vec3(mirrorPos.x - cam.get_position().x,
-                               mirrorPos.y - cam.get_position().y,
-                               mirrorPos.z - cam.get_position().z);
-    vec3 mirrorReflectionVector =
-        normalize(vectorToMirror -
-                  (2 * (dot(vectorToMirror, mirrorNormal)) * mirrorNormal));
+    //vec3 mirrorPos = mirror.get_transform().position;
+    //vec3 mirrorNormal =
+    //    normalize(GetUpVector(mirror.get_transform().orientation));
+    //vec3 vectorToMirror = vec3(mirrorPos.x - cam.get_position().x,
+    //                           mirrorPos.y - cam.get_position().y,
+    //                           mirrorPos.z - cam.get_position().z);
+    //vec3 mirrorReflectionVector =
+    //    normalize(vectorToMirror -
+    //              (2 * (dot(vectorToMirror, mirrorNormal)) * mirrorNormal));
 
-    bouncecam.set_position(vec3(
-        cam.get_position().x,
-        cam.get_position().y -
-            ((mirror.get_transform().position.y - cam.get_position().y) * 2),
-        cam.get_position().z));
-    bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
+    //bouncecam.set_position(vec3(
+    //    cam.get_position().x,
+    //    cam.get_position().y -
+    //        ((mirror.get_transform().position.y - cam.get_position().y) * 2),
+    //    cam.get_position().z));
+    //bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
 
     bouncecam.update(1);
-
-    printf("%f,%f%,%f\n",bouncecam.get_position().x, bouncecam.get_position().y, bouncecam.get_position().z);
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
@@ -320,7 +318,9 @@ void renderWater() {
 
     // rerender scene
 
-    glDisable(GL_CULL_FACE);
+    //im thinking that we aren't writing into the correct depth buffer.
+
+   // glDisable(GL_CULL_FACE);
     glDisable(GL_DEPTH_TEST);
     for (auto &e : meshes) {
       rendermesh(e.second, checkedTexture);
