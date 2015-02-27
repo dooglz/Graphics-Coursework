@@ -13,11 +13,15 @@ effect gouradEffect;
 effect texturedEffect;
 effect skyeffect;
 effect waterEffect;
-
 texture checkedTexture;
 texture sandTexture;
 
 free_camera cam;
+target_camera bouncecam;
+camera* activeCam;
+
+GLuint FramebufferName = 0;
+GLuint renderedTexture;
 
 mesh *desertM;
 mesh mirror;
@@ -71,6 +75,22 @@ bool load_content() {
   meshes["torus"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["torus"].get_material().set_shininess(25.0f);
 
+
+  glGenFramebuffers(1, &FramebufferName);
+  glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+  // The texture we're going to render to
+  glGenTextures(1, &renderedTexture);
+  // "Bind" the newly created texture : all future texture functions will modify this texture
+  glBindTexture(GL_TEXTURE_2D, renderedTexture);
+  // Give an empty image to OpenGL ( the last "0" )
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  // Poor filtering. Needed !
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  // Set "renderedTexture" as our colour attachement #0
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+
   // Lights
   light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
   light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -103,6 +123,7 @@ bool load_content() {
   auto aspect = static_cast<float>(renderer::get_screen_width()) /
                 static_cast<float>(renderer::get_screen_height());
   cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
+  activeCam = &cam;
 
   // build
   DesertGen::CreateDesert();
@@ -184,8 +205,8 @@ void rendermesh(mesh &m, texture &t) {
   renderer::bind(eff);
   // Create MVP matrix
   auto M = m.get_transform().get_transform_matrix();
-  auto V = cam.get_view();
-  auto P = cam.get_projection();
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
   auto MVP = P * V * M;
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
@@ -209,14 +230,44 @@ void rendermesh(mesh &m, texture &t) {
   glUniform1i(eff.get_uniform_location("tex"), 0);
   // Set eye position
   glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
-               value_ptr(cam.get_position()));
+    value_ptr(activeCam->get_position()));
 
   // Render mesh
   renderer::render(m);
 }
 
-bool render() {
+void renderSky(){
+  // vertaical fov = 25.3125deg = 0.441786467 radians
+  float verticleFov = 0.2208932335f; // vfov/2 in radians
 
+  vec3 camview = normalize(activeCam->get_target() - activeCam->get_position());
+  vec3 camUp = normalize(activeCam->get_up());
+
+  float r = atanf(verticleFov) * camview.length();
+
+  vec3 topofscreentoplayer = normalize((r * camUp) + camview);
+  vec3 bottomofscreentoplayer = normalize((-r * camUp) + camview);
+
+  float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
+  float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
+
+  renderer::bind(skyeffect);
+  glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
+  glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
+  glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x,
+    camview.y, camview.z);
+
+  graphics_framework::geometry geo;
+  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
+    vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+  geo.add_buffer(v, 0);
+  glDisable(GL_CULL_FACE);
+  renderer::render(geo);
+  glEnable(GL_CULL_FACE);
+}
+
+bool render() {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // Render meshes
   for (auto &e : meshes) {
     rendermesh(e.second, checkedTexture);
@@ -224,48 +275,48 @@ bool render() {
 
   rendermesh(*desertM, sandTexture);
 
-  // Render Sky
-  {
-    // vertaical fov = 25.3125deg = 0.441786467 radians
-    float verticleFov = 0.2208932335f; // vfov/2 in radians
-
-    vec3 camview = normalize(cam.get_target() - cam.get_position());
-    vec3 camUp = normalize(cam.get_up());
-
-    float r = atanf(verticleFov) * camview.length();
-
-    vec3 topofscreentoplayer = normalize((r * camUp) + camview);
-    vec3 bottomofscreentoplayer = normalize((-r * camUp) + camview);
-
-    float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
-    float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
-
-    renderer::bind(skyeffect);
-    glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
-    glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
-    glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x,
-                camview.y, camview.z);
-
-    graphics_framework::geometry geo;
-    std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-                           vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
-    geo.add_buffer(v, 0);
-    glDisable(GL_CULL_FACE);
-    renderer::render(geo);
-    glEnable(GL_CULL_FACE);
-  }
+  renderSky();
 
   // Render water
   {
-    renderer::bind(waterEffect);
+    //render the reflected scene into a texture
+    {
+      //TODO, add free camera get target.
+      bouncecam.set_position(vec3(cam.get_position().x, cam.get_position().y - (cam.get_target().y + mirror.get_transform().position.y * 2), cam.get_position().z));
+      bouncecam.set_target(vec3(cam.get_target().x, cam.get_position().y - (cam.get_target().y + mirror.get_transform().position.y * 2), cam.get_target().z));
+      bouncecam.update(0);
+
+      //renderer::set_render_target(*mirrorFB);
+      glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+      activeCam = &bouncecam;
+
+      //rerender scene
+
+      for (auto &e : meshes) {
+        rendermesh(e.second, checkedTexture);
+      }
+      rendermesh(*desertM, sandTexture);
+      renderSky();
+
+      // end render
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      //renderer::set_render_target();
+      activeCam = &cam;
+    }
+
+    //render texture onto plane
+    renderer::bind(texturedEffect);
+
     auto M = mirror.get_transform().get_transform_matrix();
-    auto V = cam.get_view();
-    auto P = cam.get_projection();
+    auto V = activeCam->get_view();
+    auto P = activeCam->get_projection();
     auto MVP = P * V * M;
 
-    // Bind and set texture
-   // renderer::bind(sandTexture, 0);
-    //glUniform1i(waterEffect.get_uniform_location("tex"), 0);
+    // Bind our texture in Texture Unit 0
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, renderedTexture);
+    // Set our "renderedTexture" sampler to user Texture Unit 0
+    glUniform1i(waterEffect.get_uniform_location("tex"), 0);
 
     // Set MVP matrix uniform
     glUniformMatrix4fv(

@@ -1,13 +1,17 @@
-#version 440
+#version 430
 
-// Incoming vertex colour
-layout (location = 0) in vec4 in_colour;
+// Sampler used to get texture colour
+uniform sampler2D tex;
 
-// Outgoing pixel colour
-layout (location = 0) out vec4 out_colour;
+// Incoming texture coordinate
+layout(location = 0) in vec2 tex_coord;
+// Outgoing colour
+layout(location = 0) out vec4 out_colour;
 
 void main()
 {
-	// Simply set outgoing colour
-	out_colour = in_colour;
+  // ****************************************
+  // Set out colour to sampled texture colour
+  // ****************************************
+  out_colour = texture(tex, tex_coord);
 }
