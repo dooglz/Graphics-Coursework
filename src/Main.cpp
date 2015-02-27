@@ -18,10 +18,11 @@ texture sandTexture;
 
 free_camera cam;
 target_camera bouncecam;
-camera* activeCam;
+camera *activeCam;
 
 GLuint FramebufferName = 0;
 GLuint renderedTexture;
+GLuint depthrenderbuffer;
 
 mesh *desertM;
 mesh mirror;
@@ -46,11 +47,10 @@ bool initialise() {
 }
 
 bool load_content() {
-  mirror = mesh(geometry_builder::create_plane());
-  mirror.get_transform().translate(vec3(25.0f, 10.0f, 25.0f));
+  mirror = mesh(geometry_builder::create_plane(100, 100, true));
+  mirror.get_transform().translate(vec3(25.0f, 1.0f, 25.0f));
   mirror.get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
-  mirror.get_transform().rotate(
-      vec3(half_pi<float>() * 0.5f, pi<float>(), 0.0f));
+  mirror.get_transform().rotate(vec3(half_pi<float>() * 0.5f, pi<float>(), 0.0f));
 
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());
@@ -58,8 +58,8 @@ bool load_content() {
   meshes["torus"] = mesh(geometry_builder::create_torus(20, 20, 1.0f, 5.0f));
   meshes["box"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
   meshes["box"].get_transform().translate(vec3(-10.0f, 2.5f, -30.0f));
-  meshes["pyramid"].get_transform().scale = vec3(5.0f, 50.0f, 5.0f);
-  meshes["pyramid"].get_transform().translate(vec3(0, 25, 0));
+  meshes["pyramid"].get_transform().scale = vec3(8.0f, 100.0f, 8.0f);
+  meshes["pyramid"].get_transform().translate(vec3(0, 50, 0));
   meshes["torus"].get_transform().translate(vec3(-25.0f, 10.0f, -25.0f));
   meshes["torus"].get_transform().rotate(vec3(half_pi<float>(), 0.0f, 0.0f));
   meshes["box"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -75,20 +75,28 @@ bool load_content() {
   meshes["torus"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["torus"].get_material().set_shininess(25.0f);
 
-
   glGenFramebuffers(1, &FramebufferName);
   glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
   // The texture we're going to render to
   glGenTextures(1, &renderedTexture);
-  // "Bind" the newly created texture : all future texture functions will modify this texture
+  // "Bind" the newly created texture : all future texture functions will modify
+  // this texture
   glBindTexture(GL_TEXTURE_2D, renderedTexture);
   // Give an empty image to OpenGL ( the last "0" )
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE,
+               0);
   // Poor filtering. Needed !
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   // Set "renderedTexture" as our colour attachement #0
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
+                       0);
+
+  // The depth buffer
+  glGenRenderbuffers(1, &depthrenderbuffer);
+  glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
 
   // Lights
@@ -230,13 +238,13 @@ void rendermesh(mesh &m, texture &t) {
   glUniform1i(eff.get_uniform_location("tex"), 0);
   // Set eye position
   glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
-    value_ptr(activeCam->get_position()));
+               value_ptr(activeCam->get_position()));
 
   // Render mesh
   renderer::render(m);
 }
 
-void renderSky(){
+void renderSky() {
   // vertaical fov = 25.3125deg = 0.441786467 radians
   float verticleFov = 0.2208932335f; // vfov/2 in radians
 
@@ -255,15 +263,76 @@ void renderSky(){
   glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
   glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
   glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x,
-    camview.y, camview.z);
+              camview.y, camview.z);
 
   graphics_framework::geometry geo;
-  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-    vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
+                         vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
   geo.add_buffer(v, 0);
   glDisable(GL_CULL_FACE);
   renderer::render(geo);
   glEnable(GL_CULL_FACE);
+}
+
+void renderWater() {
+  // render the reflected scene into a texture
+  {
+    // TODO, add free camera get target.
+    bouncecam.set_position(
+        vec3(cam.get_position().x,
+             cam.get_position().y -
+                 (cam.get_target().y + mirror.get_transform().position.y * 2),
+             cam.get_position().z));
+    bouncecam.set_target(
+        vec3(cam.get_target().x,
+             cam.get_position().y -
+                 (cam.get_target().y + mirror.get_transform().position.y * 2),
+             cam.get_target().z));
+    bouncecam.update(0);
+
+    // renderer::set_render_target(*mirrorFB);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
+                         0);
+     activeCam = &bouncecam;
+
+    // rerender scene
+
+    glDisable(GL_CULL_FACE);
+    for (auto &e : meshes) {
+      rendermesh(e.second, checkedTexture);
+    }
+    rendermesh(*desertM, sandTexture);
+   // renderSky();
+
+    // end render
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // renderer::set_render_target();
+    activeCam = &cam;
+  }
+
+  // render texture onto plane
+  renderer::bind(waterEffect);
+
+  auto M = mirror.get_transform().get_transform_matrix();
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto MVP = P * V * M;
+
+  // Bind texture
+  // renderer::bind(checkedTexture, 0);
+
+  // Bind our texture in Texture Unit 0
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, renderedTexture);
+  // Set our "renderedTexture" sampler to user Texture Unit 0
+  glUniform1i(waterEffect.get_uniform_location("tex"), 0);
+
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(waterEffect.get_uniform_location("MVP"), 1, GL_FALSE,
+                     value_ptr(MVP));
+
+  renderer::render(mirror);
 }
 
 bool render() {
@@ -277,56 +346,7 @@ bool render() {
 
   renderSky();
 
-  // Render water
-  {
-    //render the reflected scene into a texture
-    {
-      //TODO, add free camera get target.
-      bouncecam.set_position(vec3(cam.get_position().x, cam.get_position().y - (cam.get_target().y + mirror.get_transform().position.y * 2), cam.get_position().z));
-      bouncecam.set_target(vec3(cam.get_target().x, cam.get_position().y - (cam.get_target().y + mirror.get_transform().position.y * 2), cam.get_target().z));
-      bouncecam.update(0);
-
-      //renderer::set_render_target(*mirrorFB);
-      glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-      activeCam = &bouncecam;
-
-      //rerender scene
-
-      for (auto &e : meshes) {
-        rendermesh(e.second, checkedTexture);
-      }
-      rendermesh(*desertM, sandTexture);
-      renderSky();
-
-      // end render
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      //renderer::set_render_target();
-      activeCam = &cam;
-    }
-
-    //render texture onto plane
-    renderer::bind(texturedEffect);
-
-    auto M = mirror.get_transform().get_transform_matrix();
-    auto V = activeCam->get_view();
-    auto P = activeCam->get_projection();
-    auto MVP = P * V * M;
-
-    // Bind our texture in Texture Unit 0
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, renderedTexture);
-    // Set our "renderedTexture" sampler to user Texture Unit 0
-    glUniform1i(waterEffect.get_uniform_location("tex"), 0);
-
-    // Set MVP matrix uniform
-    glUniformMatrix4fv(
-        waterEffect.get_uniform_location("MVP"), // Location of uniform
-        1,                                       // Number of values - 1 mat4
-        GL_FALSE,                                // Transpose the matrix?
-        value_ptr(MVP));                         // Pointer to matrix data
-
-    renderer::render(mirror);
-  }
+  renderWater();
 
   return true;
 }

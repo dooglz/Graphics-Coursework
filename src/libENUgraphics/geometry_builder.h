@@ -26,7 +26,7 @@ namespace graphics_framework
     // Creates torus geometry
     static geometry create_torus(const unsigned int stacks = 10, const unsigned int slices = 10, const float ring_radius = 1.0f, const float outer_radius = 3.0f);
     // Creates plane geometry
-    static geometry create_plane(const unsigned int width = 100, const unsigned int depth = 100);
+    static geometry create_plane(const unsigned int width = 100, const unsigned int depth = 100, const bool uvscale = false);
     // Creates plane geometry, doesn't send to gpu
     static void create_plane_r(const unsigned int width,
                                const unsigned int depth,
