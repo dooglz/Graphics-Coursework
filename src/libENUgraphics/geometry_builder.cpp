@@ -33,39 +33,41 @@ void generate_tb(geometry &geom, const std::vector<glm::vec3> &normals) {
 
 // Data required for box geometry
 glm::vec3 box_positions[24] = {
-    // Front
-    glm::vec3(0.5f, 0.5f, 0.5f),    glm::vec3(-0.5f, 0.5f, 0.5f),
-    glm::vec3(-0.5f, -0.5f, 0.5f),  glm::vec3(0.5f, -0.5f, 0.5f),
+  // Front
+  glm::vec3(0.5f, 0.5f, 0.5f),    glm::vec3(-0.5f, 0.5f, 0.5f),
+  glm::vec3(-0.5f, -0.5f, 0.5f),  glm::vec3(0.5f, -0.5f, 0.5f),
 
-    // Right side
-    glm::vec3(0.5f, 0.5f, -0.5f),   glm::vec3(0.5f, 0.5f, 0.5f),
-    glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(0.5f, -0.5f, -0.5f),
+  // Right side
+  glm::vec3(0.5f, 0.5f, -0.5f),   glm::vec3(0.5f, 0.5f, 0.5f),
+  glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(0.5f, -0.5f, -0.5f),
 
-    // Back
-    glm::vec3(-0.5f, 0.5f, -0.5f),  glm::vec3(0.5f, 0.5f, -0.5f),
-    glm::vec3(0.5f, -0.5f, -0.5f),  glm::vec3(-0.5f, -0.5f, -0.5f),
+  // Back
+  glm::vec3(-0.5f, 0.5f, -0.5f),  glm::vec3(0.5f, 0.5f, -0.5f),
+  glm::vec3(0.5f, -0.5f, -0.5f),  glm::vec3(-0.5f, -0.5f, -0.5f),
 
-    // Left side
-    glm::vec3(-0.5f, 0.5f, 0.5f),   glm::vec3(-0.5f, 0.5f, -0.5f),
-    glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(-0.5f, -0.5f, 0.5f),
+  // Left side
+  glm::vec3(-0.5f, 0.5f, 0.5f),   glm::vec3(-0.5f, 0.5f, -0.5f),
+  glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(-0.5f, -0.5f, 0.5f),
 
-    // Top
-    glm::vec3(0.5f, 0.5f, -0.5f),   glm::vec3(-0.5f, 0.5f, -0.5f),
-    glm::vec3(-0.5f, 0.5f, 0.5f),   glm::vec3(0.5f, 0.5f, 0.5f),
+  // Top
+  glm::vec3(0.5f, 0.5f, -0.5f),   glm::vec3(-0.5f, 0.5f, -0.5f),
+  glm::vec3(-0.5f, 0.5f, 0.5f),   glm::vec3(0.5f, 0.5f, 0.5f),
 
-    // Bottom
-    glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.5f, -0.5f, -0.5f),
-    glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(-0.5f, -0.5f, 0.5f)};
+  // Bottom
+  glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.5f, -0.5f, -0.5f),
+  glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(-0.5f, -0.5f, 0.5f)
+};
 
 // Normals for the box geometry
 glm::vec3 box_normals[6] = {
-    glm::vec3(0.0f, 0.0f, 1.0f),  glm::vec3(1.0f, 0.0f, 0.0f),
-    glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(-1.0f, 0.0f, 0.0f),
-    glm::vec3(0.0f, 1.0f, 0.0f),  glm::vec3(0.0f, -1.0f, 0.0f)};
+  glm::vec3(0.0f, 0.0f, 1.0f),  glm::vec3(1.0f, 0.0f, 0.0f),
+  glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(-1.0f, 0.0f, 0.0f),
+  glm::vec3(0.0f, 1.0f, 0.0f),  glm::vec3(0.0f, -1.0f, 0.0f)
+};
 
 // Box texture coordinates
-glm::vec2 box_texcoords[4] = {glm::vec2(1.0f, 1.0f), glm::vec2(0.0f, 1.0f),
-                              glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f)};
+glm::vec2 box_texcoords[4] = { glm::vec2(1.0f, 1.0f), glm::vec2(0.0f, 1.0f),
+                               glm::vec2(0.0f, 0.0f), glm::vec2(1.0f, 0.0f) };
 
 // Creates box geometry
 geometry geometry_builder::create_box(const glm::vec3 &dims) {
@@ -135,25 +137,26 @@ geometry geometry_builder::create_box(const glm::vec3 &dims) {
 
 // Tetrahedron data
 glm::vec3 tetra_positions[12] = {
-    // Side 1
-    glm::vec3(0.5f, -0.5f, 0.5f),  glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(-0.5f, -0.5f, 0.5f),
+  // Side 1
+  glm::vec3(0.5f, -0.5f, 0.5f),  glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(-0.5f, -0.5f, 0.5f),
 
-    // Side 2
-    glm::vec3(0.0f, -0.5f, -0.5f), glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(0.5f, -0.5f, 0.5f),
+  // Side 2
+  glm::vec3(0.0f, -0.5f, -0.5f), glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(0.5f, -0.5f, 0.5f),
 
-    // Side 3
-    glm::vec3(-0.5f, -0.5f, 0.5f), glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(0.0f, -0.5f, -0.5f),
+  // Side 3
+  glm::vec3(-0.5f, -0.5f, 0.5f), glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(0.0f, -0.5f, -0.5f),
 
-    // Bottom
-    glm::vec3(-0.5f, -0.5f, 0.5f), glm::vec3(0.0f, -0.5f, -0.5f),
-    glm::vec3(0.5f, -0.5f, 0.5f)};
+  // Bottom
+  glm::vec3(-0.5f, -0.5f, 0.5f), glm::vec3(0.0f, -0.5f, -0.5f),
+  glm::vec3(0.5f, -0.5f, 0.5f)
+};
 
 // Texture coordinates for the tetrahedron geometry
-glm::vec2 tetra_texcoords[3] = {glm::vec2(1.0f, 0.0f), glm::vec2(0.5f, 1.0f),
-                                glm::vec2(0.0f, 0.0f)};
+glm::vec2 tetra_texcoords[3] = { glm::vec2(1.0f, 0.0f), glm::vec2(0.5f, 1.0f),
+                                 glm::vec2(0.0f, 0.0f) };
 
 // Creates tetrahedron geometry
 geometry geometry_builder::create_tetrahedron(const glm::vec3 &dims) {
@@ -223,24 +226,25 @@ geometry geometry_builder::create_tetrahedron(const glm::vec3 &dims) {
 
 // Pyramid data
 glm::vec3 pyramid_positions[18] = {
-    // Front
-    glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(-0.5f, -0.5f, 0.5f),
-    // Right
-    glm::vec3(0.5f, -0.5f, -0.5f),  glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(0.5f, -0.5f, 0.5f),
-    // Back
-    glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(0.5f, -0.5f, -0.5f),
-    // Left
-    glm::vec3(-0.5f, -0.5f, 0.5f),  glm::vec3(0.0f, 0.5f, 0.0f),
-    glm::vec3(-0.5f, -0.5f, -0.5f),
-    // Bottom 1
-    glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(-0.5f, -0.5f, 0.5f),
-    glm::vec3(-0.5f, -0.5f, -0.5f),
-    // Bottom 2
-    glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(-0.5f, -0.5f, -0.5f),
-    glm::vec3(0.5f, -0.5f, -0.5f)};
+  // Front
+  glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(-0.5f, -0.5f, 0.5f),
+  // Right
+  glm::vec3(0.5f, -0.5f, -0.5f),  glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(0.5f, -0.5f, 0.5f),
+  // Back
+  glm::vec3(-0.5f, -0.5f, -0.5f), glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(0.5f, -0.5f, -0.5f),
+  // Left
+  glm::vec3(-0.5f, -0.5f, 0.5f),  glm::vec3(0.0f, 0.5f, 0.0f),
+  glm::vec3(-0.5f, -0.5f, -0.5f),
+  // Bottom 1
+  glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(-0.5f, -0.5f, 0.5f),
+  glm::vec3(-0.5f, -0.5f, -0.5f),
+  // Bottom 2
+  glm::vec3(0.5f, -0.5f, 0.5f),   glm::vec3(-0.5f, -0.5f, -0.5f),
+  glm::vec3(0.5f, -0.5f, -0.5f)
+};
 
 // Creates pyramid geometry
 geometry geometry_builder::create_pyramid(const glm::vec3 &dims) {

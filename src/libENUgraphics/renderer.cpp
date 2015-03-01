@@ -5,6 +5,29 @@
 
 namespace graphics_framework
 {
+
+  void __stdcall DebugCallbackAMD(GLuint id, GLenum category, GLenum severity,
+    GLsizei length, const GLchar* message,
+    GLvoid* userParam) {
+    printf("\nAn OGL AMD error has occured: %s\n", message);
+  }
+
+  void __stdcall DebugCallbackARB(GLenum source, GLenum type, GLuint id,
+    GLenum severity, GLsizei length,
+    const GLchar* message, GLvoid* userParam) {
+    printf("\nAn OGL ARB error has occured: %s\n", message);
+  }
+
+  void __stdcall printOutKhrDebugMessage(GLenum source, GLenum type, GLuint id,
+    GLenum severity, GLsizei length,
+    const GLchar* message,
+    const void* userParam) {
+    if (severity >= GL_DEBUG_SEVERITY_LOW){
+      printf("\nAn OGL KHR error has occured: %s\n", message);
+    }
+  }
+
+
 	// Initialise the renderer singleton
 	renderer *renderer::_instance = new renderer();
 
@@ -23,7 +46,7 @@ namespace graphics_framework
 	}
 
 	// Initialises the renderer
-	bool renderer::initialise(const unsigned int screenX, const unsigned int screenY, const bool fullscreen)
+  bool renderer::initialise(const unsigned int screenX, const unsigned int screenY, const bool fullscreen)
 	{
 		// Set running to false
 		_instance->_running = false;
@@ -49,7 +72,10 @@ namespace graphics_framework
 		glfwWindowHint(GLFW_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-		// If in debug mode, set window dimensions to 800 x 600
+    #if defined(DEBUG) | defined(_DEBUG)
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    #endif
+
 		if (fullscreen)
 		{
 			_instance->_window = glfwCreateWindow(video_mode->width, video_mode->height, "Render Framework", nullptr, nullptr);
@@ -98,6 +124,26 @@ namespace graphics_framework
 			glfwTerminate();
 			return false;
 		}
+
+#if defined(DEBUG) | defined(_DEBUG)
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+    if (GLEW_ARB_debug_output) {
+      printf("Supporting Arb OGL debug output\n");
+      glEnable(GL_DEBUG_OUTPUT);
+      glDebugMessageCallbackARB((GLDEBUGPROCARB)DebugCallbackARB, 0);
+    }
+
+    if (GLEW_AMD_debug_output) {
+      printf("Supporting AMD OGL debug output\n");
+      glDebugMessageCallbackAMD((GLDEBUGPROCAMD)DebugCallbackAMD, 0);
+    }
+
+    if (GLEW_KHR_debug) {
+      printf("Supporting KHR OGL debug output\n");
+      glDebugMessageCallback((GLDEBUGPROC)printOutKhrDebugMessage, 0);
+    }
+#endif
 
 		// Set clear colour to cyan
 		glClearColor(0.0f, 1.0f, 1.0f, 1.0f);

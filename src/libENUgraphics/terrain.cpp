@@ -2,10 +2,6 @@
 
 #include "terrain.h"
 
-namespace graphics_framework
-{
-	terrain::terrain(const std::string &heightmap)
-		: terrain()
-	{
-	}
+namespace graphics_framework {
+terrain::terrain(const std::string &heightmap) : terrain() {}
 }
