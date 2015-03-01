@@ -101,5 +101,8 @@ public:
   static void set_render_target(const depth_buffer &depth) throw(...);
   // Sets the render target of the renderer to a frame buffer
   static void set_render_target(const frame_buffer &frame) throw(...);
+  //Renders lines between a vector of points, lineLength 1 = 1 line joining 2 points.
+  static void RenderLines(const std::vector<const glm::vec3> &points, unsigned int lineLength);
+ 
 };
 }

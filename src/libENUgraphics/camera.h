@@ -45,6 +45,10 @@ public:
     // Call GLM's perspective function
     _projection = glm::perspective(fov, aspect, near, far);
   }
+  void set_projection(const glm::mat4& value) {
+    // Call GLM's perspective function
+    _projection = value;
+  }
   // Updates the camera.  This is a pure virtual function.
   virtual void update(float delta_time) = 0;
 };

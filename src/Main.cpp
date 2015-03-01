@@ -9,7 +9,7 @@ using namespace graphics_framework;
 using namespace glm;
 
 map<string, mesh> meshes;
-
+effect simpleEffect;
 effect gouradEffect;
 effect texturedEffect;
 effect skyeffect;
@@ -33,6 +33,18 @@ directional_light light;
 double cursor_x = 0.0;
 double cursor_y = 0.0;
 
+static std::vector<const glm::vec3> linebuffer;
+static void DrawLine(const glm::vec3& p1, const glm::vec3& p2)
+{
+  linebuffer.push_back(p1);
+  linebuffer.push_back(p2);
+}
+static void DrawCross(const glm::vec3& p1, const float size){
+  DrawLine(p1 + glm::vec3(size, 0, 0), p1 - glm::vec3(size, 0, 0));
+  DrawLine(p1 + glm::vec3(0, size, 0), p1 - glm::vec3(0, size, 0));
+  DrawLine(p1 + glm::vec3(0, 0, size), p1 - glm::vec3(0, 0, size));
+}
+
 bool initialise() {
   // ********************************
   // Set input mode - hide the cursor
@@ -50,7 +62,7 @@ bool initialise() {
 bool load_content() {
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
   mirror.get_transform().translate(vec3(25.0f, 1.0f, 25.0f));
-  mirror.get_transform().scale = vec3(0.25f, 0.25f, 0.25f);
+  mirror.get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
   // mirror.get_transform().rotate(vec3(half_pi<float>() * 0.5f, pi<float>(),
   // 0.0f));
 
@@ -123,6 +135,10 @@ bool load_content() {
   sandTexture = texture("textures\\sand_512_1.png");
 
   // shaders
+  simpleEffect.add_shader("shaders\\basic.vert", GL_VERTEX_SHADER);
+  simpleEffect.add_shader("shaders\\basic.frag", GL_FRAGMENT_SHADER);
+  simpleEffect.build();
+
   gouradEffect.add_shader("shaders\\gouraud.vert", GL_VERTEX_SHADER);
   gouradEffect.add_shader("shaders\\gouraud.frag", GL_FRAGMENT_SHADER);
   gouradEffect.build();
@@ -258,6 +274,24 @@ void rendermesh(mesh &m, texture &t) {
   renderer::render(m);
 }
 
+void processLines(){
+  if (linebuffer.size() < 1) {
+    return;
+  }
+
+  renderer::bind(simpleEffect);
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto VP = P * V;
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(simpleEffect.get_uniform_location("MVP"), // Location of uniform
+    1,               // Number of values - 1 mat4
+    GL_FALSE,        // Transpose the matrix?
+    value_ptr(VP)); // Pointer to matrix data
+  renderer::RenderLines(linebuffer,1);
+  linebuffer.clear();
+}
+
 void renderSky() {
   // vertaical fov = 25.3125deg = 0.441786467 radians
   float verticleFov = 0.2208932335f; // vfov/2 in radians
@@ -291,46 +325,69 @@ void renderSky() {
 void renderWater() {
   // render the reflected scene into a texture
   {
+
     // TODO, add free camera get target.
-     bouncecam.set_position(
-        vec3(cam.get_position().x,
-             cam.get_position().y - ((mirror.get_transform().position.y -
-             cam.get_position().y)*2),
-             cam.get_position().z));
-     bouncecam.set_target(
-        vec3(cam.get_target().x,
-             cam.get_target().y - (cam.get_target().y +
-             mirror.get_transform().position.y * 2),
-             cam.get_target().z));
-     bouncecam.update(0);
+     //bouncecam.set_position(
+     //   vec3(cam.get_position().x,
+     //        cam.get_position().y - ((mirror.get_transform().position.y -
+     //        cam.get_position().y)*2),
+     //        cam.get_position().z));
+     //bouncecam.set_target(
+     //   vec3(cam.get_target().x,
+     //        cam.get_target().y - (cam.get_target().y +
+     //        mirror.get_transform().position.y * 2),
+     //        cam.get_target().z));
+     //bouncecam.update(0);
 
-    //vec3 mirrorPos = mirror.get_transform().position;
-    //vec3 mirrorNormal =
-    //    normalize(GetUpVector(mirror.get_transform().orientation));
-    //vec3 vectorToMirror = vec3(mirrorPos.x - cam.get_position().x,
-    //                           mirrorPos.y - cam.get_position().y,
-    //                           mirrorPos.z - cam.get_position().z);
-    //vec3 mirrorReflectionVector =
-    //    normalize(vectorToMirror -
-    //              (2 * (dot(vectorToMirror, mirrorNormal)) * mirrorNormal));
 
-    //bouncecam.set_position(vec3(
-    //    cam.get_position().x,
-    //    cam.get_position().y -
-    //        ((mirror.get_transform().position.y - cam.get_position().y) * 2),
-    //    cam.get_position().z));
-    //bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
+    vec3 bcamPos = bouncecam.get_position();
+    vec3 mirrorPos = mirror.get_transform().position;
+    vec3 mirrorNormal =
+        normalize(GetUpVector(mirror.get_transform().orientation));
+    vec3 vectorToMirror = vec3(mirrorPos.x - cam.get_position().x,
+                               mirrorPos.y - cam.get_position().y,
+                               mirrorPos.z - cam.get_position().z);
+    vec3 mirrorReflectionVector =
+        normalize(vectorToMirror -
+                  (2 * (dot(vectorToMirror, mirrorNormal)) * mirrorNormal));
+
+
+    // Reflect camera around reflection plane
+    mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
+    vec3 refelctedCameraPos = vec3(vec4(cam.get_position(), 1.0f) * reflectionMat);
+
+    bouncecam.set_projection(cam.get_projection() * reflectionMat);
+
+    // Setup oblique projection matrix so that near plane is our reflection
+    // plane. This way we clip everything below/above it for free.
+    vec4 clipPlane = CameraSpacePlane(bouncecam.get_projection(), mirrorPos, mirrorNormal, 1.0f);
+    mat4 projection = cam.get_projection();
+    CalculateObliqueMatrix(projection, clipPlane);
+   // bouncecam.set_projection(projection);
+    
+//move camera
+    bouncecam.set_position(refelctedCameraPos);
+    bouncecam.set_target(cam.get_target());
+    DrawCross(bouncecam.get_position(),20.0f);
+    DrawLine(bouncecam.get_position(), bouncecam.get_position() + (bouncecam.get_target()*50.0f));
+    /*
+    bouncecam.set_position(vec3(
+        cam.get_position().x,
+        cam.get_position().y -
+            ((mirror.get_transform().position.y - cam.get_position().y) * 2),
+        cam.get_position().z));
+    bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
+    */
 
     bouncecam.update(1);
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the depth and colour buffers  
-    //activeCam = &bouncecam;
+    activeCam = &bouncecam;
 
     //Rerender scene
 
     //glDisable(GL_CULL_FACE);
-    //glDisable(GL_DEPTH_TEST);
     for (auto &e : meshes) {
       rendermesh(e.second, checkedTexture);
     }
@@ -338,8 +395,8 @@ void renderWater() {
      renderSky();
 
     // end render
-    //glEnable(GL_CULL_FACE);
-    //glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     activeCam = &cam;
   }
@@ -380,7 +437,9 @@ bool render() {
   renderSky();
 
   renderWater();
+  DrawCross(vec3(0.0,0.0,0.0f),10.0f);
 
+  processLines();
   return true;
 }
 

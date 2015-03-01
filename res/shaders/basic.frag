@@ -8,6 +8,7 @@ layout (location = 0) out vec4 out_colour;
 
 void main()
 {
-	// Simply set outgoing colour
-	out_colour = in_colour;
+  // Simply set outgoing colour
+  //out_colour = in_colour;
+  out_colour = vec4(1.0,0.1,0.2,1.0);
 }
