@@ -165,6 +165,8 @@ bool load_content() {
   cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
   activeCam = &cam;
 
+  bouncecam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
+
   // build
   DesertGen::CreateDesert();
   desertM = &DesertGen::farMesh;
