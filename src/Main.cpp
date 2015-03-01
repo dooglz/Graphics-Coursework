@@ -1,6 +1,8 @@
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
+#include <glm\gtx\quaternion.hpp>
+#include <glm\gtc\matrix_transform.hpp>
 #include "DesertGen.h"
 #include "Math.h"
 
@@ -326,49 +328,50 @@ void renderWater() {
   // render the reflected scene into a texture
   {
 
-    // TODO, add free camera get target.
-     //bouncecam.set_position(
-     //   vec3(cam.get_position().x,
-     //        cam.get_position().y - ((mirror.get_transform().position.y -
-     //        cam.get_position().y)*2),
-     //        cam.get_position().z));
-     //bouncecam.set_target(
-     //   vec3(cam.get_target().x,
-     //        cam.get_target().y - (cam.get_target().y +
-     //        mirror.get_transform().position.y * 2),
-     //        cam.get_target().z));
-     //bouncecam.update(0);
-
-
-    vec3 bcamPos = bouncecam.get_position();
     vec3 mirrorPos = mirror.get_transform().position;
-
-    vec3 mirrorNormal =
-        normalize(GetUpVector(mirror.get_transform().orientation));
-    vec3 vectorToMirror = vec3(mirrorPos.x - cam.get_position().x,
-                               mirrorPos.y - cam.get_position().y,
-                               mirrorPos.z - cam.get_position().z);
-    vec3 mirrorReflectionVector =
-        normalize(vectorToMirror -
-                  (2 * (dot(vectorToMirror, mirrorNormal)) * mirrorNormal));
-
-
-    // Reflect camera around reflection plane
+    vec3 mirrorNormal = normalize(GetUpVector(mirror.get_transform().orientation));
     mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
-    vec3 refelctedCameraPos = vec3(vec4(cam.get_position(), 1.0f) * reflectionMat);
-    vec3 refelctedCameraTarget = vec3(vec4(cam.get_target(), 1.0f) * reflectionMat);
+    vec3 CamPos = cam.get_position();  // Actual virtual cam position
+    vec3 vecMirrorToCam = CamPos - mirrorPos;
 
-    //bouncecam.set_projection(cam.get_projection() * reflectionMat);
+    vec3 mirrorReflectionVector =
+        normalize(vecMirrorToCam -
+                  (2 * (dot(vecMirrorToCam, mirrorNormal)) * mirrorNormal));
+
+    vec3 refelctedCameraPos = vec3(vec4(CamPos, 1.0f) * reflectionMat);
+
+    vec3 bounce2 = normalize(refelctedCameraPos - mirrorPos);
+
+    bouncecam.set_position(mirrorPos);
+    bouncecam.set_target(-refelctedCameraPos);
+    bouncecam.update(1);
+
+    printf("%f,%f,%f\n", bouncecam.get_target().x, bouncecam.get_target().y, bouncecam.get_target().z);
+/*
+    //move camera
+    bouncecam.set_position(refelctedCameraPos);
 
     // Setup oblique projection matrix so that near plane is our reflection
     // plane. This way we clip everything below/above it for free.
+    bouncecam.set_projection(cam.get_projection() * reflectionMat);
     vec4 clipPlane = CameraSpacePlane(bouncecam.get_projection(), mirrorPos, mirrorNormal, 1.0f);
     mat4 projection = cam.get_projection();
     CalculateObliqueMatrix(projection, clipPlane);
-   // bouncecam.set_projection(projection);
+    bouncecam.set_projection(projection);
     
-//move camera
-    bouncecam.set_position(refelctedCameraPos);
+    //roation and targeting
+    mat4 view;
+    translate(view, refelctedCameraPos);
+
+    //copy rotation from camera
+    vec3 camrot = glm::eulerAngles(toQuat(cam.get_view()));
+    camrot.x =0;
+    mat4 q = glm::mat4_cast(quat(camrot));
+
+    view = view * q;
+
+    //bouncecam.set_view(view);
+  
     //bouncecam.set_target(vec3(-cam.get_target().x, cam.get_target().y, -cam.get_target().z));
    // bouncecam.set_target(vec3(refelctedCameraTarget.x, refelctedCameraTarget.y, refelctedCameraTarget.z));
     bouncecam.set_target(
@@ -385,10 +388,11 @@ void renderWater() {
     //bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
    
 
-    
     bouncecam.update(1);
     DrawCross(bouncecam.get_position(), 40.0f);
-    DrawLine(bouncecam.get_position(), bouncecam.get_position() + (bouncecam.get_target()*100.0f));
+    DrawCross(bouncecam.get_target(), 20.0f);
+    DrawLine(bouncecam.get_position(), bouncecam.get_target());
+    DrawLine(bouncecam.get_position(), bouncecam.get_position() + ( normalize(bouncecam.get_target() - bouncecam.get_position()) * 10.0f));
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the depth and colour buffers  
