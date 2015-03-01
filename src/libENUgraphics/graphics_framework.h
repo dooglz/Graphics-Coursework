@@ -23,3 +23,4 @@
 #include "chase_camera.h"
 #include "arc_ball_camera.h"
 #include "util.h"
+#include "matrix_camera.h"

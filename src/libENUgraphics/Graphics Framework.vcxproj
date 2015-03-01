@@ -86,6 +86,7 @@
     <ClCompile Include="free_camera.cpp" />
     <ClCompile Include="geometry.cpp" />
     <ClCompile Include="geometry_builder.cpp" />
+    <ClCompile Include="Matrix_camera.cpp" />
     <ClCompile Include="renderer.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="target_camera.cpp" />
@@ -108,6 +109,7 @@
     <ClInclude Include="geometry_builder.h" />
     <ClInclude Include="graphics_framework.h" />
     <ClInclude Include="material.h" />
+    <ClInclude Include="Matrix_camera.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="point_light.h" />
     <ClInclude Include="renderer.h" />

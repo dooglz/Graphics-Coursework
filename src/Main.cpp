@@ -20,7 +20,7 @@ texture checkedTexture;
 texture sandTexture;
 
 free_camera cam;
-target_camera bouncecam;
+matrix_camera bouncecam;
 camera *activeCam;
 
 GLuint FramebufferName = 0;
@@ -164,6 +164,8 @@ bool load_content() {
                 static_cast<float>(renderer::get_screen_height());
   cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
   activeCam = &cam;
+
+  bouncecam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
 
   // build
   DesertGen::CreateDesert();
@@ -329,24 +331,25 @@ void renderWater() {
   {
 
     vec3 mirrorPos = mirror.get_transform().position;
-    vec3 mirrorNormal = normalize(GetUpVector(mirror.get_transform().orientation));
+    vec3 mirrorNormal =vec3(0,1,0);// normalize(GetUpVector(mirror.get_transform().orientation));
     mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
-    vec3 CamPos = cam.get_position();  // Actual virtual cam position
+    mat4 XZreflectionMatrix = mat4(1.0f);
+    XZreflectionMatrix[1][1] = -1.0f;
+    vec3 CamPos = cam.get_position();
+    vec3 refelctionCamPos = bouncecam.get_position();
     vec3 vecMirrorToCam = CamPos - mirrorPos;
 
-    vec3 mirrorReflectionVector =
-        normalize(vecMirrorToCam -
-                  (2 * (dot(vecMirrorToCam, mirrorNormal)) * mirrorNormal));
-
-    vec3 refelctedCameraPos = vec3(vec4(CamPos, 1.0f) * reflectionMat);
-
+    //vec3 refelctedCameraPos = vec3(vec4(CamPos, 1.0f) * reflectionMat);
+    mat4 refcamtransform = reflectionMat * cam.get_view() * XZreflectionMatrix;
+    bouncecam.set_view(refcamtransform);
+    /*
     vec3 bounce2 = normalize(refelctedCameraPos - mirrorPos);
 
     bouncecam.set_position(mirrorPos);
     bouncecam.set_target(-refelctedCameraPos);
     bouncecam.update(1);
 
-    printf("%f,%f,%f\n", bouncecam.get_target().x, bouncecam.get_target().y, bouncecam.get_target().z);
+    printf("%f,%f,%f\n", bouncecam.get_target().x, bouncecam.get_target().y, bouncecam.get_target().z);*/
 /*
     //move camera
     bouncecam.set_position(refelctedCameraPos);
@@ -388,11 +391,10 @@ void renderWater() {
     //bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
    
 
-    bouncecam.update(1);
     DrawCross(bouncecam.get_position(), 40.0f);
     DrawCross(bouncecam.get_target(), 20.0f);
     DrawLine(bouncecam.get_position(), bouncecam.get_target());
-    DrawLine(bouncecam.get_position(), bouncecam.get_position() + ( normalize(bouncecam.get_target() - bouncecam.get_position()) * 10.0f));
+   // DrawLine(bouncecam.get_position(), bouncecam.get_position() + ( normalize(bouncecam.get_target() - bouncecam.get_position()) * 10.0f));
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the depth and colour buffers  
@@ -423,19 +425,24 @@ void renderWater() {
   auto P = activeCam->get_projection();
   auto MVP = P * V * M;
 
-  // Bind texture
-  // renderer::bind(checkedTexture, 0);
-
   // Bind our texture in Texture Unit 0
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, renderedTexture);
   // Set our "renderedTexture" sampler to user Texture Unit 0
   glUniform1i(waterEffect.get_uniform_location("tex"), 0);
 
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(waterEffect.get_uniform_location("MVP"), 1, GL_FALSE,
-                     value_ptr(MVP));
+  glUniform4f(waterEffect.get_uniform_location("clip_plane"), 0, 1, 0,
+              mirror.get_transform().position.y);
 
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(waterEffect.get_uniform_location("o2v_projection"), 1,
+                     GL_FALSE, value_ptr(MVP));
+
+  glUniformMatrix4fv(waterEffect.get_uniform_location("o2v"), 1, GL_FALSE,
+                     value_ptr(V * M));
+
+  glUniformMatrix4fv(waterEffect.get_uniform_location("o2v_projection_reflection"), 1, GL_FALSE,
+    value_ptr(MVP));
   renderer::render(mirror);
 }
 
