@@ -22,8 +22,8 @@ target_camera bouncecam;
 camera *activeCam;
 
 GLuint FramebufferName = 0;
-GLuint renderedTexture;
-GLuint depthrenderbuffer;
+GLuint renderedTexture = 0;
+GLuint depthrenderbuffer = 0;
 
 mesh *desertM;
 mesh mirror;
@@ -77,29 +77,41 @@ bool load_content() {
   meshes["torus"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["torus"].get_material().set_shininess(25.0f);
 
-  glGenFramebuffers(1, &FramebufferName);
-  glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-  // The texture we're going to render to
-  glGenTextures(1, &renderedTexture);
-  // "Bind" the newly created texture : all future texture functions will modify
-  // this texture
-  glBindTexture(GL_TEXTURE_2D, renderedTexture);
-  // Give an empty image to OpenGL ( the last "0" )
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 768, 0, GL_RGB, GL_UNSIGNED_BYTE,
-               0);
-  // Poor filtering. Needed !
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  // Set "renderedTexture" as our colour attachement #0
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
-                       0);
+  //create mirror FB
+  {
+    // Create the FBO
+    glGenFramebuffers(1, &FramebufferName);
+    //Bind to FBO
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FramebufferName);
 
-  // The depth buffer
-  glGenRenderbuffers(1, &depthrenderbuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1024, 768);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                            GL_RENDERBUFFER, depthrenderbuffer);
+    // Create the textures in the fbo
+    glGenTextures(1, &renderedTexture);
+    //bind it
+    glBindTexture(GL_TEXTURE_2D, renderedTexture);
+    //set dimensions,  Give an empty image to OpenGL ( the last "0" )
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1280, 720, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    //tex filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //unbind
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    //Attach a level of a texture object as a logical buffer of a framebuffer object
+    //target moust be GL_READ_FRAMEBUFFER, or GL_FRAMEBUFFER
+    //attachment must be GL_COLOR_ATTACHMENTi, GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT or GL_DEPTH_STENCIL_ATTACHMENT.
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+    //Do the same for depth, but use a renderbuffer rather than texture
+    glGenRenderbuffers(1, &depthrenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+    //set dimensions, fill with undefined
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1280, 720);
+    //attach to fbo depth output
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+    //unbind
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  }
 
   // Lights
   light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
@@ -312,27 +324,23 @@ void renderWater() {
     bouncecam.update(1);
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
-                         0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the depth and colour buffers  
     //activeCam = &bouncecam;
 
-    // rerender scene
+    //Rerender scene
 
-    //im thinking that we aren't writing into the correct depth buffer.
-
-   // glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_TEST);
+    //glDisable(GL_CULL_FACE);
+    //glDisable(GL_DEPTH_TEST);
     for (auto &e : meshes) {
       rendermesh(e.second, checkedTexture);
     }
     rendermesh(*desertM, sandTexture);
-    // renderSky();
+     renderSky();
 
     // end render
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_CULL_FACE);
+    //glEnable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // renderer::set_render_target();
     activeCam = &cam;
   }
 
