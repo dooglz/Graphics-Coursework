@@ -77,6 +77,7 @@
     <ClInclude Include="Main.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Perlin.h" />
+    <ClInclude Include="water.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DesertGen.cpp" />
@@ -84,6 +85,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MAth.cpp" />
     <ClCompile Include="Perlin.cpp" />
+    <ClCompile Include="Water.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\sky.frag">
