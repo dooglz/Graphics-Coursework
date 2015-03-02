@@ -75,6 +75,13 @@ bool graphics::load_content() {
 
   setupWater();
 
+  goodsand = mesh(geometry("models\\flatCone.obj"));
+  goodsand.get_transform().translate(vec3(0, 0.01f, 0));
+  goodsand.get_transform().scale = vec3(300.0f, 1.0f, 300.0f);
+  goodsand.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  goodsand.get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  goodsand.get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
+  goodsand.get_material().set_shininess(1000.0f);
   // Lights
   light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
   light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -83,8 +90,18 @@ bool graphics::load_content() {
   // textures
   checkedTexture = texture("textures\\checked.gif");
   sandTexture = texture("textures\\sand_512_1.png");
+  goodsandTexture = texture("textures\\Goodsand_1024.jpg");
+  goodsandTextureBump = texture("textures\\Goodsand_bump_1024.jpg");
 
   // shaders
+  phongEffect.add_shader("shaders\\phong.vert", GL_VERTEX_SHADER);
+  phongEffect.add_shader("shaders\\phong.frag", GL_FRAGMENT_SHADER);
+  phongEffect.build();
+
+  texturedBumpEffect.add_shader("shaders\\textured_bump.vert", GL_VERTEX_SHADER);
+  texturedBumpEffect.add_shader("shaders\\textured_bump.frag", GL_FRAGMENT_SHADER);
+  texturedBumpEffect.build();
+
   simpleEffect.add_shader("shaders\\basic.vert", GL_VERTEX_SHADER);
   simpleEffect.add_shader("shaders\\basic.frag", GL_FRAGMENT_SHADER);
   simpleEffect.build();
@@ -184,7 +201,7 @@ bool graphics::update(float delta_time) {
 }
 
 void graphics::rendermesh(mesh& m, texture& t) {
-  effect eff = gouradEffect;
+  effect eff = phongEffect;
   // Bind effect
   renderer::bind(eff);
   // Create MVP matrix
@@ -219,6 +236,49 @@ void graphics::rendermesh(mesh& m, texture& t) {
   // Render mesh
   renderer::render(m);
 }
+
+void graphics::rendermeshB(mesh& m, texture& t, texture& tb, const float scale) {
+  effect eff = texturedBumpEffect;
+  // Bind effect
+  renderer::bind(eff);
+  // Create MVP matrix
+  auto M = m.get_transform().get_transform_matrix();
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto MVP = P * V * M;
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
+    1,               // Number of values - 1 mat4
+    GL_FALSE,        // Transpose the matrix?
+    value_ptr(MVP)); // Pointer to matrix data
+  // Set M matrix uniform
+  glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
+  // Set N matrix uniform
+  glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
+    value_ptr(m.get_transform().get_normal_matrix()));
+  // Bind material
+  renderer::bind(m.get_material(), "mat");
+  // **********
+  // Bind light
+  // **********
+  renderer::bind(light, "light");
+  // Bind texture
+  renderer::bind(t, 0);
+  renderer::bind(tb, 1);
+  // Set tex uniform
+  glUniform1i(eff.get_uniform_location("tex"), 0);
+  glUniform1i(eff.get_uniform_location("normal_map"), 1);
+  glUniform1f(eff.get_uniform_location("TextureScale"), scale);
+  // Set eye position
+  glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
+    value_ptr(activeCam->get_position()));
+
+  glUniform3fv(eff.get_uniform_location("light_dir"), 1,
+    value_ptr(light.get_direction()));
+  // Render mesh
+  renderer::render(m);
+}
+
 
 void graphics::processLines() {
   if (linebuffer.size() < 1) {
@@ -277,6 +337,8 @@ bool graphics::render() {
   }
 
   rendermesh(*desertM, sandTexture);
+
+  rendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
 
   renderSky();
 

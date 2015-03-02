@@ -88,5 +88,17 @@
     <CustomBuild Include="..\res\shaders\simple_texture.vert">
       <Filter>Shaders</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\res\shaders\textured_bump.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\textured_bump.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\phong.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\phong.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

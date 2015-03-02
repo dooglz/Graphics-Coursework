@@ -19,18 +19,28 @@ public:
 
   graphics();
   ~graphics();
+
   std::map<std::string, mesh> meshes;
   float aspect;
+
   camera *activeCam;
+  free_camera cam;
+
   texture checkedTexture;
   texture sandTexture;
+  texture goodsandTexture;
+  texture goodsandTextureBump;
+
   effect simpleEffect;
   effect gouradEffect;
+  effect phongEffect;
   effect texturedEffect;
+  effect texturedBumpEffect;
   effect skyeffect;
-  free_camera cam;
+
   mesh *desertM;
   mesh mirror;
+  mesh goodsand;
 
   directional_light light;
 
@@ -38,6 +48,7 @@ public:
   void DrawCross(const glm::vec3 &p1, const float size);
   void processLines();
   void rendermesh(mesh &m, texture &t);
+  void graphics::rendermeshB(mesh& m, texture& t, texture& tb, const float scale);
   void renderSky();
 };
 
