@@ -361,11 +361,20 @@ void graphics::renderSky() {
 }
 
 bool graphics::render() {
+	glEnable(GL_FOG); //enable the fog
+	GLfloat density = 0.3;
+	GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0 };
+	glFogi(GL_FOG_MODE, GL_EXP2); //set the fog mode to GL_EXP2
+	glFogfv(GL_FOG_COLOR, fogColor);
+	glFogf(GL_FOG_DENSITY, density);
+	glHint(GL_FOG_HINT, GL_NICEST);
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // Render meshes
   for (auto& e : meshes) {
     rendermesh(e.second, checkedTexture);
   }
+
 
   rendermesh(*desertM, sandTexture);
 

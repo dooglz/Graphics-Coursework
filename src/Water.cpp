@@ -82,56 +82,12 @@ void renderWater(mesh& mirror) {
 
     vec3 bounce2 = normalize(refelctedCameraPos - mirrorPos);
 
-    bouncecam.set_position(mirrorPos);
-    bouncecam.set_target(-refelctedCameraPos);
-    bouncecam.update(1);
+//	bouncecam.set_position(refelctedCameraPos);
+	//bouncecam.set_target(bounce2);
 
-    //printf("%f,%f,%f\n", bouncecam.get_target().x, bouncecam.get_target().y, bouncecam.get_target().z);
-    
-/*
-    //move camera
-    bouncecam.set_position(refelctedCameraPos);
+	bouncecam.set_view(gfx->cam.get_view() * reflectionMat);
+   // bouncecam.update(1);
 
-    // Setup oblique projection matrix so that near plane is our reflection
-    // plane. This way we clip everything below/above it for free.
-    bouncecam.set_projection(cam.get_projection() * reflectionMat);
-    vec4 clipPlane = CameraSpacePlane(bouncecam.get_projection(), mirrorPos,
-    mirrorNormal, 1.0f);
-    mat4 projection = cam.get_projection();
-    CalculateObliqueMatrix(projection, clipPlane);
-    bouncecam.set_projection(projection);
-
-    //roation and targeting
-    mat4 view;
-    translate(view, refelctedCameraPos);
-
-    //copy rotation from camera
-    vec3 camrot = glm::eulerAngles(toQuat(cam.get_view()));
-    camrot.x =0;
-    mat4 q = glm::mat4_cast(quat(camrot));
-
-    view = view * q;
-
-    //bouncecam.set_view(view);
-
-    //bouncecam.set_target(vec3(-cam.get_target().x, cam.get_target().y,
-    -cam.get_target().z));
-    // bouncecam.set_target(vec3(refelctedCameraTarget.x,
-    refelctedCameraTarget.y, refelctedCameraTarget.z));
-    bouncecam.set_target(
-    vec3(-cam.get_target().x,
-    cam.get_target().y -
-    (cam.get_target().y + mirror.get_transform().position.y * 2),
-    -cam.get_target().z));
-    /*
-    bouncecam.set_position(vec3(
-    cam.get_position().x,
-    cam.get_position().y -
-    ((mirror.get_transform().position.y - cam.get_position().y) * 2),
-    cam.get_position().z)); */
-    // bouncecam.set_target(bouncecam.get_position() + mirrorReflectionVector);
-
-    bouncecam.update(1);
     gfx->DrawCross(bouncecam.get_position(), 40.0f);
     gfx->DrawCross(bouncecam.get_target(), 20.0f);
     gfx->DrawLine(bouncecam.get_position(), bouncecam.get_target());
@@ -147,7 +103,8 @@ void renderWater(mesh& mirror) {
     gfx->activeCam = &bouncecam;
 
     // Rerender scene
-
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
     // glDisable(GL_CULL_FACE);
     for (auto& e : gfx->meshes) {
       gfx->rendermesh(e.second, gfx->checkedTexture);
@@ -158,7 +115,7 @@ void renderWater(mesh& mirror) {
 
     // end render
     glEnable(GL_CULL_FACE);
-
+	glCullFace(GL_BACK);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gfx->activeCam = &gfx->cam;
   }
@@ -183,6 +140,8 @@ void renderWater(mesh& mirror) {
   // Set MVP matrix uniform
   glUniformMatrix4fv(waterEffect.get_uniform_location("MVP"), 1, GL_FALSE,
                      value_ptr(MVP));
+  glUniformMatrix4fv(waterEffect.get_uniform_location("o2v_projection_reflection"), 1, GL_FALSE,
+	  value_ptr(bouncecam.get_projection() * bouncecam.get_view() * M));
 
   renderer::render(mirror);
 }
