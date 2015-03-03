@@ -41,11 +41,6 @@ void setupWater() {
   // unbind
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  // Attach a level of a texture object as a logical buffer of a framebuffer
-  // object
-  // target moust be GL_READ_FRAMEBUFFER, or GL_FRAMEBUFFER
-  // attachment must be GL_COLOR_ATTACHMENTi, GL_DEPTH_ATTACHMENT,
-  // GL_STENCIL_ATTACHMENT or GL_DEPTH_STENCIL_ATTACHMENT.
   glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture,
                        0);
 
@@ -71,40 +66,19 @@ void renderWater(mesh& mirror) {
     vec3 mirrorNormal =
         normalize(GetUpVector(mirror.get_transform().orientation));
     mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
-    vec3 CamPos = gfx->cam.get_position(); // Actual virtual cam position
-    vec3 vecMirrorToCam = CamPos - mirrorPos;
-
-    vec3 mirrorReflectionVector =
-        normalize(vecMirrorToCam -
-                  (2 * (dot(vecMirrorToCam, mirrorNormal)) * mirrorNormal));
-
-    vec3 refelctedCameraPos = vec3(vec4(CamPos, 1.0f) * reflectionMat);
-
-    vec3 bounce2 = normalize(refelctedCameraPos - mirrorPos);
-
-//	bouncecam.set_position(refelctedCameraPos);
-	//bouncecam.set_target(bounce2);
-
-	bouncecam.set_view(gfx->cam.get_view() * reflectionMat);
-   // bouncecam.update(1);
-
-    gfx->DrawCross(bouncecam.get_position(), 40.0f);
-    gfx->DrawCross(bouncecam.get_target(), 20.0f);
-    gfx->DrawLine(bouncecam.get_position(), bouncecam.get_target());
-    gfx->DrawLine(
-        bouncecam.get_position(),
-        bouncecam.get_position() +
-            (normalize(bouncecam.get_target() - bouncecam.get_position()) *
-             10.0f));
+    
+    bouncecam.set_view(gfx->cam.get_view() * reflectionMat);
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    glClear(GL_COLOR_BUFFER_BIT |
-            GL_DEPTH_BUFFER_BIT); // Clear the depth and colour buffers
+
+    // Clear the depth and colour buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     gfx->activeCam = &bouncecam;
 
     // Rerender scene
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
     // glDisable(GL_CULL_FACE);
     for (auto& e : gfx->meshes) {
       gfx->rendermesh(e.second, gfx->checkedTexture);
@@ -115,7 +89,7 @@ void renderWater(mesh& mirror) {
 
     // end render
     glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+    glCullFace(GL_BACK);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gfx->activeCam = &gfx->cam;
   }
@@ -127,9 +101,9 @@ void renderWater(mesh& mirror) {
   auto V = gfx->activeCam->get_view();
   auto P = gfx->activeCam->get_projection();
   auto MVP = P * V * M;
-
-  // Bind texture
-  // renderer::bind(checkedTexture, 0);
+  auto RV = gfx->activeCam->get_view();
+  auto RP = gfx->activeCam->get_projection();
+  auto RMVP = RP * RV * M;
 
   // Bind our texture in Texture Unit 0
   glActiveTexture(GL_TEXTURE0);
@@ -140,8 +114,8 @@ void renderWater(mesh& mirror) {
   // Set MVP matrix uniform
   glUniformMatrix4fv(waterEffect.get_uniform_location("MVP"), 1, GL_FALSE,
                      value_ptr(MVP));
-  glUniformMatrix4fv(waterEffect.get_uniform_location("o2v_projection_reflection"), 1, GL_FALSE,
-	  value_ptr(bouncecam.get_projection() * bouncecam.get_view() * M));
+  glUniformMatrix4fv(waterEffect.get_uniform_location("reflected_MVP"), 1,
+                     GL_FALSE, value_ptr(RMVP));
 
   renderer::render(mirror);
 }
