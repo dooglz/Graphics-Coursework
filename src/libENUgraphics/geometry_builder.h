@@ -7,6 +7,9 @@ namespace graphics_framework {
 /*
 Utility class to build basic geometry types
 */
+ void generate_tb(geometry &geom, const std::vector<glm::vec3> &normals);
+ void generate_tb(std::vector<glm::vec3>& tangent_data, std::vector<glm::vec3>& binormal_data, const std::vector<glm::vec3> &normals);
+
 class geometry_builder {
 public:
   // Creates box geometry

@@ -21,7 +21,7 @@
 **/*.pdb
 
 #.obj in resouces are 3d models, save them.
-!*/res/models/*.obj
+!**/res/models/*.obj
 
 #Doxygen
 docs/html/

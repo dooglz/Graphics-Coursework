@@ -1,18 +1,18 @@
 #version 440
 
-// Model view projection matrix  = otv
-uniform mat4 o2v;
-uniform mat4 o2v_projection;
+// Model view projection matrix
+uniform mat4 MVP;
 
-layout(location = 0) in vec3 vertex;
-layout(location = 1) out vec3 interpolatedVertexEye;
-layout(location = 2) out vec3 interpolatedVertexObject;
+layout(location = 0) in vec3 position;
+layout(location = 10) in vec2 tex_coord_in;
+
+layout(location = 0) out vec2 tex_coord_out;
+layout(location = 1) out vec3 positionOut;
 
 void main()
 {
-  interpolatedVertexObject = vertex;
-	vec4 vertexEye = o2v * vec4(vertex.xy, 0.0, 1.0);
-	interpolatedVertexEye = vertexEye.xyz;
-
-	gl_Position = o2v_projection * vec4(vertex.xyz, 1.0);
+  // Calculate screen position of vertex
+  gl_Position = MVP * vec4(position, 1.0);
+  positionOut = position;
+  tex_coord_out = tex_coord_in;
 }

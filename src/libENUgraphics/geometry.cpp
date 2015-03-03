@@ -1,5 +1,5 @@
 #include "stdafx.h"
-
+#include "geometry_builder.h"
 #include "geometry.h"
 #include "util.h"
 
@@ -99,8 +99,14 @@ geometry::geometry(const std::string &filename) throw(...) : geometry() {
   // Add the buffers to the geometry
   add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
   add_buffer(colours, BUFFER_INDEXES::COLOUR_BUFFER);
-  if (normals.size() != 0)
+  if (normals.size() != 0) {
+    std::vector<glm::vec3> tangent_data;
+    std::vector<glm::vec3> binormal_data;
+    generate_tb(tangent_data, binormal_data, normals);
+    add_buffer(tangent_data, BUFFER_INDEXES::TANGENT_BUFFER);
+    add_buffer(binormal_data, BUFFER_INDEXES::BINORMAL_BUFFER);
     add_buffer(normals, BUFFER_INDEXES::NORMAL_BUFFER);
+  }
   if (tex_coords.size() != 0)
     add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
   if (indices.size() != 0)

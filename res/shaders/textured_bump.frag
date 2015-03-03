@@ -25,19 +25,27 @@ uniform material mat;
 uniform vec3 eye_pos;
 // Texture
 uniform sampler2D tex;
+// bump Texture
+uniform sampler2D normal_map;
+
 
 // Incoming position
 layout (location = 0) in vec3 position;
-// Incoming normal
-layout (location = 1) in vec3 normal;
 // Incoming texture coordinate
-layout (location = 2) in vec2 tex_coord;
+layout (location = 1) in vec2 tex_coord;
+// Incoming light vector
+layout (location = 2) in vec3 light_vec;
+
+layout (location = 3) in float fade;
 
 // Outgoing colour
 layout (location = 0) out vec4 colour;
 
 void main()
 {
+  // Extract the normal from the normal map  
+  vec3 normal2 = normalize((texture(normal_map, tex_coord).xyz) * 2.0 - 1.0);
+  vec3 lv = normalize(light_vec);
 	// ***************************
 	// Calculate ambient component
 	// ***************************
@@ -45,7 +53,7 @@ void main()
 	// ***************************
 	// Calculate diffuse component
 	// ***************************
-	vec4 diffuse = (mat.diffuse_reflection * light.light_colour) * max(dot(normal, light.light_dir), 0);
+	vec4 diffuse = (mat.diffuse_reflection * light.light_colour) * max(dot(normal2, lv), 0);
 	// ************************
 	// Calculate view direction
 	// ************************
@@ -53,11 +61,11 @@ void main()
 	// *********************
 	// Calculate half vector
 	// *********************
-	vec3 half_vector = normalize(light.light_dir + view_dir);
+	vec3 half_vector = normalize(lv + view_dir);
 	// ****************************
 	// Calculate specular component
 	// ****************************
-	vec4 specular = (mat.specular_reflection * light.light_colour) * pow(max(dot(normal, half_vector), 0), mat.shininess);
+	vec4 specular = (mat.specular_reflection * light.light_colour) * pow(max(dot(normal2, half_vector), 0), mat.shininess);
 	// **************
 	// Sample texture
 	// **************
@@ -71,5 +79,6 @@ void main()
 	// - remember alpha
 	// **********************
 	colour = primary * tex_colour + specular;
-	colour.a = 1.0;
+	colour.a = fade;
+
 }
