@@ -2,12 +2,11 @@
 
 uniform float topdot;
 uniform float bottomdot;
+uniform vec3 topcol;
+uniform vec3 bottomcol;
 
 layout (location = 0) in vec2 vertexIn;
 layout (location = 0) out vec4 out_colour;
-
-vec3 topcol = vec3(0.067,0.129,0.698);
-vec3 bottomcol = vec3(0.73,0.796,0.99);
 
 void main()
 {

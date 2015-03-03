@@ -17,7 +17,7 @@ double cursor_x = 0.0;
 double cursor_y = 0.0;
 
 static std::vector<const glm::vec3> linebuffer;
-
+static float counter = 0;
 void graphics::DrawLine(const glm::vec3& p1, const glm::vec3& p2) {
   linebuffer.push_back(p1);
   linebuffer.push_back(p2);
@@ -42,6 +42,8 @@ bool graphics::initialise() {
 
   return true;
 }
+
+
 
 bool graphics::load_content() {
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
@@ -75,7 +77,7 @@ bool graphics::load_content() {
 
   setupWater();
 
-  goodsand = mesh(geometry("models\\flatCone.obj"));
+  goodsand = mesh(geometry_builder::create_disk(10,vec2(1.0,1.0)));
   goodsand.get_transform().translate(vec3(0, 0.01f, 0));
   goodsand.get_transform().scale = vec3(300.0f, 1.0f, 300.0f);
   goodsand.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -84,7 +86,7 @@ bool graphics::load_content() {
   goodsand.get_material().set_shininess(1000.0f);
   // Lights
   light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
-  light.set_light_colour(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   light.set_direction(vec3(1.0f, 1.0f, -1.0f));
 
   // textures
@@ -138,6 +140,15 @@ bool graphics::load_content() {
 }
 
 bool graphics::update(float delta_time) {
+	counter += (delta_time*0.16f);
+	float s = sinf(counter);
+	float c = cosf(counter);
+	if (counter > pi<float>()){
+		counter = 0;
+	}
+	vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
+	light.set_direction(glm::rotateZ(rot, counter));
+
   // The ratio of pixels to rotation - remember the fov
   static double ratio_width =
       quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
@@ -315,6 +326,26 @@ void graphics::renderSky() {
   float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
 
   renderer::bind(skyeffect);
+  float p = pi<float>();
+
+  //counter		0			pi/2			 pi
+  //			midday		midnight		midday
+  //dayscale	1.0			0				1.0
+  float dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
+ // printf("%f\n", dayscale);
+  vec3 bottomcol;
+  if (dayscale < 0.6f){
+	  bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99), dayscale / 0.6f)* dayscale;
+  }
+  else{
+	  bottomcol = vec3(0.73, 0.796, 0.99) * dayscale;
+  }
+  vec3 topcol = vec3(0.067, 0.129, 0.698) * dayscale;
+  //vec3 bottomcol = vec3(0.73, 0.796, 0.99) * dayscale;
+
+
+  glUniform3fv(skyeffect.get_uniform_location("topcol"),1, &topcol[0]);
+  glUniform3fv(skyeffect.get_uniform_location("bottomcol"), 1, &bottomcol[0]);
   glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
   glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
   glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x,
