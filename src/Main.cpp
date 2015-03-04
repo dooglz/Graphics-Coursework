@@ -50,18 +50,18 @@ void graphics::UpdateLights() {
   struct S_Dlight {
     vec4 ambient_intensity;
     vec4 light_colour;
-    vec3 light_dir;
+    vec4 light_dir;
   };
   vector<S_Dlight> S_DLights;
   for (auto L : DLights) {
     S_Dlight sd;
     sd.ambient_intensity = L.get_ambient_intensity();
     sd.light_colour = L.get_light_colour();
-    sd.light_dir = L.get_direction();
+    sd.light_dir = vec4(L.get_direction(),0);
     S_DLights.push_back(sd);
   }
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
   // this might not be the best way to copy data, but it worlks.
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(),
                &S_DLights[0], GL_DYNAMIC_COPY);
@@ -83,8 +83,12 @@ bool graphics::load_content() {
   // directional light SSBO
   {
     assert(GL_SHADER_STORAGE_BUFFER);
-    glGenBuffers(1, &ssbo);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo);
+    glGenBuffers(1, &dLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
+    glGenBuffers(1, &pLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
+    glGenBuffers(1, &sLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
     UpdateLights();
   }
 
