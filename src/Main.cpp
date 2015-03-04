@@ -44,41 +44,103 @@ bool graphics::initialise() {
 }
 
 void graphics::UpdateLights() {
-  vector<directional_light> DLights;
-  DLights.push_back(light);
+  {//Dlights
+    vector<directional_light> DLights;
+    DLights.push_back(dlight);
 
-  struct S_Dlight {
-    vec4 ambient_intensity;
-    vec4 light_colour;
-    vec4 light_dir;
-  };
-  vector<S_Dlight> S_DLights;
-  for (auto L : DLights) {
-    S_Dlight sd;
-    sd.ambient_intensity = L.get_ambient_intensity();
-    sd.light_colour = L.get_light_colour();
-    sd.light_dir = vec4(L.get_direction(),0);
-    S_DLights.push_back(sd);
+    struct S_Dlight {
+      vec4 ambient_intensity;
+      vec4 light_colour;
+      vec4 light_dir;
+    };
+    vector<S_Dlight> S_DLights;
+    for (auto L : DLights) {
+      S_Dlight sd;
+      sd.ambient_intensity = L.get_ambient_intensity();
+      sd.light_colour = L.get_light_colour();
+      sd.light_dir = vec4(L.get_direction(), 0);
+      S_DLights.push_back(sd);
+    }
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
+    // this might not be the best way to copy data, but it works.
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight)* S_DLights.size(),
+      &S_DLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
+  {//  point lights
+    vector<point_light> PLights;
+    PLights.push_back(plight);
+
+    struct S_Plight {
+      vec4 light_colour;
+      vec4 position; //position is a vec3, padded in a vec4
+      vec4 falloff; //(constant, linear, quadratic, NULL)
+    };
+    vector<S_Plight> S_PLights;
+    for (auto L : PLights) {
+      S_Plight sd;
+      sd.light_colour = L.get_light_colour();
+      sd.position = vec4(L.get_position(),0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L.get_constant_attenuation();
+      sd.falloff.y = L.get_linear_attenuation();
+      sd.falloff.z = L.get_quadratic_attenuation();
+      S_PLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight)* S_PLights.size(),
+      &S_PLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
-  // this might not be the best way to copy data, but it worlks.
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(),
-               &S_DLights[0], GL_DYNAMIC_COPY);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  {//spot lights
+    vector<spot_light> PLights;
+    PLights.push_back(slight);
+
+    struct S_Slight {
+      vec4 light_colour;
+      vec4 position;  //position is a vec3, padded in a vec4
+      vec4 direction; //direction is a vec3, padded in a vec4
+      vec4 falloff;   //(constant, linear, quadratic, power)
+    };
+    vector<S_Slight> S_SLights;
+    for (auto L : PLights) {
+      S_Slight sd;
+      sd.light_colour = L.get_light_colour();
+      sd.position = vec4(L.get_position(), 0);
+      sd.direction = vec4(L.get_direction(),0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L.get_constant_attenuation();
+      sd.falloff.y = L.get_linear_attenuation();
+      sd.falloff.z = L.get_quadratic_attenuation();
+      sd.falloff.w = L.get_power();
+      S_SLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight)* S_SLights.size(),
+      &S_SLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
+
 }
 
 bool graphics::load_content() {
 
   // Lights
-  light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
-  light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
-  light.set_direction(vec3(1.0f, 1.0f, -1.0f));
+  dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+  dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
+  dlight.set_direction(vec3(1.0f, 1.0f, -1.0f));
+  
+  plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
+  plight.set_range(40.0f);
+  plight.set_position(vec3(30.0f, 15.0f, 30.0f));
 
-  shader_data_t shader_data;
-  shader_data.ambient_intensity = light.get_ambient_intensity();
-  shader_data.light_colour = light.get_light_colour();
-  shader_data.light_dir = light.get_direction();
+  slight.set_position(vec3(-25.0f, 10.0f, -15.0f));
+  slight.set_light_colour(vec4(0.0f, 1.0f, 0.0f, 1.0f));
+  slight.set_direction(normalize(vec3(1.0f, -1.0f, -1.0f)));
+  slight.set_range(20.0f);
+  slight.set_power(0.5f);
 
   // directional light SSBO
   {
@@ -201,13 +263,13 @@ bool graphics::update(float delta_time) {
   // printf("%f\n", dayscale);
 
   vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
-  light.set_direction(glm::rotateZ(rot, counter));
+  dlight.set_direction(glm::rotateZ(rot, counter));
 
   if (dayscale < 0.5) {
-    light.set_light_colour(mix(vec4(0, 0, 0, 1.0f),
+    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f),
                                vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
   } else {
-    light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
+    dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
   UpdateLights();
   // The ratio of pixels to rotation - remember the fov
@@ -296,7 +358,7 @@ void graphics::rendermesh(mesh &m, texture &t) {
   // **********
   // Bind light
   // **********
-  renderer::bind(light, "light");
+  renderer::bind(dlight, "light");
   // Bind texture
   renderer::bind(t, 0);
   // Set tex uniform
@@ -334,7 +396,7 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
   // **********
   // Bind light
   // **********
-  renderer::bind(light, "light");
+  renderer::bind(dlight, "light");
   // Bind texture
   renderer::bind(t, 0);
   renderer::bind(tb, 1);
@@ -347,7 +409,7 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
                value_ptr(activeCam->get_position()));
 
   glUniform3fv(eff.get_uniform_location("light_dir"), 1,
-               value_ptr(light.get_direction()));
+               value_ptr(dlight.get_direction()));
   // Render mesh
   renderer::render(m);
 }

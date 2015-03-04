@@ -7,6 +7,8 @@
 #include "libENUgraphics\effect.h"
 #include "libENUgraphics\free_camera.h"
 #include "libENUgraphics\directional_light.h"
+#include "libENUgraphics\spot_light.h"
+#include "libENUgraphics\point_light.h"
 
 using namespace graphics_framework;
 
@@ -48,7 +50,9 @@ public:
   mesh mirror;
   mesh goodsand;
 
-  directional_light light;
+  directional_light dlight;
+  point_light plight;
+  spot_light slight;
   GLuint dLightSSBO;
   GLuint pLightSSBO;
   GLuint sLightSSBO;

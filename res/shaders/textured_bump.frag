@@ -10,21 +10,16 @@ struct directional_light {
 // Point light information
 struct point_light {
   vec4 light_colour;
-  vec3 position;
-  float constant;
-  float linear;
-  float quadratic;
+  vec4 position;//position is a vec3, padded in a vec4
+  vec4 falloff; //(constant, linear, quadratic, NULL)
 };
 
 // Spot light data
 struct spot_light {
   vec4 light_colour;
-  vec3 position;
-  vec3 direction;
-  float constant;
-  float linear;
-  float quadratic;
-  float power;
+  vec4 position;//position is a vec3, padded in a vec4
+  vec4 direction;//direction is a vec3, padded in a vec4
+  vec4 falloff; //(constant, linear, quadratic, power)
 };
 // A material structure
 struct material {
@@ -52,11 +47,10 @@ uniform sampler2D normal_map;
 // Incoming position
 layout(location = 0) in vec3 position;
 // Incoming texture coordinate
-
 layout(location = 1) in vec2 tex_coord;
-// Incoming light vector
+// Incoming mat4(tangent, binormal, N * normal)
 layout(location = 8) in mat3 TBN;
-
+// alpha fade
 layout(location = 3) in float fade;
 
 // Outgoing colour
@@ -87,18 +81,17 @@ vec4 calculate_dir(in directional_light light, in material mat,
 vec4 calculate_point(in point_light point, in material mat, in vec3 position,
                      in vec3 normal, in vec3 view_dir, in vec4 tex_colour) {
   // Get distance between point light and vertex
-  float d = distance(point.position, position);
+  float d = distance(vec3(point.position), position);
   // Calculate attenuation factor
   float attenuation =
-      point.constant + (point.linear * d) + (point.quadratic * d * d);
+      point.falloff.x + (point.falloff.y * d) + (point.falloff.z * d * d);
   // Calculate light colour
   vec4 light_colour = point.light_colour / attenuation;
   light_colour.a = 1.0;
   // Calculate light dir
-  vec3 light_dir = normalize(point.position - position);
+  vec3 light_dir = normalize(vec3(point.position) - position);
   // Now use standard phong shading but using calculated light colour and
-  // direction
-  // - note no ambient
+  // direction  - note no ambient
   vec4 diffuse =
       (mat.diffuse_reflection * light_colour) * max(dot(normal, light_dir), 0);
   vec3 half_vector = normalize(light_dir + view_dir);
@@ -113,18 +106,17 @@ vec4 calculate_point(in point_light point, in material mat, in vec3 position,
 vec4 calculate_spot(in spot_light spot, in material mat, in vec3 position, in vec3 normal, in vec3 view_dir, in vec4 tex_colour)
 {
   // Calculate direction to the light
-  vec3 light_dir = normalize(spot.position - position);
+  vec3 light_dir = normalize(vec3(spot.position) - position);
   // Calculate distance to light
-  float d = distance(spot.position, position);
+  float d = distance(vec3(spot.position), position);
   // Calculate attenuation value
-  float attenuation = spot.constant + spot.linear * d + spot.quadratic * d * d;
+  float attenuation = spot.falloff.x + spot.falloff.y * d + spot.falloff.z * d * d;
   // Calculate spot light intensity
-  float sp = pow(max(dot(light_dir, -spot.direction), 0.0), spot.power);
+  float sp = pow(max(dot(light_dir, -vec3(spot.direction)), 0.0), spot.falloff.w);
   // Calculate light colour
   vec4 light_colour = (sp / attenuation) * spot.light_colour;
   // Now use standard phong shading but using calculated light colour and
-  // direction
-  // - note no ambient
+  // direction  - note no ambient
   vec4 diffuse = (mat.diffuse_reflection * light_colour) *
                  max(dot(normal, light_dir), 0.0);
   vec3 half_vector = normalize(light_dir + view_dir);
@@ -150,8 +142,7 @@ void main() {
 
   // for each directional light
   for (int i = 0; i < DLights.length() ; i++) {
-    colour +=
-        calculate_dir(DLights[i], mat, position, normal, view_dir, tex_colour);
+    colour += calculate_dir(DLights[i], mat, position, normal, view_dir, tex_colour);
   }
   // point light
   for (int i = 0; i < PLights.length(); i++) {
@@ -162,5 +153,5 @@ void main() {
     colour += calculate_spot(SLights[i], mat, position, normal, view_dir, tex_colour);
   }
 
-  colour.a = fade;
+ colour.a = fade;
 }
