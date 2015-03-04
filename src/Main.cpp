@@ -55,19 +55,36 @@ bool graphics::load_content() {
   shader_data.light_colour = light.get_light_colour();
   shader_data.light_dir = light.get_direction();
 
-  assert(GL_SHADER_STORAGE_BUFFER);
-  glGenBuffers(1, &ssbo);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-  //target, index, buffer, offset, size
-  //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, ssbo, 0, 128);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(shader_data), &shader_data, GL_DYNAMIC_COPY);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  {
+    assert(GL_SHADER_STORAGE_BUFFER);
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    //target, index, buffer, offset, size
+    //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, ssbo, 0, 128);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(shader_data), &shader_data, GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-  //update ssbo with data
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-  GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-  memcpy(p, &shader_data, sizeof(shader_data));
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    //update ssbo with data
+    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    //GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+    //memcpy(p, &shader_data, sizeof(shader_data));
+    //glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  }
+  {
+    vector<vec4> cool_colours;
+    cool_colours.push_back(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    cool_colours.push_back(vec4(0.0f, 0.5f, 0.0f, 1.0f));
+    cool_colours.push_back(vec4(0.0f, 0.0f, 0.2f, 1.0f));
+
+    glGenBuffers(1, &ssbo2);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo2);
+    //target, index, buffer, offset, size
+    //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, ssbo2, 0, 128);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(vec4)* cool_colours.size(), &cool_colours[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
+
+
 
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
   mirror.get_transform().translate(vec3(0.0f, 10.0f, 30.0f));
@@ -127,7 +144,8 @@ bool graphics::load_content() {
   GLuint block_index = 0;
   block_index = glGetProgramResourceIndex(texturedBumpEffect.get_program(), GL_SHADER_STORAGE_BLOCK, "ssbo_directional_lights");
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo);
-
+  block_index = glGetProgramResourceIndex(texturedBumpEffect.get_program(), GL_SHADER_STORAGE_BLOCK, "MyBuffer");
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssbo2);
 
   simpleEffect.add_shader("shaders\\basic.vert", GL_VERTEX_SHADER);
   simpleEffect.add_shader("shaders\\basic.frag", GL_FRAGMENT_SHADER);

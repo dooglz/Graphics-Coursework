@@ -7,6 +7,12 @@ layout(std430, binding = 2) buffer ssbo_directional_lights
   vec3 s_light_dir;
 };
 
+layout(std430, binding = 3) buffer MyBuffer
+{
+  vec4 lotsOfFloats[];
+};
+
+
 // A directional light structure
 struct directional_light
 {
@@ -69,4 +75,9 @@ void main()
   // Calculate final colour
   colour = primary * tex_colour + specular;
   colour.a = fade;
+
+  for (int i = 0; i < lotsOfFloats.length(); i++){
+    colour += lotsOfFloats[i];
+  }
+  //colour.a = fade;
 }

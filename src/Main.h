@@ -51,7 +51,8 @@ public:
   mesh goodsand;
 
   directional_light light;
-  GLuint ssbo = 0;
+  GLuint ssbo;
+  GLuint ssbo2;
 
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
