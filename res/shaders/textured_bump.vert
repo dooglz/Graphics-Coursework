@@ -43,7 +43,7 @@ void main()
     // *******************
     // Generate TBN matrix
     // *******************
-    mat3 TBN = N * mat3(tangent, binormal,  normal);
+    mat3 TBN = mat3(tangent, binormal,  N * normal);
     // *************************************************
     // light_vec is light_dir transformed by this matrix
     // *************************************************

@@ -116,6 +116,7 @@ void renderWater(mesh& mirror) {
                      value_ptr(MVP));
   glUniformMatrix4fv(waterEffect.get_uniform_location("reflected_MVP"), 1,
                      GL_FALSE, value_ptr(RMVP));
-
+  glDisable(GL_CULL_FACE);
   renderer::render(mirror);
+  glEnable(GL_CULL_FACE);
 }

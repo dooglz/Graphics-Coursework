@@ -1,4 +1,4 @@
-#include "main.h"
+﻿#include "main.h"
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
@@ -18,12 +18,12 @@ double cursor_y = 0.0;
 
 static std::vector<const glm::vec3> linebuffer;
 static float counter = 0;
-void graphics::DrawLine(const glm::vec3& p1, const glm::vec3& p2) {
+void graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
   linebuffer.push_back(p1);
   linebuffer.push_back(p2);
 }
 
-void graphics::DrawCross(const glm::vec3& p1, const float size) {
+void graphics::DrawCross(const glm::vec3 &p1, const float size) {
   DrawLine(p1 + glm::vec3(size, 0, 0), p1 - glm::vec3(size, 0, 0));
   DrawLine(p1 + glm::vec3(0, size, 0), p1 - glm::vec3(0, size, 0));
   DrawLine(p1 + glm::vec3(0, 0, size), p1 - glm::vec3(0, 0, size));
@@ -44,6 +44,31 @@ bool graphics::initialise() {
 }
 
 bool graphics::load_content() {
+
+  // Lights
+  light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+  light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
+  light.set_direction(vec3(1.0f, 1.0f, -1.0f));
+
+  shader_data_t shader_data;
+  shader_data.ambient_intensity = light.get_ambient_intensity();
+  shader_data.light_colour = light.get_light_colour();
+  shader_data.light_dir = light.get_direction();
+
+  assert(GL_SHADER_STORAGE_BUFFER);
+  glGenBuffers(1, &ssbo);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+  //target, index, buffer, offset, size
+  //glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, ssbo, 0, 128);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(shader_data), &shader_data, GL_DYNAMIC_COPY);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+  //update ssbo with data
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+  GLvoid* p = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+  memcpy(p, &shader_data, sizeof(shader_data));
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
   mirror.get_transform().translate(vec3(0.0f, 10.0f, 30.0f));
   mirror.get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
@@ -81,10 +106,6 @@ bool graphics::load_content() {
   goodsand.get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   goodsand.get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   goodsand.get_material().set_shininess(1000.0f);
-  // Lights
-  light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
-  light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
-  light.set_direction(vec3(1.0f, 1.0f, -1.0f));
 
   // textures
   checkedTexture = texture("textures\\checked.gif");
@@ -102,6 +123,11 @@ bool graphics::load_content() {
   texturedBumpEffect.add_shader("shaders\\textured_bump.frag",
                                 GL_FRAGMENT_SHADER);
   texturedBumpEffect.build();
+  //bind shader to light ssbo
+  GLuint block_index = 0;
+  block_index = glGetProgramResourceIndex(texturedBumpEffect.get_program(), GL_SHADER_STORAGE_BLOCK, "ssbo_directional_lights");
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssbo);
+
 
   simpleEffect.add_shader("shaders\\basic.vert", GL_VERTEX_SHADER);
   simpleEffect.add_shader("shaders\\basic.frag", GL_FRAGMENT_SHADER);
@@ -132,21 +158,38 @@ bool graphics::load_content() {
   desertM = &DesertGen::farMesh;
   desertM->get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  desertM->get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  desertM->get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_shininess(1000.0f);
 
   return true;
 }
 
+float dayscale;
 bool graphics::update(float delta_time) {
-//  counter += (delta_time * 0.16f);
+  counter += (delta_time * 0.16f);
+  // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
+
   float s = sinf(counter);
   float c = cosf(counter);
   if (counter > pi<float>()) {
     counter = 0;
   }
+
+  // counter		0			pi/2			 pi
+  //            midday		midnight		midday
+  // dayscale	  1.0			0				1.0
+  dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
+  // printf("%f\n", dayscale);
+
   vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
   light.set_direction(glm::rotateZ(rot, counter));
+
+  if (dayscale < 0.5) {
+    light.set_light_colour(mix(vec4(0, 0, 0, 1.0f),
+                               vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
+  } else {
+    light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
+  }
 
   // The ratio of pixels to rotation - remember the fov
   static double ratio_width =
@@ -210,7 +253,7 @@ bool graphics::update(float delta_time) {
   return true;
 }
 
-void graphics::rendermesh(mesh& m, texture& t) {
+void graphics::rendermesh(mesh &m, texture &t) {
   effect eff = phongEffect;
   // Bind effect
   renderer::bind(eff);
@@ -247,7 +290,7 @@ void graphics::rendermesh(mesh& m, texture& t) {
   renderer::render(m);
 }
 
-void graphics::rendermeshB(mesh& m, texture& t, texture& tb,
+void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
                            const float scale) {
   effect eff = texturedBumpEffect;
   // Bind effect
@@ -327,11 +370,6 @@ void graphics::renderSky() {
   renderer::bind(skyeffect);
   float p = pi<float>();
 
-  // counter		0			pi/2			 pi
-  //			midday		midnight		midday
-  // dayscale	1.0			0				1.0
-  float dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
-  // printf("%f\n", dayscale);
   vec3 bottomcol;
   if (dayscale < 0.6f) {
     bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99),
@@ -351,8 +389,8 @@ void graphics::renderSky() {
               camview.y, camview.z);
 
   graphics_framework::geometry geo;
-  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-                          vec2(1, 1),   vec2(1, -1), vec2(-1, -1) };
+  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
+                         vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
   geo.add_buffer(v, 0);
   glDisable(GL_CULL_FACE);
   renderer::render(geo);
@@ -362,7 +400,7 @@ void graphics::renderSky() {
 bool graphics::render() {
   glEnable(GL_FOG); // enable the fog
   GLfloat density = 0.3;
-  GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0 };
+  GLfloat fogColor[4] = {0.5, 0.5, 0.5, 1.0};
   glFogi(GL_FOG_MODE, GL_EXP2); // set the fog mode to GL_EXP2
   glFogfv(GL_FOG_COLOR, fogColor);
   glFogf(GL_FOG_DENSITY, density);
@@ -370,7 +408,7 @@ bool graphics::render() {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // Render meshes
-  for (auto& e : meshes) {
+  for (auto &e : meshes) {
     rendermesh(e.second, checkedTexture);
   }
 
@@ -392,7 +430,7 @@ graphics::graphics() {}
 
 graphics::~graphics() {}
 
-graphics* gfx = nullptr;
+graphics *gfx = nullptr;
 
 void main() {
   // Create application

@@ -10,6 +10,14 @@
 
 using namespace graphics_framework;
 
+static struct shader_data_t
+{
+  glm::vec4 ambient_intensity;
+  glm::vec4 light_colour;
+  glm::vec3 light_dir;
+} shader_data;
+
+
 class graphics {
 public:
   bool render();
@@ -43,6 +51,7 @@ public:
   mesh goodsand;
 
   directional_light light;
+  GLuint ssbo = 0;
 
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
