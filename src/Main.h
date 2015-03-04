@@ -10,13 +10,11 @@
 
 using namespace graphics_framework;
 
-static struct shader_data_t
-{
+static struct shader_data_t {
   glm::vec4 ambient_intensity;
   glm::vec4 light_colour;
   glm::vec3 light_dir;
 } shader_data;
-
 
 class graphics {
 public:
@@ -52,14 +50,15 @@ public:
 
   directional_light light;
   GLuint ssbo;
-  GLuint ssbo2;
 
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
   void processLines();
   void rendermesh(mesh &m, texture &t);
-  void graphics::rendermeshB(mesh& m, texture& t, texture& tb, const float scale);
+  void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
+                             const float scale);
   void renderSky();
+  void UpdateLights();
 };
 
 extern graphics *gfx;
