@@ -27,9 +27,8 @@ layout(location = 0) out vec3 vertex_position;
 // Outgoing texture coordinate
 layout(location = 1) out vec2 tex_coord_out;
 // Outgoing TBN matrix
-layout(location = 8) out mat3 TBN;
-
-layout(location = 3) out float fade;
+layout(location = 2) out float fade;
+out mat3 TBN;
 
 void main() {
   // Transform position into screen space

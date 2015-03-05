@@ -42,7 +42,7 @@ bool graphics::initialise() {
 
   return true;
 }
-
+vec4 NumberOfLights = vec4(1, 1, 1, 0);
 void graphics::UpdateLights() {
   { // Dlights
     vector<directional_light> DLights;
@@ -122,6 +122,11 @@ void graphics::UpdateLights() {
       &S_SLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights),
+               &NumberOfLights, GL_DYNAMIC_COPY);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 bool graphics::load_content() {
@@ -151,6 +156,8 @@ bool graphics::load_content() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
     glGenBuffers(1, &sLightSSBO);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
+    glGenBuffers(1, &LightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, LightSSBO);
     UpdateLights();
   }
 
@@ -313,10 +320,14 @@ bool graphics::update(float delta_time) {
   // - WSAD
   // *******************************
   vec3 translation(0.0f, 0.0f, 0.0f);
-  if (glfwGetKey(renderer::get_window(), 'W'))
+  if (glfwGetKey(renderer::get_window(), 'W')){
     translation.z += 5.0f * delta_time;
-  if (glfwGetKey(renderer::get_window(), 'S'))
+   // NumberOfLights = vec4(0, 1, 0, 0);
+  }
+  if (glfwGetKey(renderer::get_window(), 'S')){
     translation.z -= 5.0f * delta_time;
+    //NumberOfLights = vec4(0, 0, 1, 0);
+  }
   if (glfwGetKey(renderer::get_window(), 'A'))
     translation.x -= 5.0f * delta_time;
   if (glfwGetKey(renderer::get_window(), 'D'))

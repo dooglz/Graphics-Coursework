@@ -36,6 +36,7 @@ void print_GL_info() {
   std::clog << "GL Renderer: " << glGetString(GL_RENDERER) << std::endl;
   std::clog << "GL Version: " << glGetString(GL_VERSION) << std::endl;
   std::clog << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION)<< std::endl;
+  std::clog << "GLFW Version: " << glfwGetVersionString() << std::endl;
 }
 
 // Builds any necessary content for the render framework
