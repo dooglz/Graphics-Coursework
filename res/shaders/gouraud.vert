@@ -1,4 +1,4 @@
-#version 440
+#version 430
 
 // A directional light structure
 struct directional_light

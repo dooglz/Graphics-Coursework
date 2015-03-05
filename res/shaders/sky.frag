@@ -1,4 +1,4 @@
-#version 440
+#version 430
 //direction the player is facing
 uniform vec3 playerview;
 

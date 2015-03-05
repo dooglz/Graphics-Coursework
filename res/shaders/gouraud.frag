@@ -1,4 +1,4 @@
-#version 440
+#version 430
 
 // Texture to sample from
 uniform sampler2D tex;
