@@ -1,4 +1,4 @@
-#include "main.h"
+﻿#include "main.h"
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
@@ -18,12 +18,12 @@ double cursor_y = 0.0;
 
 static std::vector<const glm::vec3> linebuffer;
 static float counter = 0;
-void graphics::DrawLine(const glm::vec3& p1, const glm::vec3& p2) {
+void graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
   linebuffer.push_back(p1);
   linebuffer.push_back(p2);
 }
 
-void graphics::DrawCross(const glm::vec3& p1, const float size) {
+void graphics::DrawCross(const glm::vec3 &p1, const float size) {
   DrawLine(p1 + glm::vec3(size, 0, 0), p1 - glm::vec3(size, 0, 0));
   DrawLine(p1 + glm::vec3(0, size, 0), p1 - glm::vec3(0, size, 0));
   DrawLine(p1 + glm::vec3(0, 0, size), p1 - glm::vec3(0, 0, size));
@@ -43,7 +43,117 @@ bool graphics::initialise() {
   return true;
 }
 
+void graphics::UpdateLights() {
+  {//Dlights
+    vector<directional_light> DLights;
+    DLights.push_back(dlight);
+
+    struct S_Dlight {
+      vec4 ambient_intensity;
+      vec4 light_colour;
+      vec4 light_dir;
+    };
+    vector<S_Dlight> S_DLights;
+    for (auto L : DLights) {
+      S_Dlight sd;
+      sd.ambient_intensity = L.get_ambient_intensity();
+      sd.light_colour = L.get_light_colour();
+      sd.light_dir = vec4(L.get_direction(), 0);
+      S_DLights.push_back(sd);
+    }
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
+    // this might not be the best way to copy data, but it works.
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight)* S_DLights.size(),
+      &S_DLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
+  {//  point lights
+    vector<point_light> PLights;
+    PLights.push_back(plight);
+
+    struct S_Plight {
+      vec4 light_colour;
+      vec4 position; //position is a vec3, padded in a vec4
+      vec4 falloff; //(constant, linear, quadratic, NULL)
+    };
+    vector<S_Plight> S_PLights;
+    for (auto L : PLights) {
+      S_Plight sd;
+      sd.light_colour = L.get_light_colour();
+      sd.position = vec4(L.get_position(),0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L.get_constant_attenuation();
+      sd.falloff.y = L.get_linear_attenuation();
+      sd.falloff.z = L.get_quadratic_attenuation();
+      S_PLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight)* S_PLights.size(),
+      &S_PLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
+
+  {//spot lights
+    vector<spot_light> PLights;
+    PLights.push_back(slight);
+
+    struct S_Slight {
+      vec4 light_colour;
+      vec4 position;  //position is a vec3, padded in a vec4
+      vec4 direction; //direction is a vec3, padded in a vec4
+      vec4 falloff;   //(constant, linear, quadratic, power)
+    };
+    vector<S_Slight> S_SLights;
+    for (auto L : PLights) {
+      S_Slight sd;
+      sd.light_colour = L.get_light_colour();
+      sd.position = vec4(L.get_position(), 0);
+      sd.direction = vec4(L.get_direction(),0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L.get_constant_attenuation();
+      sd.falloff.y = L.get_linear_attenuation();
+      sd.falloff.z = L.get_quadratic_attenuation();
+      sd.falloff.w = L.get_power();
+      S_SLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight)* S_SLights.size(),
+      &S_SLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  }
+
+}
+
 bool graphics::load_content() {
+
+  // Lights
+  dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+  dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
+  dlight.set_direction(vec3(1.0f, 1.0f, -1.0f));
+  
+  plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
+  plight.set_range(40.0f);
+  plight.set_position(vec3(30.0f, 15.0f, 30.0f));
+
+  slight.set_position(vec3(-25.0f, 10.0f, -15.0f));
+  slight.set_light_colour(vec4(0.0f, 1.0f, 0.0f, 1.0f));
+  slight.set_direction(normalize(vec3(1.0f, -1.0f, -1.0f)));
+  slight.set_range(20.0f);
+  slight.set_power(0.5f);
+
+  // directional light SSBO
+  {
+    assert(GL_SHADER_STORAGE_BUFFER);
+    glGenBuffers(1, &dLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
+    glGenBuffers(1, &pLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
+    glGenBuffers(1, &sLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
+    UpdateLights();
+  }
+
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
   mirror.get_transform().translate(vec3(0.0f, 10.0f, 30.0f));
   mirror.get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
@@ -81,10 +191,6 @@ bool graphics::load_content() {
   goodsand.get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   goodsand.get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   goodsand.get_material().set_shininess(1000.0f);
-  // Lights
-  light.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
-  light.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
-  light.set_direction(vec3(1.0f, 1.0f, -1.0f));
 
   // textures
   checkedTexture = texture("textures\\checked.gif");
@@ -102,6 +208,7 @@ bool graphics::load_content() {
   texturedBumpEffect.add_shader("shaders\\textured_bump.frag",
                                 GL_FRAGMENT_SHADER);
   texturedBumpEffect.build();
+  // bind shader to light ssbo
 
   simpleEffect.add_shader("shaders\\basic.vert", GL_VERTEX_SHADER);
   simpleEffect.add_shader("shaders\\basic.frag", GL_FRAGMENT_SHADER);
@@ -132,22 +239,39 @@ bool graphics::load_content() {
   desertM = &DesertGen::farMesh;
   desertM->get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  desertM->get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  desertM->get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_shininess(1000.0f);
 
   return true;
 }
 
+float dayscale;
 bool graphics::update(float delta_time) {
-//  counter += (delta_time * 0.16f);
+  counter += (delta_time * 0.16f);
+  // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
+
   float s = sinf(counter);
   float c = cosf(counter);
   if (counter > pi<float>()) {
     counter = 0;
   }
-  vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
-  light.set_direction(glm::rotateZ(rot, counter));
 
+  // counter		0			pi/2			 pi
+  //            midday		midnight		midday
+  // dayscale	  1.0			0				1.0
+  dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
+  // printf("%f\n", dayscale);
+
+  vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
+  dlight.set_direction(glm::rotateZ(rot, counter));
+
+  if (dayscale < 0.5) {
+    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f),
+                               vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
+  } else {
+    dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
+  }
+  UpdateLights();
   // The ratio of pixels to rotation - remember the fov
   static double ratio_width =
       quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
@@ -210,7 +334,7 @@ bool graphics::update(float delta_time) {
   return true;
 }
 
-void graphics::rendermesh(mesh& m, texture& t) {
+void graphics::rendermesh(mesh &m, texture &t) {
   effect eff = phongEffect;
   // Bind effect
   renderer::bind(eff);
@@ -234,7 +358,7 @@ void graphics::rendermesh(mesh& m, texture& t) {
   // **********
   // Bind light
   // **********
-  renderer::bind(light, "light");
+  renderer::bind(dlight, "light");
   // Bind texture
   renderer::bind(t, 0);
   // Set tex uniform
@@ -247,7 +371,7 @@ void graphics::rendermesh(mesh& m, texture& t) {
   renderer::render(m);
 }
 
-void graphics::rendermeshB(mesh& m, texture& t, texture& tb,
+void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
                            const float scale) {
   effect eff = texturedBumpEffect;
   // Bind effect
@@ -272,7 +396,7 @@ void graphics::rendermeshB(mesh& m, texture& t, texture& tb,
   // **********
   // Bind light
   // **********
-  renderer::bind(light, "light");
+  renderer::bind(dlight, "light");
   // Bind texture
   renderer::bind(t, 0);
   renderer::bind(tb, 1);
@@ -285,7 +409,7 @@ void graphics::rendermeshB(mesh& m, texture& t, texture& tb,
                value_ptr(activeCam->get_position()));
 
   glUniform3fv(eff.get_uniform_location("light_dir"), 1,
-               value_ptr(light.get_direction()));
+               value_ptr(dlight.get_direction()));
   // Render mesh
   renderer::render(m);
 }
@@ -327,11 +451,6 @@ void graphics::renderSky() {
   renderer::bind(skyeffect);
   float p = pi<float>();
 
-  // counter		0			pi/2			 pi
-  //			midday		midnight		midday
-  // dayscale	1.0			0				1.0
-  float dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
-  // printf("%f\n", dayscale);
   vec3 bottomcol;
   if (dayscale < 0.6f) {
     bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99),
@@ -351,8 +470,8 @@ void graphics::renderSky() {
               camview.y, camview.z);
 
   graphics_framework::geometry geo;
-  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-                          vec2(1, 1),   vec2(1, -1), vec2(-1, -1) };
+  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
+                         vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
   geo.add_buffer(v, 0);
   glDisable(GL_CULL_FACE);
   renderer::render(geo);
@@ -362,7 +481,7 @@ void graphics::renderSky() {
 bool graphics::render() {
   glEnable(GL_FOG); // enable the fog
   GLfloat density = 0.3;
-  GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0 };
+  GLfloat fogColor[4] = {0.5, 0.5, 0.5, 1.0};
   glFogi(GL_FOG_MODE, GL_EXP2); // set the fog mode to GL_EXP2
   glFogfv(GL_FOG_COLOR, fogColor);
   glFogf(GL_FOG_DENSITY, density);
@@ -370,7 +489,7 @@ bool graphics::render() {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // Render meshes
-  for (auto& e : meshes) {
+  for (auto &e : meshes) {
     rendermesh(e.second, checkedTexture);
   }
 
@@ -392,7 +511,7 @@ graphics::graphics() {}
 
 graphics::~graphics() {}
 
-graphics* gfx = nullptr;
+graphics *gfx = nullptr;
 
 void main() {
   // Create application
