@@ -35,8 +35,7 @@ void print_GL_info() {
   std::clog << "GL Vendor: " << glGetString(GL_VENDOR) << std::endl;
   std::clog << "GL Renderer: " << glGetString(GL_RENDERER) << std::endl;
   std::clog << "GL Version: " << glGetString(GL_VERSION) << std::endl;
-  std::clog << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION)
-            << std::endl;
+  std::clog << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION)<< std::endl;
 }
 
 // Builds any necessary content for the render framework
@@ -66,6 +65,7 @@ bool renderer::initialise(const unsigned int screenX,
   // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_VERSION_MINOR, 4);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
 #if defined(DEBUG) | defined(_DEBUG)

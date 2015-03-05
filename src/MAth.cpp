@@ -2,7 +2,6 @@
 #include "glm\gtc\quaternion.hpp"
 
 glm::vec3 GetForwardVector(glm::quat& q) {
-
   return glm::vec3(2.0f * (q.x * q.z + q.w * q.y),
                    2.0f * (q.y * q.z - q.w * q.x),
                    1.0f - 2.0f * (q.x * q.x + q.y * q.y));
@@ -63,14 +62,9 @@ glm::vec4 CameraSpacePlane(const glm::mat4& camproj, const glm::vec3& pos,
   return glm::vec4(cnormal.x, cnormal.y, cnormal.z, -glm::dot(cpos, cnormal));
 }
 
-void CalculateObliqueMatrix(glm::mat4& projection, const glm::vec4& clipPlane)
-{
-  glm::vec4 q = glm::inverse(projection) * glm::vec4(
-    sgn(clipPlane.x),
-    sgn(clipPlane.y),
-    1.0f,
-    1.0f
-    );
+void CalculateObliqueMatrix(glm::mat4& projection, const glm::vec4& clipPlane) {
+  glm::vec4 q = glm::inverse(projection) *
+                glm::vec4(sgn(clipPlane.x), sgn(clipPlane.y), 1.0f, 1.0f);
   glm::vec4 c = clipPlane * (2.0F / (glm::dot(clipPlane, q)));
   // third row = clip plane - fourth row
   projection[2][0] = c.x - projection[3][0];

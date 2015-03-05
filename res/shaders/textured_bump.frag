@@ -1,4 +1,4 @@
-#version 430
+#version 440
 // A directional light structure
 struct directional_light {
   vec4 ambient_intensity;
@@ -155,3 +155,5 @@ void main() {
 
  colour.a = fade;
 }
+
+//lolol

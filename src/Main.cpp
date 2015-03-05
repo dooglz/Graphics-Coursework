@@ -44,7 +44,7 @@ bool graphics::initialise() {
 }
 
 void graphics::UpdateLights() {
-  {//Dlights
+  { // Dlights
     vector<directional_light> DLights;
     DLights.push_back(dlight);
 
@@ -64,24 +64,24 @@ void graphics::UpdateLights() {
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
     // this might not be the best way to copy data, but it works.
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight)* S_DLights.size(),
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(),
       &S_DLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
-  {//  point lights
+  { //  point lights
     vector<point_light> PLights;
     PLights.push_back(plight);
 
     struct S_Plight {
       vec4 light_colour;
-      vec4 position; //position is a vec3, padded in a vec4
-      vec4 falloff; //(constant, linear, quadratic, NULL)
+      vec4 position; // position is a vec3, padded in a vec4
+      vec4 falloff;  //(constant, linear, quadratic, NULL)
     };
     vector<S_Plight> S_PLights;
     for (auto L : PLights) {
       S_Plight sd;
       sd.light_colour = L.get_light_colour();
-      sd.position = vec4(L.get_position(),0);
+      sd.position = vec4(L.get_position(), 0);
       sd.falloff = vec4(0, 0, 0, 0);
       sd.falloff.x = L.get_constant_attenuation();
       sd.falloff.y = L.get_linear_attenuation();
@@ -89,19 +89,19 @@ void graphics::UpdateLights() {
       S_PLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight)* S_PLights.size(),
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(),
       &S_PLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
 
-  {//spot lights
+  { // spot lights
     vector<spot_light> PLights;
     PLights.push_back(slight);
 
     struct S_Slight {
       vec4 light_colour;
-      vec4 position;  //position is a vec3, padded in a vec4
-      vec4 direction; //direction is a vec3, padded in a vec4
+      vec4 position;  // position is a vec3, padded in a vec4
+      vec4 direction; // direction is a vec3, padded in a vec4
       vec4 falloff;   //(constant, linear, quadratic, power)
     };
     vector<S_Slight> S_SLights;
@@ -109,7 +109,7 @@ void graphics::UpdateLights() {
       S_Slight sd;
       sd.light_colour = L.get_light_colour();
       sd.position = vec4(L.get_position(), 0);
-      sd.direction = vec4(L.get_direction(),0);
+      sd.direction = vec4(L.get_direction(), 0);
       sd.falloff = vec4(0, 0, 0, 0);
       sd.falloff.x = L.get_constant_attenuation();
       sd.falloff.y = L.get_linear_attenuation();
@@ -118,20 +118,18 @@ void graphics::UpdateLights() {
       S_SLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight)* S_SLights.size(),
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(),
       &S_SLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
-
 }
 
 bool graphics::load_content() {
-
   // Lights
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
   dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   dlight.set_direction(vec3(1.0f, 1.0f, -1.0f));
-  
+
   plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
   plight.set_range(40.0f);
   plight.set_position(vec3(30.0f, 15.0f, 30.0f));
@@ -141,10 +139,12 @@ bool graphics::load_content() {
   slight.set_direction(normalize(vec3(1.0f, -1.0f, -1.0f)));
   slight.set_range(20.0f);
   slight.set_power(0.5f);
-
   // directional light SSBO
   {
     assert(GL_SHADER_STORAGE_BUFFER);
+    assert(GL_ARB_shader_storage_buffer_object);
+    assert(GL_ARB_uniform_buffer_object);
+
     glGenBuffers(1, &dLightSSBO);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
     glGenBuffers(1, &pLightSSBO);
@@ -204,9 +204,9 @@ bool graphics::load_content() {
   phongEffect.build();
 
   texturedBumpEffect.add_shader("shaders\\textured_bump.vert",
-                                GL_VERTEX_SHADER);
+    GL_VERTEX_SHADER);
   texturedBumpEffect.add_shader("shaders\\textured_bump.frag",
-                                GL_FRAGMENT_SHADER);
+    GL_FRAGMENT_SHADER);
   texturedBumpEffect.build();
   // bind shader to light ssbo
 
@@ -230,7 +230,7 @@ bool graphics::load_content() {
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
   aspect = static_cast<float>(renderer::get_screen_width()) /
-           static_cast<float>(renderer::get_screen_height());
+    static_cast<float>(renderer::get_screen_height());
   cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
   activeCam = &cam;
 
@@ -267,19 +267,20 @@ bool graphics::update(float delta_time) {
 
   if (dayscale < 0.5) {
     dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f),
-                               vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
-  } else {
+      vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
+  }
+  else {
     dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
   UpdateLights();
   // The ratio of pixels to rotation - remember the fov
   static double ratio_width =
-      quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
+    quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
   static double ratio_height =
-      (quarter_pi<float>() *
-       (static_cast<float>(renderer::get_screen_height()) /
-        static_cast<float>(renderer::get_screen_width()))) /
-      static_cast<float>(renderer::get_screen_height());
+    (quarter_pi<float>() *
+    (static_cast<float>(renderer::get_screen_height()) /
+    static_cast<float>(renderer::get_screen_width()))) /
+    static_cast<float>(renderer::get_screen_height());
 
   double current_x;
   double current_y;
@@ -345,14 +346,14 @@ void graphics::rendermesh(mesh &m, texture &t) {
   auto MVP = P * V * M;
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
-                     1,               // Number of values - 1 mat4
-                     GL_FALSE,        // Transpose the matrix?
-                     value_ptr(MVP)); // Pointer to matrix data
+    1,               // Number of values - 1 mat4
+    GL_FALSE,        // Transpose the matrix?
+    value_ptr(MVP)); // Pointer to matrix data
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
-                     value_ptr(m.get_transform().get_normal_matrix()));
+    value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // **********
@@ -365,14 +366,14 @@ void graphics::rendermesh(mesh &m, texture &t) {
   glUniform1i(eff.get_uniform_location("tex"), 0);
   // Set eye position
   glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
-               value_ptr(activeCam->get_position()));
+    value_ptr(activeCam->get_position()));
 
   // Render mesh
   renderer::render(m);
 }
 
 void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
-                           const float scale) {
+  const float scale) {
   effect eff = texturedBumpEffect;
   // Bind effect
   renderer::bind(eff);
@@ -383,14 +384,14 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
   auto MVP = P * V * M;
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
-                     1,               // Number of values - 1 mat4
-                     GL_FALSE,        // Transpose the matrix?
-                     value_ptr(MVP)); // Pointer to matrix data
+    1,               // Number of values - 1 mat4
+    GL_FALSE,        // Transpose the matrix?
+    value_ptr(MVP)); // Pointer to matrix data
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
-                     value_ptr(m.get_transform().get_normal_matrix()));
+    value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // **********
@@ -406,10 +407,10 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
   glUniform1f(eff.get_uniform_location("TextureScale"), scale);
   // Set eye position
   glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
-               value_ptr(activeCam->get_position()));
+    value_ptr(activeCam->get_position()));
 
   glUniform3fv(eff.get_uniform_location("light_dir"), 1,
-               value_ptr(dlight.get_direction()));
+    value_ptr(dlight.get_direction()));
   // Render mesh
   renderer::render(m);
 }
@@ -425,10 +426,10 @@ void graphics::processLines() {
   auto VP = P * V;
   // Set MVP matrix uniform
   glUniformMatrix4fv(
-      simpleEffect.get_uniform_location("MVP"), // Location of uniform
-      1,                                        // Number of values - 1 mat4
-      GL_FALSE,                                 // Transpose the matrix?
-      value_ptr(VP));                           // Pointer to matrix data
+    simpleEffect.get_uniform_location("MVP"), // Location of uniform
+    1,                                        // Number of values - 1 mat4
+    GL_FALSE,                                 // Transpose the matrix?
+    value_ptr(VP));                           // Pointer to matrix data
   renderer::RenderLines(linebuffer, 1);
   linebuffer.clear();
 }
@@ -454,9 +455,10 @@ void graphics::renderSky() {
   vec3 bottomcol;
   if (dayscale < 0.6f) {
     bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99),
-                    dayscale / 0.6f) *
-                dayscale;
-  } else {
+      dayscale / 0.6f) *
+      dayscale;
+  }
+  else {
     bottomcol = vec3(0.73, 0.796, 0.99) * dayscale;
   }
   vec3 topcol = vec3(0.067, 0.129, 0.698) * dayscale;
@@ -467,11 +469,11 @@ void graphics::renderSky() {
   glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
   glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
   glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x,
-              camview.y, camview.z);
+    camview.y, camview.z);
 
   graphics_framework::geometry geo;
-  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-                         vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
+  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
+    vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
   geo.add_buffer(v, 0);
   glDisable(GL_CULL_FACE);
   renderer::render(geo);
@@ -481,7 +483,7 @@ void graphics::renderSky() {
 bool graphics::render() {
   glEnable(GL_FOG); // enable the fog
   GLfloat density = 0.3;
-  GLfloat fogColor[4] = {0.5, 0.5, 0.5, 1.0};
+  GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0 };
   glFogi(GL_FOG_MODE, GL_EXP2); // set the fog mode to GL_EXP2
   glFogfv(GL_FOG_COLOR, fogColor);
   glFogf(GL_FOG_DENSITY, density);
@@ -521,7 +523,7 @@ void main() {
   application.set_load_content(std::bind(&graphics::load_content, gfx));
   application.set_initialise(std::bind(&graphics::initialise, gfx));
   application.set_update(
-      std::bind(&graphics::update, gfx, std::placeholders::_1));
+    std::bind(&graphics::update, gfx, std::placeholders::_1));
   application.set_render(std::bind(&graphics::render, gfx));
 
   // Run application
