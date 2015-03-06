@@ -1,9 +1,14 @@
-﻿#include "main.h"
+﻿/* Main.cpp
+* Program entry point,
+*  holds loader and the main update and render funcs.
+* Starts up the graphics Api.
+*
+* Sam Serrels, Computer Graphics, 2015
+*/
+#include "main.h"
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
-#include <glm\gtx\quaternion.hpp>
-#include <glm\gtc\matrix_transform.hpp>
 #include "DesertGen.h"
 #include "Math.h"
 #include "water.h"
@@ -13,11 +18,9 @@ using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-double cursor_x = 0.0;
-double cursor_y = 0.0;
+//Init the global extern to the graphics instance
+graphics *gfx = nullptr;
 
-static std::vector<const glm::vec3> linebuffer;
-static float counter = 0;
 void graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
   linebuffer.push_back(p1);
   linebuffer.push_back(p2);
@@ -42,7 +45,7 @@ bool graphics::initialise() {
 
   return true;
 }
-vec4 NumberOfLights = vec4(1, 1, 1, 0);
+
 void graphics::UpdateLights() {
   { // Dlights
     vector<directional_light> DLights;
@@ -144,6 +147,7 @@ bool graphics::load_content() {
   slight.set_direction(normalize(vec3(1.0f, -1.0f, -1.0f)));
   slight.set_range(20.0f);
   slight.set_power(0.5f);
+  NumberOfLights = vec4(1, 1, 1, 0);
   // directional light SSBO
   {
     assert(GL_SHADER_STORAGE_BUFFER);
@@ -252,7 +256,6 @@ bool graphics::load_content() {
   return true;
 }
 
-float dayscale;
 bool graphics::update(float delta_time) {
   counter += (delta_time * 0.16f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
@@ -493,7 +496,7 @@ void graphics::renderSky() {
 
 bool graphics::render() {
   glEnable(GL_FOG); // enable the fog
-  GLfloat density = 0.3;
+  GLfloat density = 0.3f;
   GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0 };
   glFogi(GL_FOG_MODE, GL_EXP2); // set the fog mode to GL_EXP2
   glFogfv(GL_FOG_COLOR, fogColor);
@@ -523,8 +526,6 @@ bool graphics::render() {
 graphics::graphics() {}
 
 graphics::~graphics() {}
-
-graphics *gfx = nullptr;
 
 void main() {
   // Create application

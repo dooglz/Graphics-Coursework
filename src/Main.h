@@ -1,3 +1,11 @@
+/* Main.h
+* Encapsulates global varaibles fom main.cpp into a class for safer accees from
+* other areas of code.
+* Singleton pattern, instance stored in "gfx"
+*
+* Sam Serrels, Computer Graphics, 2015
+*/
+
 #pragma once
 
 #include <string>
@@ -12,12 +20,6 @@
 
 using namespace graphics_framework;
 
-static struct shader_data_t {
-  glm::vec4 ambient_intensity;
-  glm::vec4 light_colour;
-  glm::vec3 light_dir;
-} shader_data;
-
 class graphics {
 public:
   bool render();
@@ -29,9 +31,16 @@ public:
   ~graphics();
 
   std::map<std::string, mesh> meshes;
-  float aspect;
 
+  double cursor_x = 0.0;
+  double cursor_y = 0.0;
+  float aspect;
+  float counter = 0;
+  float dayscale;
+
+  //The current active camera, used for rendering
   camera *activeCam;
+  //The main camera used in the scene
   free_camera cam;
 
   texture checkedTexture;
@@ -50,13 +59,17 @@ public:
   mesh mirror;
   mesh goodsand;
 
+  //Light stuff
   directional_light dlight;
   point_light plight;
   spot_light slight;
+  glm::vec4 NumberOfLights;  //Amd workaround
   GLuint dLightSSBO;
   GLuint pLightSSBO;
   GLuint sLightSSBO;
   GLuint LightSSBO;
+
+  std::vector<const glm::vec3> linebuffer;
 
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
