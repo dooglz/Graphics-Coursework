@@ -46,3 +46,5 @@ docs/html/
 
 #Project  Specific ignores
 **/ipch/*
+lib/Win32_Debug/libENUgraphics.lib
+lib/Win32_Release/libENUgraphics.lib

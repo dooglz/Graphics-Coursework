@@ -44,6 +44,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>../../lib/$(Platform)_$(Configuration)/</OutDir>
+    <IntDir>temp/$(Platform)_$(Configuration)/</IntDir>
+    <IncludePath>../../include/;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
