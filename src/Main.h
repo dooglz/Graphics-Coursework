@@ -68,6 +68,10 @@ public:
   GLuint pLightSSBO;
   GLuint sLightSSBO;
   GLuint LightSSBO;
+  std::vector<directional_light> DLights;
+  std::vector<point_light> PLights;
+  std::vector<spot_light> SLights;
+
 
   std::vector<const glm::vec3> linebuffer;
 
@@ -77,7 +81,9 @@ public:
   void rendermesh(mesh &m, texture &t);
   void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
                              const float scale);
+
   void renderSky();
+  //Send all light data to SSBOs on the GPU
   void UpdateLights();
 };
 

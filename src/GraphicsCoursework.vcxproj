@@ -98,7 +98,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
     <ClInclude Include="Main.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Perlin.h" />
-    <ClInclude Include="water.h" />
+    <ClInclude Include="mirror.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DesertGen.cpp" />
@@ -106,7 +106,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MAth.cpp" />
     <ClCompile Include="Perlin.cpp" />
-    <ClCompile Include="Water.cpp" />
+    <ClCompile Include="Mirror.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\sky.frag">

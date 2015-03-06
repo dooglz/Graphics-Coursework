@@ -1,21 +1,20 @@
 #pragma once
 
-//forward decalre includes
-namespace graphics_framework{
-    class geometry;
-    class mesh;
+// forward decalre includes
+namespace graphics_framework {
+class geometry;
+class mesh;
 }
 
-class DesertGen
-{
+class DesertGen {
 public:
-    DesertGen();
-    ~DesertGen();
-    static void CreateDesert();
-    static graphics_framework::mesh farMesh;
-private:
-    static graphics_framework::geometry _farGeo;
-    static graphics_framework::geometry _nearGeo;
-    static void makefarGeometry();
-};
+  DesertGen();
+  ~DesertGen();
+  static void CreateDesert();
+  static graphics_framework::mesh farMesh;
 
+private:
+  static graphics_framework::geometry _farGeo;
+  static graphics_framework::geometry _nearGeo;
+  static void makefarGeometry();
+};

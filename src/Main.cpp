@@ -11,14 +11,14 @@
 #include <glm\gtx\rotate_vector.hpp>
 #include "DesertGen.h"
 #include "Math.h"
-#include "water.h"
+#include "mirror.h"
 #include <functional>
 
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
-//Init the global extern to the graphics instance
+// Init the global extern to the graphics instance
 graphics *gfx = nullptr;
 
 void graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
@@ -33,24 +33,19 @@ void graphics::DrawCross(const glm::vec3 &p1, const float size) {
 }
 
 bool graphics::initialise() {
-  // ********************************
   // Set input mode - hide the cursor
-  // ********************************
   glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // ******************************
   // Capture initial mouse position
-  // ******************************
   glfwGetCursorPos(renderer::get_window(), &cursor_x, &cursor_y);
 
   return true;
 }
 
+// Send all light data to SSBOs on the GPU
 void graphics::UpdateLights() {
-  { // Dlights
-    vector<directional_light> DLights;
-    DLights.push_back(dlight);
-
+  // Directional lights
+  {
     struct S_Dlight {
       vec4 ambient_intensity;
       vec4 light_colour;
@@ -64,17 +59,14 @@ void graphics::UpdateLights() {
       sd.light_dir = vec4(L.get_direction(), 0);
       S_DLights.push_back(sd);
     }
-
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
     // this might not be the best way to copy data, but it works.
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(),
-      &S_DLights[0], GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0],
+                 GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
-  { //  point lights
-    vector<point_light> PLights;
-    PLights.push_back(plight);
-
+  //  point lights
+  {
     struct S_Plight {
       vec4 light_colour;
       vec4 position; // position is a vec3, padded in a vec4
@@ -92,15 +84,12 @@ void graphics::UpdateLights() {
       S_PLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(),
-      &S_PLights[0], GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0],
+                 GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
-
-  { // spot lights
-    vector<spot_light> PLights;
-    PLights.push_back(slight);
-
+  // spot lights
+  {
     struct S_Slight {
       vec4 light_colour;
       vec4 position;  // position is a vec3, padded in a vec4
@@ -108,7 +97,7 @@ void graphics::UpdateLights() {
       vec4 falloff;   //(constant, linear, quadratic, power)
     };
     vector<S_Slight> S_SLights;
-    for (auto L : PLights) {
+    for (auto L : SLights) {
       S_Slight sd;
       sd.light_colour = L.get_light_colour();
       sd.position = vec4(L.get_position(), 0);
@@ -121,14 +110,13 @@ void graphics::UpdateLights() {
       S_SLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(),
-      &S_SLights[0], GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0],
+                 GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights),
-               &NumberOfLights, GL_DYNAMIC_COPY);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights), &NumberOfLights, GL_DYNAMIC_COPY);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
@@ -138,22 +126,25 @@ bool graphics::load_content() {
   dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   dlight.set_direction(vec3(1.0f, 1.0f, -1.0f));
 
+  DLights.push_back(dlight);
   plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
   plight.set_range(40.0f);
   plight.set_position(vec3(30.0f, 15.0f, 30.0f));
+  PLights.push_back(plight);
 
   slight.set_position(vec3(-25.0f, 10.0f, -15.0f));
   slight.set_light_colour(vec4(0.0f, 1.0f, 0.0f, 1.0f));
   slight.set_direction(normalize(vec3(1.0f, -1.0f, -1.0f)));
   slight.set_range(20.0f);
   slight.set_power(0.5f);
+  SLights.push_back(slight);
+
   NumberOfLights = vec4(1, 1, 1, 0);
   // directional light SSBO
   {
     assert(GL_SHADER_STORAGE_BUFFER);
     assert(GL_ARB_shader_storage_buffer_object);
     assert(GL_ARB_uniform_buffer_object);
-
     glGenBuffers(1, &dLightSSBO);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
     glGenBuffers(1, &pLightSSBO);
@@ -193,7 +184,7 @@ bool graphics::load_content() {
   meshes["torus"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["torus"].get_material().set_shininess(25.0f);
 
-  setupWater();
+  SetupMirror();
 
   goodsand = mesh(geometry_builder::create_disk(10, vec2(1.0, 1.0)));
   goodsand.get_transform().translate(vec3(0, 0.01f, 0));
@@ -214,10 +205,8 @@ bool graphics::load_content() {
   phongEffect.add_shader("shaders\\phong.frag", GL_FRAGMENT_SHADER);
   phongEffect.build();
 
-  texturedBumpEffect.add_shader("shaders\\textured_bump.vert",
-    GL_VERTEX_SHADER);
-  texturedBumpEffect.add_shader("shaders\\textured_bump.frag",
-    GL_FRAGMENT_SHADER);
+  texturedBumpEffect.add_shader("shaders\\textured_bump.vert", GL_VERTEX_SHADER);
+  texturedBumpEffect.add_shader("shaders\\textured_bump.frag", GL_FRAGMENT_SHADER);
   texturedBumpEffect.build();
   // bind shader to light ssbo
 
@@ -241,7 +230,7 @@ bool graphics::load_content() {
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
   aspect = static_cast<float>(renderer::get_screen_width()) /
-    static_cast<float>(renderer::get_screen_height());
+           static_cast<float>(renderer::get_screen_height());
   cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
   activeCam = &cam;
 
@@ -276,61 +265,42 @@ bool graphics::update(float delta_time) {
   dlight.set_direction(glm::rotateZ(rot, counter));
 
   if (dayscale < 0.5) {
-    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f),
-      vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
-  }
-  else {
+    dlight.set_light_colour(
+        mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
+  } else {
     dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
   UpdateLights();
   // The ratio of pixels to rotation - remember the fov
   static double ratio_width =
-    quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
+      quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
   static double ratio_height =
-    (quarter_pi<float>() *
-    (static_cast<float>(renderer::get_screen_height()) /
-    static_cast<float>(renderer::get_screen_width()))) /
-    static_cast<float>(renderer::get_screen_height());
+      (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
+                              static_cast<float>(renderer::get_screen_width()))) /
+      static_cast<float>(renderer::get_screen_height());
 
   double current_x;
   double current_y;
-  // *******************************
   // Get the current cursor position
-  // *******************************
   glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
-
-  // ***************************************************
   // Calculate delta of cursor positions from last frame
-  // ***************************************************
   double delta_x = current_x - cursor_x;
   double delta_y = current_y - cursor_y;
-
-  // *************************************************************
   // Multiply deltas by ratios - gets actual change in orientation
-  // *************************************************************
   delta_x *= ratio_width;
   delta_y *= -ratio_height;
 
-  // *************************
   // Rotate cameras by delta
   // delta_y - x-axis rotation
   // delta_x - y-axis rotation
-  // *************************
   cam.rotate(static_cast<float>(delta_x), static_cast<float>(delta_y));
 
-  // *******************************
   // Use keyboard to move the camera
-  // - WSAD
-  // *******************************
   vec3 translation(0.0f, 0.0f, 0.0f);
-  if (glfwGetKey(renderer::get_window(), 'W')){
+  if (glfwGetKey(renderer::get_window(), 'W'))
     translation.z += 5.0f * delta_time;
-   // NumberOfLights = vec4(0, 1, 0, 0);
-  }
-  if (glfwGetKey(renderer::get_window(), 'S')){
+  if (glfwGetKey(renderer::get_window(), 'S'))
     translation.z -= 5.0f * delta_time;
-    //NumberOfLights = vec4(0, 0, 1, 0);
-  }
   if (glfwGetKey(renderer::get_window(), 'A'))
     translation.x -= 5.0f * delta_time;
   if (glfwGetKey(renderer::get_window(), 'D'))
@@ -360,14 +330,14 @@ void graphics::rendermesh(mesh &m, texture &t) {
   auto MVP = P * V * M;
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
-    1,               // Number of values - 1 mat4
-    GL_FALSE,        // Transpose the matrix?
-    value_ptr(MVP)); // Pointer to matrix data
+                     1,                               // Number of values - 1 mat4
+                     GL_FALSE,                        // Transpose the matrix?
+                     value_ptr(MVP));                 // Pointer to matrix data
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
-    value_ptr(m.get_transform().get_normal_matrix()));
+                     value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // **********
@@ -379,15 +349,13 @@ void graphics::rendermesh(mesh &m, texture &t) {
   // Set tex uniform
   glUniform1i(eff.get_uniform_location("tex"), 0);
   // Set eye position
-  glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
-    value_ptr(activeCam->get_position()));
+  glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(activeCam->get_position()));
 
   // Render mesh
   renderer::render(m);
 }
 
-void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
-  const float scale) {
+void graphics::rendermeshB(mesh &m, texture &t, texture &tb, const float scale) {
   effect eff = texturedBumpEffect;
   // Bind effect
   renderer::bind(eff);
@@ -398,14 +366,14 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
   auto MVP = P * V * M;
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
-    1,               // Number of values - 1 mat4
-    GL_FALSE,        // Transpose the matrix?
-    value_ptr(MVP)); // Pointer to matrix data
+                     1,                               // Number of values - 1 mat4
+                     GL_FALSE,                        // Transpose the matrix?
+                     value_ptr(MVP));                 // Pointer to matrix data
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
-    value_ptr(m.get_transform().get_normal_matrix()));
+                     value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // **********
@@ -420,11 +388,9 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb,
   glUniform1i(eff.get_uniform_location("normal_map"), 1);
   glUniform1f(eff.get_uniform_location("TextureScale"), scale);
   // Set eye position
-  glUniform3fv(eff.get_uniform_location("eye_pos"), 1,
-    value_ptr(activeCam->get_position()));
+  glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(activeCam->get_position()));
 
-  glUniform3fv(eff.get_uniform_location("light_dir"), 1,
-    value_ptr(dlight.get_direction()));
+  glUniform3fv(eff.get_uniform_location("light_dir"), 1, value_ptr(dlight.get_direction()));
   // Render mesh
   renderer::render(m);
 }
@@ -439,11 +405,10 @@ void graphics::processLines() {
   auto P = activeCam->get_projection();
   auto VP = P * V;
   // Set MVP matrix uniform
-  glUniformMatrix4fv(
-    simpleEffect.get_uniform_location("MVP"), // Location of uniform
-    1,                                        // Number of values - 1 mat4
-    GL_FALSE,                                 // Transpose the matrix?
-    value_ptr(VP));                           // Pointer to matrix data
+  glUniformMatrix4fv(simpleEffect.get_uniform_location("MVP"), // Location of uniform
+                     1,                                        // Number of values - 1 mat4
+                     GL_FALSE,                                 // Transpose the matrix?
+                     value_ptr(VP));                           // Pointer to matrix data
   renderer::RenderLines(linebuffer, 1);
   linebuffer.clear();
 }
@@ -468,11 +433,8 @@ void graphics::renderSky() {
 
   vec3 bottomcol;
   if (dayscale < 0.6f) {
-    bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99),
-      dayscale / 0.6f) *
-      dayscale;
-  }
-  else {
+    bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99), dayscale / 0.6f) * dayscale;
+  } else {
     bottomcol = vec3(0.73, 0.796, 0.99) * dayscale;
   }
   vec3 topcol = vec3(0.067, 0.129, 0.698) * dayscale;
@@ -482,12 +444,11 @@ void graphics::renderSky() {
   glUniform3fv(skyeffect.get_uniform_location("bottomcol"), 1, &bottomcol[0]);
   glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
   glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
-  glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x,
-    camview.y, camview.z);
+  glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
 
   graphics_framework::geometry geo;
-  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-    vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
+                         vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
   geo.add_buffer(v, 0);
   glDisable(GL_CULL_FACE);
   renderer::render(geo);
@@ -497,7 +458,7 @@ void graphics::renderSky() {
 bool graphics::render() {
   glEnable(GL_FOG); // enable the fog
   GLfloat density = 0.3f;
-  GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0 };
+  GLfloat fogColor[4] = {0.5, 0.5, 0.5, 1.0};
   glFogi(GL_FOG_MODE, GL_EXP2); // set the fog mode to GL_EXP2
   glFogfv(GL_FOG_COLOR, fogColor);
   glFogf(GL_FOG_DENSITY, density);
@@ -515,7 +476,7 @@ bool graphics::render() {
 
   renderSky();
 
-  renderWater(mirror);
+  RenderMirror(mirror);
 
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
 
@@ -534,10 +495,11 @@ void main() {
   // Set load content, update and render methods
   application.set_load_content(std::bind(&graphics::load_content, gfx));
   application.set_initialise(std::bind(&graphics::initialise, gfx));
-  application.set_update(
-    std::bind(&graphics::update, gfx, std::placeholders::_1));
+  application.set_update(std::bind(&graphics::update, gfx, std::placeholders::_1));
   application.set_render(std::bind(&graphics::render, gfx));
 
   // Run application
   application.run();
+  delete gfx;
+  gfx = nullptr;
 }

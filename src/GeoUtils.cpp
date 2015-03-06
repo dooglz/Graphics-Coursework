@@ -2,8 +2,7 @@
 #include <set>
 #include <unordered_map>
 
-void CalculateNormals(std::vector<glm::vec3> &verts,
-                      std::vector<glm::vec3> &normals,
+void CalculateNormals(std::vector<glm::vec3> &verts, std::vector<glm::vec3> &normals,
                       std::vector<unsigned int> &indices) {
 
   if (normals.size() != verts.size()) {
@@ -35,9 +34,8 @@ void CalculateNormals(std::vector<glm::vec3> &verts,
     // for each face, add it's nomrmal.
     normals[i] = glm::vec3(0, 0, 0);
     for (unsigned int j = 0; j < faces.size(); j += 3) {
-      normals[i] +=
-          glm::normalize(glm::cross(verts[faces[j]] - verts[faces[j + 1]],
-                                    verts[faces[j]] - verts[faces[j + 2]]));
+      normals[i] += glm::normalize(
+          glm::cross(verts[faces[j]] - verts[faces[j + 1]], verts[faces[j]] - verts[faces[j + 2]]));
     }
     normals[i] = glm::normalize(normals[i]);
   }
@@ -60,15 +58,14 @@ struct CmpClass // class comparing vertices in the set
 };
 
 // Takes an ordered list of verts, returns a list of indices and verts
-void IndexVerticies(std::vector<glm::vec3> &Vinput,
-                    std::vector<glm::vec3> &Vout,
+void IndexVerticies(std::vector<glm::vec3> &Vinput, std::vector<glm::vec3> &Vout,
                     std::vector<unsigned int> &indices) {
   std::set<VPair, CmpClass> vertices;
   int index = 0;
 
   for (unsigned int i = 0; i < Vinput.size(); i++) {
-    std::set<VPair>::iterator it = vertices.find(
-        std::make_pair(Vinput[i], 0 /*this value doesn't matter*/));
+    std::set<VPair>::iterator it =
+        vertices.find(std::make_pair(Vinput[i], 0 /*this value doesn't matter*/));
     if (it != vertices.end())
       indices.push_back(it->second);
     else {
@@ -80,29 +77,26 @@ void IndexVerticies(std::vector<glm::vec3> &Vinput,
   // Notice that the vertices in the set are not sorted by the index
   // so you'll have to rearrange them like this:
   Vout.resize(vertices.size());
-  for (std::set<VPair>::iterator it = vertices.begin(); it != vertices.end();
-       ++it)
+  for (std::set<VPair>::iterator it = vertices.begin(); it != vertices.end(); ++it)
     Vout[it->second] = it->first;
 }
 
 // Verifies the indices and vertices match. If fix, will attempt to fix errors
 
-void VerifyIndices(std::vector<glm::vec3> &verts,
-                   std::vector<glm::vec3> *normals,
-                   std::vector<glm::vec2> *tex_coords,
-                   std::vector<unsigned int> &indices, const bool fix) {
+void VerifyIndices(std::vector<glm::vec3> &verts, std::vector<glm::vec3> *normals,
+                   std::vector<glm::vec2> *tex_coords, std::vector<unsigned int> &indices,
+                   const bool fix) {
   std::set<VPair, CmpClass> vertices;
   std::vector<unsigned int> removedVerts;
   std::unordered_map<unsigned int, unsigned int> remappedIndices;
   bool *vcheck = new bool[verts.size()];
 
   if (!fix && normals != NULL && normals->size() != verts.size()) {
-    printf("Amount of normals[%i] != amount of verticies[%i]\n",
-           normals->size(), verts.size());
+    printf("Amount of normals[%i] != amount of verticies[%i]\n", normals->size(), verts.size());
   }
   if (!fix && tex_coords != NULL && tex_coords->size() != verts.size()) {
-    printf("Amount of TexCoords[%i] != amount of verticies[%i]\n",
-           tex_coords->size(), verts.size());
+    printf("Amount of TexCoords[%i] != amount of verticies[%i]\n", tex_coords->size(),
+           verts.size());
   }
 
   // check all indices are valid
@@ -121,8 +115,8 @@ void VerifyIndices(std::vector<glm::vec3> &verts,
     std::set<VPair>::iterator it = vertices.find(std::make_pair(verts[i], 0));
     if (it != vertices.end()) {
       if (!fix) {
-        printf("duplicate vert [%i] and [%u], at (%f,%f,%f)\n", it->second, i,
-               it->first.x, it->first.y, it->first.z);
+        printf("duplicate vert [%i] and [%u], at (%f,%f,%f)\n", it->second, i, it->first.x,
+               it->first.y, it->first.z);
       } else {
         // TODO check remapped doesn't already have this
         remappedIndices.insert(std::make_pair(i, (unsigned int)it->second));
@@ -142,8 +136,7 @@ void VerifyIndices(std::vector<glm::vec3> &verts,
     }
   }
 
-  for (auto itr = remappedIndices.begin(); itr != remappedIndices.end();
-       ++itr) {
+  for (auto itr = remappedIndices.begin(); itr != remappedIndices.end(); ++itr) {
     unsigned int find = (*itr).first;
     unsigned int replace = (*itr).second;
     for (auto &i : indices) {

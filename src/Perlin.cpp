@@ -18,7 +18,6 @@
 #include <math.h>
 #include "Perlin.h"
 
-
 /* 2D, 3D and 4D Simplex Noise functions return 'random' values in (-1, 1).
 
 This algorithm was originally designed by Ken Perlin, but my code has been
@@ -43,12 +42,12 @@ dimension, you can ensure that each gets a unique noise value and they don't
 all look identical.
 */
 
-
 // 2D Multi-octave Simplex noise.
 //
 // For each octave, a higher frequency/lower amplitude function will be added to the original.
 // The higher the persistence [0-1], the more of each succeeding octave will be added.
-float octave_noise_2d(const float octaves, const float persistence, const float scale, const float x, const float y) {
+float octave_noise_2d(const float octaves, const float persistence, const float scale,
+                      const float x, const float y) {
   float total = 0;
   float frequency = scale;
   float amplitude = 1;
@@ -68,12 +67,12 @@ float octave_noise_2d(const float octaves, const float persistence, const float 
   return total / maxAmplitude;
 }
 
-
 // 3D Multi-octave Simplex noise.
 //
 // For each octave, a higher frequency/lower amplitude function will be added to the original.
 // The higher the persistence [0-1], the more of each succeeding octave will be added.
-float octave_noise_3d(const float octaves, const float persistence, const float scale, const float x, const float y, const float z) {
+float octave_noise_3d(const float octaves, const float persistence, const float scale,
+                      const float x, const float y, const float z) {
   float total = 0;
   float frequency = scale;
   float amplitude = 1;
@@ -93,12 +92,12 @@ float octave_noise_3d(const float octaves, const float persistence, const float 
   return total / maxAmplitude;
 }
 
-
 // 4D Multi-octave Simplex noise.
 //
 // For each octave, a higher frequency/lower amplitude function will be added to the original.
 // The higher the persistence [0-1], the more of each succeeding octave will be added.
-float octave_noise_4d(const float octaves, const float persistence, const float scale, const float x, const float y, const float z, const float w) {
+float octave_noise_4d(const float octaves, const float persistence, const float scale,
+                      const float x, const float y, const float z, const float w) {
   float total = 0;
   float frequency = scale;
   float amplitude = 1;
@@ -118,31 +117,35 @@ float octave_noise_4d(const float octaves, const float persistence, const float 
   return total / maxAmplitude;
 }
 
-
-
 // 2D Scaled Multi-octave Simplex noise.
 //
 // Returned value will be between loBound and hiBound.
-float scaled_octave_noise_2d(const float octaves, const float persistence, const float scale, const float loBound, const float hiBound, const float x, const float y) {
-  return octave_noise_2d(octaves, persistence, scale, x, y) * (hiBound - loBound) / 2 + (hiBound + loBound) / 2;
+float scaled_octave_noise_2d(const float octaves, const float persistence, const float scale,
+                             const float loBound, const float hiBound, const float x,
+                             const float y) {
+  return octave_noise_2d(octaves, persistence, scale, x, y) * (hiBound - loBound) / 2 +
+         (hiBound + loBound) / 2;
 }
-
 
 // 3D Scaled Multi-octave Simplex noise.
 //
 // Returned value will be between loBound and hiBound.
-float scaled_octave_noise_3d(const float octaves, const float persistence, const float scale, const float loBound, const float hiBound, const float x, const float y, const float z) {
-  return octave_noise_3d(octaves, persistence, scale, x, y, z) * (hiBound - loBound) / 2 + (hiBound + loBound) / 2;
+float scaled_octave_noise_3d(const float octaves, const float persistence, const float scale,
+                             const float loBound, const float hiBound, const float x, const float y,
+                             const float z) {
+  return octave_noise_3d(octaves, persistence, scale, x, y, z) * (hiBound - loBound) / 2 +
+         (hiBound + loBound) / 2;
 }
 
 // 4D Scaled Multi-octave Simplex noise.
 //
 // Returned value will be between loBound and hiBound.
-float scaled_octave_noise_4d(const float octaves, const float persistence, const float scale, const float loBound, const float hiBound, const float x, const float y, const float z, const float w) {
-  return octave_noise_4d(octaves, persistence, scale, x, y, z, w) * (hiBound - loBound) / 2 + (hiBound + loBound) / 2;
+float scaled_octave_noise_4d(const float octaves, const float persistence, const float scale,
+                             const float loBound, const float hiBound, const float x, const float y,
+                             const float z, const float w) {
+  return octave_noise_4d(octaves, persistence, scale, x, y, z, w) * (hiBound - loBound) / 2 +
+         (hiBound + loBound) / 2;
 }
-
-
 
 // 2D Scaled Simplex raw noise.
 //
@@ -151,22 +154,21 @@ float scaled_raw_noise_2d(const float loBound, const float hiBound, const float 
   return raw_noise_2d(x, y) * (hiBound - loBound) / 2 + (hiBound + loBound) / 2;
 }
 
-
 // 3D Scaled Simplex raw noise.
 //
 // Returned value will be between loBound and hiBound.
-float scaled_raw_noise_3d(const float loBound, const float hiBound, const float x, const float y, const float z) {
+float scaled_raw_noise_3d(const float loBound, const float hiBound, const float x, const float y,
+                          const float z) {
   return raw_noise_3d(x, y, z) * (hiBound - loBound) / 2 + (hiBound + loBound) / 2;
 }
 
 // 4D Scaled Simplex raw noise.
 //
 // Returned value will be between loBound and hiBound.
-float scaled_raw_noise_4d(const float loBound, const float hiBound, const float x, const float y, const float z, const float w) {
+float scaled_raw_noise_4d(const float loBound, const float hiBound, const float x, const float y,
+                          const float z, const float w) {
   return raw_noise_4d(x, y, z, w) * (hiBound - loBound) / 2 + (hiBound + loBound) / 2;
 }
-
-
 
 // 2D raw Simplex noise
 float raw_noise_2d(const float x, const float y) {
@@ -174,13 +176,13 @@ float raw_noise_2d(const float x, const float y) {
   float n0, n1, n2;
 
   // Skew the input space to determine which simplex cell we're in
-  float F2 = 0.5 * (sqrtf(3.0) - 1.0);
+  float F2 = 0.5f * (sqrtf(3.0f) - 1.0f);
   // Hairy factor for 2D
   float s = (x + y) * F2;
   int i = fastfloor(x + s);
   int j = fastfloor(y + s);
 
-  float G2 = (3.0 - sqrtf(3.0)) / 6.0;
+  float G2 = (3.0f - sqrtf(3.0f)) / 6.0f;
   float t = (i + j) * G2;
   // Unskew the cell origin back to (x,y) space
   float X0 = i - t;
@@ -192,16 +194,22 @@ float raw_noise_2d(const float x, const float y) {
   // For the 2D case, the simplex shape is an equilateral triangle.
   // Determine which simplex we are in.
   int i1, j1; // Offsets for second (middle) corner of simplex in (i,j) coords
-  if (x0>y0) { i1 = 1; j1 = 0; } // lower triangle, XY order: (0,0)->(1,0)->(1,1)
-  else { i1 = 0; j1 = 1; } // upper triangle, YX order: (0,0)->(0,1)->(1,1)
+  if (x0 > y0) {
+    i1 = 1;
+    j1 = 0;
+  } // lower triangle, XY order: (0,0)->(1,0)->(1,1)
+  else {
+    i1 = 0;
+    j1 = 1;
+  } // upper triangle, YX order: (0,0)->(0,1)->(1,1)
 
   // A step of (1,0) in (i,j) means a step of (1-c,-c) in (x,y), and
   // a step of (0,1) in (i,j) means a step of (-c,1-c) in (x,y), where
   // c = (3-sqrt(3))/6
   float x1 = x0 - i1 + G2; // Offsets for middle corner in (x,y) unskewed coords
   float y1 = y0 - j1 + G2;
-  float x2 = x0 - 1.0 + 2.0 * G2; // Offsets for last corner in (x,y) unskewed coords
-  float y2 = y0 - 1.0 + 2.0 * G2;
+  float x2 = x0 - 1.0f + 2.0f * G2; // Offsets for last corner in (x,y) unskewed coords
+  float y2 = y0 - 1.0f + 2.0f * G2;
 
   // Work out the hashed gradient indices of the three simplex corners
   int ii = i & 255;
@@ -211,22 +219,25 @@ float raw_noise_2d(const float x, const float y) {
   int gi2 = perm[ii + 1 + perm[jj + 1]] % 12;
 
   // Calculate the contribution from the three corners
-  float t0 = 0.5 - x0*x0 - y0*y0;
-  if (t0<0) n0 = 0.0;
+  float t0 = 0.5f - x0 * x0 - y0 * y0;
+  if (t0 < 0)
+    n0 = 0.0f;
   else {
     t0 *= t0;
     n0 = t0 * t0 * dot(grad3[gi0], x0, y0); // (x,y) of grad3 used for 2D gradient
   }
 
-  float t1 = 0.5 - x1*x1 - y1*y1;
-  if (t1<0) n1 = 0.0;
+  float t1 = 0.5f - x1 * x1 - y1 * y1;
+  if (t1 < 0)
+    n1 = 0.0f;
   else {
     t1 *= t1;
     n1 = t1 * t1 * dot(grad3[gi1], x1, y1);
   }
 
-  float t2 = 0.5 - x2*x2 - y2*y2;
-  if (t2<0) n2 = 0.0;
+  float t2 = 0.5f - x2 * x2 - y2 * y2;
+  if (t2 < 0)
+    n2 = 0.0f;
   else {
     t2 *= t2;
     n2 = t2 * t2 * dot(grad3[gi2], x2, y2);
@@ -234,23 +245,22 @@ float raw_noise_2d(const float x, const float y) {
 
   // Add contributions from each corner to get the final noise value.
   // The result is scaled to return values in the interval [-1,1].
-  return 70.0 * (n0 + n1 + n2);
+  return 70.0f * (n0 + n1 + n2);
 }
-
 
 // 3D raw Simplex noise
 float raw_noise_3d(const float x, const float y, const float z) {
   float n0, n1, n2, n3; // Noise contributions from the four corners
 
   // Skew the input space to determine which simplex cell we're in
-  float F3 = 1.0 / 3.0;
-  float s = (x + y + z)*F3; // Very nice and simple skew factor for 3D
+  float F3 = 1.0f / 3.0f;
+  float s = (x + y + z) * F3; // Very nice and simple skew factor for 3D
   int i = fastfloor(x + s);
   int j = fastfloor(y + s);
   int k = fastfloor(z + s);
 
-  float G3 = 1.0 / 6.0; // Very nice and simple unskew factor, too
-  float t = (i + j + k)*G3;
+  float G3 = 1.0f / 6.0f; // Very nice and simple unskew factor, too
+  float t = (i + j + k) * G3;
   float X0 = i - t; // Unskew the cell origin back to (x,y,z) space
   float Y0 = j - t;
   float Z0 = k - t;
@@ -264,14 +274,55 @@ float raw_noise_3d(const float x, const float y, const float z) {
   int i2, j2, k2; // Offsets for third corner of simplex in (i,j,k) coords
 
   if (x0 >= y0) {
-    if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; } // X Y Z order
-    else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; } // X Z Y order
-    else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; } // Z X Y order
-  }
-  else { // x0<y0
-    if (y0<z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; } // Z Y X order
-    else if (x0<z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; } // Y Z X order
-    else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; } // Y X Z order
+    if (y0 >= z0) {
+      i1 = 1;
+      j1 = 0;
+      k1 = 0;
+      i2 = 1;
+      j2 = 1;
+      k2 = 0;
+    } // X Y Z order
+    else if (x0 >= z0) {
+      i1 = 1;
+      j1 = 0;
+      k1 = 0;
+      i2 = 1;
+      j2 = 0;
+      k2 = 1;
+    } // X Z Y order
+    else {
+      i1 = 0;
+      j1 = 0;
+      k1 = 1;
+      i2 = 1;
+      j2 = 0;
+      k2 = 1;
+    }      // Z X Y order
+  } else { // x0<y0
+    if (y0 < z0) {
+      i1 = 0;
+      j1 = 0;
+      k1 = 1;
+      i2 = 0;
+      j2 = 1;
+      k2 = 1;
+    } // Z Y X order
+    else if (x0 < z0) {
+      i1 = 0;
+      j1 = 1;
+      k1 = 0;
+      i2 = 0;
+      j2 = 1;
+      k2 = 1;
+    } // Y Z X order
+    else {
+      i1 = 0;
+      j1 = 1;
+      k1 = 0;
+      i2 = 1;
+      j2 = 1;
+      k2 = 0;
+    } // Y X Z order
   }
 
   // A step of (1,0,0) in (i,j,k) means a step of (1-c,-c,-c) in (x,y,z),
@@ -281,12 +332,12 @@ float raw_noise_3d(const float x, const float y, const float z) {
   float x1 = x0 - i1 + G3; // Offsets for second corner in (x,y,z) coords
   float y1 = y0 - j1 + G3;
   float z1 = z0 - k1 + G3;
-  float x2 = x0 - i2 + 2.0*G3; // Offsets for third corner in (x,y,z) coords
-  float y2 = y0 - j2 + 2.0*G3;
-  float z2 = z0 - k2 + 2.0*G3;
-  float x3 = x0 - 1.0 + 3.0*G3; // Offsets for last corner in (x,y,z) coords
-  float y3 = y0 - 1.0 + 3.0*G3;
-  float z3 = z0 - 1.0 + 3.0*G3;
+  float x2 = x0 - i2 + 2.0f * G3; // Offsets for third corner in (x,y,z) coords
+  float y2 = y0 - j2 + 2.0f * G3;
+  float z2 = z0 - k2 + 2.0f * G3;
+  float x3 = x0 - 1.0f + 3.0f * G3; // Offsets for last corner in (x,y,z) coords
+  float y3 = y0 - 1.0f + 3.0f * G3;
+  float z3 = z0 - 1.0f + 3.0f * G3;
 
   // Work out the hashed gradient indices of the four simplex corners
   int ii = i & 255;
@@ -298,29 +349,33 @@ float raw_noise_3d(const float x, const float y, const float z) {
   int gi3 = perm[ii + 1 + perm[jj + 1 + perm[kk + 1]]] % 12;
 
   // Calculate the contribution from the four corners
-  float t0 = 0.6 - x0*x0 - y0*y0 - z0*z0;
-  if (t0<0) n0 = 0.0;
+  float t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0;
+  if (t0 < 0)
+    n0 = 0.0f;
   else {
     t0 *= t0;
     n0 = t0 * t0 * dot(grad3[gi0], x0, y0, z0);
   }
 
-  float t1 = 0.6 - x1*x1 - y1*y1 - z1*z1;
-  if (t1<0) n1 = 0.0;
+  float t1 = 0.6f - x1 * x1 - y1 * y1 - z1 * z1;
+  if (t1 < 0)
+    n1 = 0.0f;
   else {
     t1 *= t1;
     n1 = t1 * t1 * dot(grad3[gi1], x1, y1, z1);
   }
 
-  float t2 = 0.6 - x2*x2 - y2*y2 - z2*z2;
-  if (t2<0) n2 = 0.0;
+  float t2 = 0.6f - x2 * x2 - y2 * y2 - z2 * z2;
+  if (t2 < 0)
+    n2 = 0.0;
   else {
     t2 *= t2;
     n2 = t2 * t2 * dot(grad3[gi2], x2, y2, z2);
   }
 
-  float t3 = 0.6 - x3*x3 - y3*y3 - z3*z3;
-  if (t3<0) n3 = 0.0;
+  float t3 = 0.6f - x3 * x3 - y3 * y3 - z3 * z3;
+  if (t3 < 0)
+    n3 = 0.0;
   else {
     t3 *= t3;
     n3 = t3 * t3 * dot(grad3[gi3], x3, y3, z3);
@@ -328,15 +383,14 @@ float raw_noise_3d(const float x, const float y, const float z) {
 
   // Add contributions from each corner to get the final noise value.
   // The result is scaled to stay just inside [-1,1]
-  return 32.0*(n0 + n1 + n2 + n3);
+  return 32.0f * (n0 + n1 + n2 + n3);
 }
-
 
 // 4D raw Simplex noise
 float raw_noise_4d(const float x, const float y, const float z, const float w) {
   // The skewing and unskewing factors are hairy again for the 4D case
-  float F4 = (sqrtf(5.0) - 1.0) / 4.0;
-  float G4 = (5.0 - sqrtf(5.0)) / 20.0;
+  float F4 = (sqrtf(5.0f) - 1.0f) / 4.0f;
+  float G4 = (5.0f - sqrtf(5.0f)) / 20.0f;
   float n0, n1, n2, n3, n4; // Noise contributions from the five corners
 
   // Skew the (x,y,z,w) space to determine which cell of 24 simplices we're in
@@ -346,7 +400,7 @@ float raw_noise_4d(const float x, const float y, const float z, const float w) {
   int k = fastfloor(z + s);
   int l = fastfloor(w + s);
   float t = (i + j + k + l) * G4; // Factor for 4D unskewing
-  float X0 = i - t; // Unskew the cell origin back to (x,y,z,w) space
+  float X0 = i - t;               // Unskew the cell origin back to (x,y,z,w) space
   float Y0 = j - t;
   float Z0 = k - t;
   float W0 = l - t;
@@ -401,18 +455,18 @@ float raw_noise_4d(const float x, const float y, const float z, const float w) {
   float y1 = y0 - j1 + G4;
   float z1 = z0 - k1 + G4;
   float w1 = w0 - l1 + G4;
-  float x2 = x0 - i2 + 2.0*G4; // Offsets for third corner in (x,y,z,w) coords
-  float y2 = y0 - j2 + 2.0*G4;
-  float z2 = z0 - k2 + 2.0*G4;
-  float w2 = w0 - l2 + 2.0*G4;
-  float x3 = x0 - i3 + 3.0*G4; // Offsets for fourth corner in (x,y,z,w) coords
-  float y3 = y0 - j3 + 3.0*G4;
-  float z3 = z0 - k3 + 3.0*G4;
-  float w3 = w0 - l3 + 3.0*G4;
-  float x4 = x0 - 1.0 + 4.0*G4; // Offsets for last corner in (x,y,z,w) coords
-  float y4 = y0 - 1.0 + 4.0*G4;
-  float z4 = z0 - 1.0 + 4.0*G4;
-  float w4 = w0 - 1.0 + 4.0*G4;
+  float x2 = x0 - i2 + 2.0f * G4; // Offsets for third corner in (x,y,z,w) coords
+  float y2 = y0 - j2 + 2.0f * G4;
+  float z2 = z0 - k2 + 2.0f * G4;
+  float w2 = w0 - l2 + 2.0f * G4;
+  float x3 = x0 - i3 + 3.0f * G4; // Offsets for fourth corner in (x,y,z,w) coords
+  float y3 = y0 - j3 + 3.0f * G4;
+  float z3 = z0 - k3 + 3.0f * G4;
+  float w3 = w0 - l3 + 3.0f * G4;
+  float x4 = x0 - 1.0f + 4.0f * G4; // Offsets for last corner in (x,y,z,w) coords
+  float y4 = y0 - 1.0f + 4.0f * G4;
+  float z4 = z0 - 1.0f + 4.0f * G4;
+  float w4 = w0 - 1.0f + 4.0f * G4;
 
   // Work out the hashed gradient indices of the five simplex corners
   int ii = i & 255;
@@ -426,48 +480,56 @@ float raw_noise_4d(const float x, const float y, const float z, const float w) {
   int gi4 = perm[ii + 1 + perm[jj + 1 + perm[kk + 1 + perm[ll + 1]]]] % 32;
 
   // Calculate the contribution from the five corners
-  float t0 = 0.6 - x0*x0 - y0*y0 - z0*z0 - w0*w0;
-  if (t0<0) n0 = 0.0;
+  float t0 = 0.6f - x0 * x0 - y0 * y0 - z0 * z0 - w0 * w0;
+  if (t0 < 0)
+    n0 = 0.0;
   else {
     t0 *= t0;
     n0 = t0 * t0 * dot(grad4[gi0], x0, y0, z0, w0);
   }
 
-  float t1 = 0.6 - x1*x1 - y1*y1 - z1*z1 - w1*w1;
-  if (t1<0) n1 = 0.0;
+  float t1 = 0.6f - x1 * x1 - y1 * y1 - z1 * z1 - w1 * w1;
+  if (t1 < 0)
+    n1 = 0.0;
   else {
     t1 *= t1;
     n1 = t1 * t1 * dot(grad4[gi1], x1, y1, z1, w1);
   }
 
-  float t2 = 0.6 - x2*x2 - y2*y2 - z2*z2 - w2*w2;
-  if (t2<0) n2 = 0.0;
+  float t2 = 0.6f - x2 * x2 - y2 * y2 - z2 * z2 - w2 * w2;
+  if (t2 < 0)
+    n2 = 0.0;
   else {
     t2 *= t2;
     n2 = t2 * t2 * dot(grad4[gi2], x2, y2, z2, w2);
   }
 
-  float t3 = 0.6 - x3*x3 - y3*y3 - z3*z3 - w3*w3;
-  if (t3<0) n3 = 0.0;
+  float t3 = 0.6f - x3 * x3 - y3 * y3 - z3 * z3 - w3 * w3;
+  if (t3 < 0)
+    n3 = 0.0;
   else {
     t3 *= t3;
     n3 = t3 * t3 * dot(grad4[gi3], x3, y3, z3, w3);
   }
 
-  float t4 = 0.6 - x4*x4 - y4*y4 - z4*z4 - w4*w4;
-  if (t4<0) n4 = 0.0;
+  float t4 = 0.6f - x4 * x4 - y4 * y4 - z4 * z4 - w4 * w4;
+  if (t4 < 0)
+    n4 = 0.0;
   else {
     t4 *= t4;
     n4 = t4 * t4 * dot(grad4[gi4], x4, y4, z4, w4);
   }
 
   // Sum up and scale the result to cover the range [-1,1]
-  return 27.0 * (n0 + n1 + n2 + n3 + n4);
+  return 27.0f * (n0 + n1 + n2 + n3 + n4);
 }
-
 
 int fastfloor(const float x) { return x > 0 ? (int)x : (int)x - 1; }
 
-float dot(const int* g, const float x, const float y) { return g[0] * x + g[1] * y; }
-float dot(const int* g, const float x, const float y, const float z) { return g[0] * x + g[1] * y + g[2] * z; }
-float dot(const int* g, const float x, const float y, const float z, const float w) { return g[0] * x + g[1] * y + g[2] * z + g[3] * w; }
+float dot(const int *g, const float x, const float y) { return g[0] * x + g[1] * y; }
+float dot(const int *g, const float x, const float y, const float z) {
+  return g[0] * x + g[1] * y + g[2] * z;
+}
+float dot(const int *g, const float x, const float y, const float z, const float w) {
+  return g[0] * x + g[1] * y + g[2] * z + g[3] * w;
+}

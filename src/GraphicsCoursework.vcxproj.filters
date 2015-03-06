@@ -33,7 +33,7 @@
     <ClInclude Include="Math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="water.h">
+    <ClInclude Include="mirror.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -53,7 +53,7 @@
     <ClCompile Include="MAth.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Water.cpp">
+    <ClCompile Include="Mirror.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
