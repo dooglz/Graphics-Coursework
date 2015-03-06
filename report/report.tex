@@ -93,24 +93,26 @@ Older games (pre DirectX 9), could get away with a simple ground mesh, a single 
 As the graphical power of computer increased, the challenges to make a realistic desert increased dramatically, the standard of games required more than just a barren wasteland. Buildings, foliage, human characters and interesting landscape were needed and now the scene is just as complex as any other environment.
 Some modern games have taken up the challenge to model sand behaviour, as a very simple fluid dynamics system to add life to a scene. Sandstorms are a popular feature as they offer the valuable benefit of obscuring level elements, these elements now do not have to be rendered, therefore increasing performance.
 
-
 \figuremacroW
 {GuildWars}
 {Project Inspiration - Guild Wars}
 {\protect\cite{GuildWars}}
 {1.0}
 
+\paragraph{Sky}
+Procedural skys have been used in games for many years, the choice to use them depends on the needs of the game.  Games that have aim to have a more living environment are the primary uses for procedural skies, in other games if a static image is sufficient, then a simple texture is used.
+ 
 \figuremacroW
 {fallout3}
 {Procedural Sky - Fallout 3}
 {\protect\cite{fallout3}}
 {1.0}
 
-\section{Overview}
+\section{Implementation}
 
+\subsection{Sky}
+Rendering the sky was achieved by rendering a single screen sized quad to the screen, set at a maximum depth to place it behind all the level elements. Calculations based on the players view matrix and the projection matrix, result in two values 
 
-\section{Implementation
-}
 \figuremacroW
 {reflections}
 {Refection Camera position}
