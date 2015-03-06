@@ -1,3 +1,8 @@
+/* Main.cpp
+* Utilities for handeling Mesh arrays.
+*
+* Sam Serrels, Computer Graphics, 2015
+*/
 #include "GeoUtils.h"
 #include <set>
 #include <unordered_map>

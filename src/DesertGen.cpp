@@ -1,3 +1,8 @@
+/* DesertGen.cpp
+* Generates a Desert
+*
+* Sam Serrels, Computer Graphics, 2015
+*/
 #include "DesertGen.h"
 #include "Perlin.h"
 #include <glm\glm.hpp>

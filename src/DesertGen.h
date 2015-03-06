@@ -1,3 +1,8 @@
+/* DesertGen.h
+* Generates a Desert
+*
+* Sam Serrels, Computer Graphics, 2015
+*/
 #pragma once
 
 // forward decalre includes

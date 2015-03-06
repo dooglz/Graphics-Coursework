@@ -19,20 +19,20 @@ using namespace graphics_framework;
 using namespace glm;
 
 // Init the global extern to the graphics instance
-graphics *gfx = nullptr;
+Graphics *gfx = nullptr;
 
-void graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
+void Graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
   linebuffer.push_back(p1);
   linebuffer.push_back(p2);
 }
 
-void graphics::DrawCross(const glm::vec3 &p1, const float size) {
+void Graphics::DrawCross(const glm::vec3 &p1, const float size) {
   DrawLine(p1 + glm::vec3(size, 0, 0), p1 - glm::vec3(size, 0, 0));
   DrawLine(p1 + glm::vec3(0, size, 0), p1 - glm::vec3(0, size, 0));
   DrawLine(p1 + glm::vec3(0, 0, size), p1 - glm::vec3(0, 0, size));
 }
 
-bool graphics::initialise() {
+bool Graphics::Initialise() {
   // Set input mode - hide the cursor
   glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -43,7 +43,7 @@ bool graphics::initialise() {
 }
 
 // Send all light data to SSBOs on the GPU
-void graphics::UpdateLights() {
+void Graphics::UpdateLights() {
   // Directional lights
   {
     struct S_Dlight {
@@ -120,7 +120,7 @@ void graphics::UpdateLights() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-bool graphics::load_content() {
+bool Graphics::Load_content() {
   // Lights
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
   dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
@@ -245,7 +245,7 @@ bool graphics::load_content() {
   return true;
 }
 
-bool graphics::update(float delta_time) {
+bool Graphics::Update(float delta_time) {
   counter += (delta_time * 0.16f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
 
@@ -319,7 +319,7 @@ bool graphics::update(float delta_time) {
   return true;
 }
 
-void graphics::rendermesh(mesh &m, texture &t) {
+void Graphics::Rendermesh(mesh &m, texture &t) {
   effect eff = phongEffect;
   // Bind effect
   renderer::bind(eff);
@@ -355,7 +355,8 @@ void graphics::rendermesh(mesh &m, texture &t) {
   renderer::render(m);
 }
 
-void graphics::rendermeshB(mesh &m, texture &t, texture &tb, const float scale) {
+//Renders a mesh with a bump map
+void Graphics::RendermeshB(mesh &m, const texture &t, const texture &tb, const float scale) {
   effect eff = texturedBumpEffect;
   // Bind effect
   renderer::bind(eff);
@@ -395,7 +396,7 @@ void graphics::rendermeshB(mesh &m, texture &t, texture &tb, const float scale) 
   renderer::render(m);
 }
 
-void graphics::processLines() {
+void Graphics::ProcessLines() {
   if (linebuffer.size() < 1) {
     return;
   }
@@ -413,7 +414,7 @@ void graphics::processLines() {
   linebuffer.clear();
 }
 
-void graphics::renderSky() {
+void Graphics::RenderSky() {
   // vertaical fov = 25.3125deg = 0.441786467 radians
   float verticleFov = 0.2208932335f; // vfov/2 in radians
 
@@ -455,7 +456,7 @@ void graphics::renderSky() {
   glEnable(GL_CULL_FACE);
 }
 
-bool graphics::render() {
+bool Graphics::Render() {
   glEnable(GL_FOG); // enable the fog
   GLfloat density = 0.3f;
   GLfloat fogColor[4] = {0.5, 0.5, 0.5, 1.0};
@@ -467,36 +468,36 @@ bool graphics::render() {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // Render meshes
   for (auto &e : meshes) {
-    rendermesh(e.second, checkedTexture);
+    Rendermesh(e.second, checkedTexture);
   }
 
-  rendermesh(*desertM, sandTexture);
+  Rendermesh(*desertM, sandTexture);
 
-  rendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
+  RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
 
-  renderSky();
+  RenderSky();
 
   RenderMirror(mirror);
 
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
 
-  processLines();
+  ProcessLines();
   return true;
 }
 
-graphics::graphics() {}
+Graphics::Graphics() {}
 
-graphics::~graphics() {}
+Graphics::~Graphics() {}
 
 void main() {
   // Create application
   app application(1280, 720, 0);
-  gfx = new graphics();
+  gfx = new Graphics();
   // Set load content, update and render methods
-  application.set_load_content(std::bind(&graphics::load_content, gfx));
-  application.set_initialise(std::bind(&graphics::initialise, gfx));
-  application.set_update(std::bind(&graphics::update, gfx, std::placeholders::_1));
-  application.set_render(std::bind(&graphics::render, gfx));
+  application.set_load_content(std::bind(&Graphics::Load_content, gfx));
+  application.set_initialise(std::bind(&Graphics::Initialise, gfx));
+  application.set_update(std::bind(&Graphics::Update, gfx, std::placeholders::_1));
+  application.set_render(std::bind(&Graphics::Render, gfx));
 
   // Run application
   application.run();

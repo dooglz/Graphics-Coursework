@@ -1,3 +1,8 @@
+/* Main.cpp
+* Utilities for handeling Mesh arrays.
+*
+* Sam Serrels, Computer Graphics, 2015
+*/
 #pragma once
 #include <vector>
 #include <glm\glm.hpp>

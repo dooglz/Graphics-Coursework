@@ -84,11 +84,11 @@ void RenderMirror(mesh &mirror) {
     glCullFace(GL_FRONT);
     // glDisable(GL_CULL_FACE);
     for (auto &e : gfx->meshes) {
-      gfx->rendermesh(e.second, gfx->checkedTexture);
+      gfx->Rendermesh(e.second, gfx->checkedTexture);
     }
     // glDisable(GL_CULL_FACE);
-    gfx->rendermesh(*gfx->desertM, gfx->sandTexture);
-    gfx->renderSky();
+    gfx->Rendermesh(*gfx->desertM, gfx->sandTexture);
+    gfx->RenderSky();
 
     // end render
     glEnable(GL_CULL_FACE);
