@@ -232,23 +232,23 @@ A features introduced in OpenGl 3.1 is Uniform buffers. They allow data that wou
 \paragraph{Shader Storage Buffer Object}
 Uniform buffers have some serious limitations, the amount of data that can be stored in them is limited and this limit varies across various hardware. This demo uses a vary small set of data for each light, so the space limitation is not an issue. However, a different type of storage introduced in OpenGL 4.3 called 'Shader Storage Buffer Objects' have no limitation on size. SSBOs also have a useful feature which is that they support variable length arrays.
 
-\section{Evaluation}
+\paragraph{SSBO arrays}
+A program can write any length of data to an array in an SSBO, and a shader can loop through it simply by querying the size of the array using "arrayname.size()". This is not possible with any other data or storage type. This allows the program code to change the amount of lights in a scene, and update them without any interaction with shaders. This project uses this feature to demonstrate multiple lights.
 
-\paragraph{Scope}
-The results of the project have been inconclusive in determining the performance benefits of physics optimisation across multiple platforms. The main shortcoming has been the Playstation 3 portion of the project. Due to unforeseen technical problems and the time constraints of the project, the support for the Playstion 3 could not be completed to a level which would result in usable results. Issues with the rendering framework and subtle differences in the maths libraries across the two platforms caused substantially more time spent on fixing code issues than developing features.
-
-\paragraph{Playstation 3 results}
-Unfortunately, optimising the code for the strengths of the Playstation 3, such as subdividing the work to the separate SPU processors was not achieved. Rendering issues caused the final output of the project to be generally unviewable on the Console.
-
-\paragraph{PC results}
-The results of the simulation were more positive on the PC architecture. The simulation runs well and without any major issues, major features detailed in the original design have been omitted due to time constraints. Visually the program is basic, without any graphics embellishments to bring the output closer to the original design vision.
+\paragraph{SSBO issues}
+During testing it was found that AMD graphics cards could not compile shaders that make use of the ".size()" function. The solution to this was to store the size of the array in a separate ssbo, this was read and used as the loop boundary.
 
 \section{Future Work}
-The primary focus for future work would be to fix and complete the Playstation code to bring it upto par with the PC code, then other features can be worked on. Firstly, dynamic control of simulation variables at runtime, allowing the user to interact with the simulation while it running. The User should be able to adjust parameters such as the  size of the world, the attributes of the spacial partitioning, and the ability to create and remove balls at will.\\
-More complex collision shapes would be the next area of work, followed by rendering improvements.
+
+\paragraph{Sky}
+The simple gradient sky will be improved with the addition of clouds and the sun. Clouds could be based form multiple layers of noise, or a particle system. Rendering the sun could be achieved with additional code to the sky fragment shader, along with some post-processing effects.
+
+\paragraph{Water}
+The existing code for the mirror will be combined with additional effects to make convincing water. To add to the effect, small ripples could propagate across the water surface, causing distortion.
+
+\paragraph{Lighting}
+More research should be done to see what can be done with SSBO's. Lights could be culled per object, and then the Index of each light that effects an object could be sent to each shader. More surface effects such as parallax mapping should also be introduced.
 
 \bibliographystyle{acmsiggraph}
 \bibliography{report}
-
-
 \end{document}
