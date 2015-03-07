@@ -421,7 +421,7 @@ void Graphics::RenderSky() {
   vec3 camview = normalize(activeCam->get_target() - activeCam->get_position());
   vec3 camUp = normalize(activeCam->get_up());
 
-  float r = atanf(verticleFov) * camview.length();
+  float r = atanf(verticleFov);
 
   vec3 topofscreentoplayer = normalize((r * camUp) + camview);
   vec3 bottomofscreentoplayer = normalize((-r * camUp) + camview);

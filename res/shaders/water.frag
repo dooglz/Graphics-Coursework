@@ -14,12 +14,12 @@ layout(location = 1) in vec3 position;
 
 void main()
 {
-  vec4 transformeduvs = reflected_MVP * vec4(position.xyz, 1.0);
-  vec2 vTextureReflection;
-  vTextureReflection.x = transformeduvs.x/transformeduvs.w/2.0f + 0.5f;
-  vTextureReflection.y = transformeduvs.y/transformeduvs.w/2.0f + 0.5f;
-
-  vec4 reflectionTextureColor = texture2D (tex, vTextureReflection);
+  vec4 reflectedPos = reflected_MVP * vec4(position.xyz, 1.0);
+  vec2 transformedUV;
+  transformedUV.x = reflectedPos.x/reflectedPos.w/2.0f + 0.5f;
+  transformedUV.y = reflectedPos.y/reflectedPos.w/2.0f + 0.5f;
+  
+  vec4 reflectionTextureColor = texture2D (tex, transformedUV);
 
   reflectionTextureColor.a = 1.0;
   out_colour = reflectionTextureColor;
