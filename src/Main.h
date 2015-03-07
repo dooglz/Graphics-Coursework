@@ -85,6 +85,7 @@ public:
   void RenderSky();
   // Send all light data to SSBOs on the GPU
   void UpdateLights();
+  void UpdateTorus(float delta_time);
 };
 
 extern Graphics *gfx;
