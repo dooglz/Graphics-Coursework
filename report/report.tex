@@ -115,7 +115,7 @@ Using a multitude of texture effects, such as bump and parallax mapping, blend m
 With the wide open vita of a desert plain, the sky takes center stage and is the most important visual cue to selling the realism of the scene. This project aims to have a fully dynamic and procedural sky system, without relying on static textures. This will allow for a time-of day system and full control of elements such as clouds and sun position.
 
 \paragraph{Water}
-The centrepiece of the scene will be a water feature of some kind, providing a contrast against the dry desert and visually interesting element in it's own right. Reflections, waves using distortion maps, refraction, and particle effects will be used to provide realistic looking water. 
+The centrepiece of the scene will be a water feature of some kind, providing a contrast against the dry desert and a visually interesting element in it's own right. Reflections, waves using distortion maps, refraction, and particle effects will be used to provide realistic looking water. 
 
 \section{Background / Related Work}
 \figuremacroW
@@ -126,7 +126,7 @@ The centrepiece of the scene will be a water feature of some kind, providing a c
 Desert scenes are not uncommon to video games, the  simplicity of the landscape was a large bonus to performance limited software.
 Older games (pre DirectX 9), could get away with a simple ground mesh, a single sand texture and an interesting skybox, and this would be considered a sufficiently detailed scene for the time. See Figure: \ref{fig:GuildWars}
 \\
-As the graphical power of computer increased, the challenges to make a realistic desert increased dramatically, the standard of games required more than just a barren wasteland. Buildings, foliage, human characters and interesting landscape were needed and now the scene is just as complex as any other environment.
+As the graphical power of computers increased, the challenges to make a realistic desert increased dramatically, the standard of games required more than just a barren wasteland. Buildings, foliage, human characters and interesting landscape were needed and now the scene is just as complex as any other environment.
 Some modern games have taken up the challenge to model sand behaviour, as a very simple fluid dynamics system to add life to a scene. Sandstorms are a popular feature as they offer the valuable benefit of obscuring level elements, these elements now do not have to be rendered, therefore increasing performance.
 
 \figuremacroW
@@ -136,7 +136,7 @@ Some modern games have taken up the challenge to model sand behaviour, as a very
 {1.0}
 
 \paragraph{Sky}
-Procedural skys have been used in games for many years, the choice to use them depends on the needs of the game.  Games that have aim to have a more living environment are the primary uses for procedural skies, in other games if a static image is sufficient, then a simple texture is used.
+Procedural skys have been used in games for many years, the choice to use them depends on the needs of the game.  Games that aim to have a more living environment are the primary uses for procedural skies, in other games if a static image is sufficient, then a simple texture is used.
  
 \figuremacroW
 {fallout3}
@@ -153,7 +153,7 @@ Procedural skys have been used in games for many years, the choice to use them d
 {Sky Camera Calculations}
 {Distance of sky is infinity}
 {1.0}
-Rendering the sky was achieved by rendering a single screen sized quad to the screen, set at a maximum depth to place it behind all the level elements. Calculations based on the players view matrix and the projection matrix, result in two values representing the top bop and bottom boundary of the players view. These values are a percentage between the horizontal horizon and vertical upwards view, this is used to calculate the colour of the sky at the bottom of the screen and the top. The colours are passed to the shader which interpolates between them, completing the illusion that the player is in a skydome.
+Rendering the sky was achieved by rendering a single screen sized quad to the screen, set at a maximum depth to place it behind all the level elements. Calculations based on the players view matrix and the projection matrix, result in two values representing the top and bottom boundary of the players view. These values are a percentage between the horizontal horizon and vertical upwards view, this is used to calculate the colour of the sky at the bottom of the screen and the top. The colours are passed to the shader which interpolates between them, completing the illusion that the player is in a skydome.
 
 \begin{lstlisting}[ caption={Sky calculations}]
   // verticle fov = 25.3125deg = 0.441786467 radians
@@ -182,7 +182,7 @@ Realistic water is made up of a multitude of components and render passes. At th
 
 \paragraph{Reflection}
 At this stage in the project, only the reflection component of the water renderer has been completed, this results in the mirror effect currently in the scene. Rendering a reflection from a surface requires either using a reflection map for an approximate reflection, or re-rendering the scene from a different point, relative to the players view and position and orientation of the reflected object.
-For flat surfaces, like water or a mirror, a second render pass is preferred. For complex reflective shapes, reflection maps are almost excursively used.
+For flat surfaces, like water or a mirror, a second render pass is preferred. For complex reflective shapes, reflection maps are almost exclusively used.
 
 
 \figuremacroW
@@ -195,7 +195,7 @@ For flat surfaces, like water or a mirror, a second render pass is preferred. Fo
 The position of the 'Virtual Camera' (Camera B in Figure \ref{fig:reflections}) is calulated by multiplying a reflection matrix by the view matrix of the players camera. The reflection matrix is a matrix that will mirror every position about a plane, the plane being the mirror.
 
 \paragraph{Reflected Image}
-Due to the entire coordinate system being flipped, an additional flip matrix needs to be multiplied against the Virtual camera to flip the Y elements of the polygons in the scene are facing the right direction. Alternatively, depending on the placement of the mirror, this can be avoided by simply changing which sides of faces are culled during rendering. More advanced approaches take the form of changing the virtual projection matrix to be an oblique projection with the near plane set to the mirror plane, for easier culling of geometry.
+Due to the entire coordinate system being flipped, an additional flip matrix needs to be multiplied against the Virtual camera to flip the Y elements of the polygons in the scene to are face the right direction. Alternatively, depending on the placement of the mirror, this can be avoided by simply changing which sides of faces are culled during rendering. More advanced approaches take the form of changing the virtual projection matrix to be an oblique projection with the near plane set to the mirror plane, for easier culling of geometry.
 
 \figuremacroW
 {front-Buffer}
@@ -227,7 +227,7 @@ A simple approach to multiple lighting in a forward render solution is to send a
 This process must be repeated for every light in a scene and for every shader execution. Different methods are available, such as deferred rendering which separates all lighting into a completely separate render pass. The OpenGL standard mandates that all input uniforms must be a predefined size. This means that an upper limit to the amount of lights a shader can accept must be set.
 
 \paragraph{Uniform Buffers}
-A features introduced in OpenGl 3.1 is Uniform buffers. They allow data that would normally be sent to each shader at render time to be pre-stored in graphics memory. During the render, the program can inform the shader which uniform buffer to load data from. This has the primary benefit of people able to swap between different sets of static uniform data quickly, and that the data only needs to be sent once, and can be read by multiple shaders. This could be used to store all the light data in the scene efficiently.
+A features introduced in OpenGl 3.1 is Uniform buffers. They allow data that would normally be sent to each shader at render time to be pre-stored in graphics memory. During the render, the program can inform the shader which uniform buffer to load data from. This has the primary benefit of the ability to swap between different sets of static uniform data quickly, and that the data only needs to be sent once, and can be read by multiple shaders. This could be used to store all the light data in the scene efficiently.
 
 \paragraph{Shader Storage Buffer Object}
 Uniform buffers have some serious limitations, the amount of data that can be stored in them is limited and this limit varies across various hardware. This demo uses a vary small set of data for each light, so the space limitation is not an issue. However, a different type of storage introduced in OpenGL 4.3 called 'Shader Storage Buffer Objects' have no limitation on size. SSBOs also have a useful feature which is that they support variable length arrays.
