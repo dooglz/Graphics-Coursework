@@ -81,7 +81,7 @@ public:
   void Graphics::UpdateGyroscope(float delta_time);
 
   void Rendermesh(mesh &m, texture &t);
-  //Renders a mesh with a bump map
+  // Renders a mesh with a bump map
   void RendermeshB(mesh &m, const texture &t, const texture &tb, const float scale);
 
   void RenderSky();
