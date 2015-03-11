@@ -48,9 +48,12 @@ bool renderer::initialise(const unsigned int screenX, const unsigned int screenY
 #if defined(DEBUG) | defined(_DEBUG)
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
   _instance->_window = glfwCreateWindow(video_mode->width, video_mode->height, "Render Framework", nullptr, nullptr);
+  _instance->_window = glfwCreateWindow(screenX, screenY, "Render Framework", nullptr, nullptr);
   glfwSetWindowPos(_instance->_window, video_mode->width / 2 - 400, video_mode->height / 2 - 300);
   _instance->_width = video_mode->width;
   _instance->_height = video_mode->height;
+  _instance->_width = screenX;
+  _instance->_height = screenY;
 #else
   // If in release mode, set as fullscreen
   _instance->_window =
