@@ -120,6 +120,45 @@ void Graphics::UpdateLights() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
+#define rings 10
+void Graphics::MakeGyroscope(){
+	meshes["torus0"] = mesh(geometry_builder::create_torus(32, 32, 0.5f, rings));
+	meshes["torus0"].get_transform().translate(vec3(10.0f, rings + 2.0f, -30.0f));
+	for (unsigned int i = 1; i < rings; i++)
+	{
+		meshes["torus" + std::to_string(i)] = mesh(geometry_builder::create_torus(20, 20, 0.5f, rings - i));
+		meshes["torus" + std::to_string(i)].get_transform().parent = &meshes["torus" + std::to_string(i - 1)].get_transform();
+		meshes["torus" + std::to_string(i)].get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
+		meshes["torus" + std::to_string(i)].get_material().set_diffuse(vec4(((i - 3) % 9) / 9.0f, (i % 9) / 9.0f, ((i - 6) % 9) / 9.0f, 1.0f));
+		meshes["torus" + std::to_string(i)].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	}
+}
+
+void Graphics::UpdateGyroscope(float delta_time){
+	for (unsigned int i = 0; i < rings; i++)
+	{
+		vec3 rot;
+		switch (i%4)
+		{
+		case (0) :
+			rot = vec3(0, 0, 1);
+			break;
+		case (1) :
+			rot = vec3(1, 0, 0);
+			break;
+		case (2) :
+			rot = vec3(0, 1, 0);
+			break;
+		case (3) :
+			rot = vec3(-1, 0, 0);
+			break;
+		default:
+			break;
+		}
+		meshes["torus" + std::to_string(i)].get_transform().rotate((delta_time)* 0.6f * rot);
+	}
+}
+
 bool Graphics::Load_content() {
   // Lights
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
@@ -164,19 +203,12 @@ bool Graphics::Load_content() {
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());
   meshes["pyramid"] = mesh(geometry_builder::create_pyramid());
-  meshes["torus1"] = mesh(geometry_builder::create_torus(20, 20, 0.5f, 3.0f));
-  meshes["torus2"] = mesh(geometry_builder::create_torus(20, 20, 0.5f, 2.0f));
-  meshes["torus3"] = mesh(geometry_builder::create_torus(20, 20, 0.5f, 1.0f));
-  meshes["torus1"].get_transform().translate(vec3(10.0f, 6.0f, -30.0f));
-  meshes["torus2"].get_transform().parent = &meshes["torus1"].get_transform();
-  meshes["torus3"].get_transform().parent = &meshes["torus2"].get_transform();
  // meshes["torus2"].get_transform().translate(vec3(10.0f, 6.0f, -30.0f));
  // meshes["torus3"].get_transform().translate(vec3(10.0f, 6.0f, -30.0f));
   meshes["box"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
   meshes["box"].get_transform().translate(vec3(-10.0f, 2.5f, -30.0f));
   meshes["pyramid"].get_transform().scale = vec3(8.0f, 100.0f, 8.0f);
   meshes["pyramid"].get_transform().translate(vec3(0, 50, 0));
- 
   meshes["box"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   meshes["box"].get_material().set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
   meshes["box"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -185,19 +217,7 @@ bool Graphics::Load_content() {
   meshes["pyramid"].get_material().set_diffuse(vec4(0.0f, 0.0f, 1.0f, 1.0f));
   meshes["pyramid"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["pyramid"].get_material().set_shininess(25.0f);
-  meshes["torus1"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-  meshes["torus1"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  meshes["torus1"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  meshes["torus1"].get_material().set_shininess(25.0f);
-  meshes["torus2"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-  meshes["torus2"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  meshes["torus2"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  meshes["torus2"].get_material().set_shininess(25.0f);
-  meshes["torus3"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
-  meshes["torus3"].get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  meshes["torus3"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  meshes["torus3"].get_material().set_shininess(25.0f);
-
+  MakeGyroscope();
   SetupMirror();
 
   goodsand = mesh(geometry_builder::create_disk(10, vec2(1.0, 1.0)));
@@ -261,12 +281,9 @@ bool Graphics::Load_content() {
 
 bool Graphics::Update(float delta_time) {
   //torus heirarchy
-  meshes["torus1"].get_transform().rotate(vec3(0, 0.0f, delta_time*0.2f));
-  meshes["torus2"].get_transform().rotate(vec3(delta_time*0.6f, 0.0f, 0));
-  meshes["torus3"].get_transform().rotate(vec3(0, 0, delta_time));
   counter += (delta_time * 0.16f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
-
+  UpdateGyroscope(delta_time);
   float s = sinf(counter);
   float c = cosf(counter);
   if (counter > pi<float>()) {

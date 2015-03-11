@@ -77,6 +77,8 @@ public:
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
   void ProcessLines();
+  void Graphics::MakeGyroscope();
+  void Graphics::UpdateGyroscope(float delta_time);
 
   void Rendermesh(mesh &m, texture &t);
   //Renders a mesh with a bump map
