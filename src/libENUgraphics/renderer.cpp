@@ -1,41 +1,18 @@
 #include "stdafx.h"
-
+#include <numeric>
 #include "renderer.h"
 #include "util.h"
-#include <numeric>
 
 namespace graphics_framework {
-
-void __stdcall DebugCallbackAMD(GLuint id, GLenum category, GLenum severity,
-                                GLsizei length, const GLchar *message,
-                                GLvoid *userParam) {
-  printf("\nAn OGL AMD error has occured: %s\n", message);
-}
-
-void __stdcall DebugCallbackARB(GLenum source, GLenum type, GLuint id,
-                                GLenum severity, GLsizei length,
-                                const GLchar *message, GLvoid *userParam) {
-  printf("\nAn OGL ARB error has occured: %s\n", message);
-}
-
-void __stdcall printOutKhrDebugMessage(GLenum source, GLenum type, GLuint id,
-                                       GLenum severity, GLsizei length,
-                                       const GLchar *message,
-                                       const void *userParam) {
-  if (severity >= GL_DEBUG_SEVERITY_LOW) {
-    printf("\nAn OGL KHR error has occured: %s\n", message);
-  }
-}
-
 // Initialise the renderer singleton
-renderer *renderer::_instance = new renderer();
+renderer *renderer::_instance = nullptr;
 
 // Helper function to display OpenGL information
 void print_GL_info() {
   std::clog << "GL Vendor: " << glGetString(GL_VENDOR) << std::endl;
   std::clog << "GL Renderer: " << glGetString(GL_RENDERER) << std::endl;
   std::clog << "GL Version: " << glGetString(GL_VERSION) << std::endl;
-  std::clog << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION)<< std::endl;
+  std::clog << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
   std::clog << "GLFW Version: " << glfwGetVersionString() << std::endl;
 }
 
@@ -43,8 +20,8 @@ void print_GL_info() {
 void build_content() {}
 
 // Initialises the renderer
-bool renderer::initialise(const unsigned int screenX,
-                          const unsigned int screenY, const bool fullscreen) {
+bool renderer::initialise(const unsigned int screenX, const unsigned int screenY,
+                          const bool fullscreen) {
   // Set running to false
   _instance->_running = false;
 
@@ -63,33 +40,23 @@ bool renderer::initialise(const unsigned int screenX,
 
   // Set window hints for GLFW
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-  // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+  //glfwWindowHint(GLFW_DECORATED, GL_FALSE);
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
 #if defined(DEBUG) | defined(_DEBUG)
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-#endif
-
-  if (fullscreen) {
-    _instance->_window = glfwCreateWindow(video_mode->width, video_mode->height,
-                                          "Render Framework", nullptr, nullptr);
-    _instance->_width = video_mode->width;
-    _instance->_height = video_mode->height;
-  } else {
-    _instance->_window = glfwCreateWindow(screenX, screenY, "Render Framework",
-                                          nullptr, nullptr);
-    glfwSetWindowPos(_instance->_window, video_mode->width / 2 - 400,
-                     video_mode->height / 2 - 300);
-    _instance->_width = screenX;
-    _instance->_height = screenY;
-  }
-
-#if defined(DEBUG) | defined(_DEBUG)
-  SET_DEBUG;
+  _instance->_window = glfwCreateWindow(video_mode->width, video_mode->height, "Render Framework", nullptr, nullptr);
+  glfwSetWindowPos(_instance->_window, video_mode->width / 2 - 400, video_mode->height / 2 - 300);
+  _instance->_width = video_mode->width;
+  _instance->_height = video_mode->height;
 #else
+  // If in release mode, set as fullscreen
+  _instance->_window =
+  _instance->_window = glfwCreateWindow(video_mode->width, video_mode->height, "Render Framework", nullptr, nullptr);
+  _instance->_width = video_mode->width;
+  _instance->_height = video_mode->height;
 #endif
   // Check if window was created
   if (_instance->_window == nullptr) {
@@ -115,31 +82,14 @@ bool renderer::initialise(const unsigned int screenX,
   if (status != GLEW_OK) {
     // Display error
     std::cerr << "ERROR - initialising renderer" << std::endl;
-    std::cerr << "Error initialising GLEW: " << glewGetErrorString(status)
-              << std::endl;
+    std::cerr << "Error initialising GLEW: " << glewGetErrorString(status) << std::endl;
     // Terminate GLFW
     glfwTerminate();
     return false;
   }
 
 #if defined(DEBUG) | defined(_DEBUG)
-  glEnable(GL_DEBUG_OUTPUT);
-  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-  if (GLEW_ARB_debug_output) {
-    printf("Supporting Arb OGL debug output\n");
-    glEnable(GL_DEBUG_OUTPUT);
-    glDebugMessageCallbackARB((GLDEBUGPROCARB)DebugCallbackARB, 0);
-  }
-
-  if (GLEW_AMD_debug_output) {
-    printf("Supporting AMD OGL debug output\n");
-    glDebugMessageCallbackAMD((GLDEBUGPROCAMD)DebugCallbackAMD, 0);
-  }
-
-  if (GLEW_KHR_debug) {
-    printf("Supporting KHR OGL debug output\n");
-    glDebugMessageCallback((GLDEBUGPROC)printOutKhrDebugMessage, 0);
-  }
+  SET_DEBUG;
 #endif
 
   // Set clear colour to cyan
@@ -356,6 +306,25 @@ void renderer::bind(const texture &tex, int index) throw(...) {
   }
 }
 
+// Binds a cubemap to the renderer at the given index
+void renderer::bind(const cubemap &tex, int index) throw(...) {
+  // Check texture is valid
+  assert(tex.get_id() != 0);
+  // Check that index is valid
+  assert(index >= 0);
+  // Set active texture
+  glActiveTexture(GL_TEXTURE0 + index);
+  // Bind texture
+  glBindTexture(GL_TEXTURE_CUBE_MAP, tex.get_id());
+  // Check for error
+  if (CHECK_GL_ERROR) {
+    std::cerr << "ERROR - binding cubemap to renderer" << std::endl;
+    std::cerr << "OpenGL could not bind the texture" << std::endl;
+    // Throw exception
+    throw std::runtime_error("Error using cubemap with OpenGL");
+  }
+}
+
 // Binds a material to the currently bound effect
 void renderer::bind(const material &mat, const std::string &name) throw(...) {
   // Check for emissive
@@ -384,11 +353,9 @@ void renderer::bind(const material &mat, const std::string &name) throw(...) {
 }
 
 // Binds a directional light to the currently bound effect
-void renderer::bind(const directional_light &light,
-                    const std::string &name) throw(...) {
+void renderer::bind(const directional_light &light, const std::string &name) throw(...) {
   // Check for ambient intensity
-  auto idx =
-      _instance->_effect.get_uniform_location(name + ".ambient_intensity");
+  auto idx = _instance->_effect.get_uniform_location(name + ".ambient_intensity");
   if (idx != -1)
     glUniform4fv(idx, 1, glm::value_ptr(light.get_ambient_intensity()));
   // Check for light colour
@@ -409,8 +376,7 @@ void renderer::bind(const directional_light &light,
 }
 
 // Binds a point light to the currently bound effect
-void renderer::bind(const point_light &point,
-                    const std::string &name) throw(...) {
+void renderer::bind(const point_light &point, const std::string &name) throw(...) {
   // Check for light colour
   auto idx = _instance->_effect.get_uniform_location(name + ".light_colour");
   if (idx != -1)
@@ -441,8 +407,7 @@ void renderer::bind(const point_light &point,
 }
 
 // Binds a vector of point lights to the currently bound effect
-void renderer::bind(const std::vector<point_light> &points,
-                    const std::string &name) throw(...) {
+void renderer::bind(const std::vector<point_light> &points, const std::string &name) throw(...) {
   // Iterate through each light, setting values as required
   unsigned int n = 0;
   for (auto &p : points) {
@@ -450,8 +415,7 @@ void renderer::bind(const std::vector<point_light> &points,
     stream << name << "[" << n << "]";
     auto point_name = stream.str();
     // Check for light colour
-    auto idx =
-        _instance->_effect.get_uniform_location(point_name + ".light_colour");
+    auto idx = _instance->_effect.get_uniform_location(point_name + ".light_colour");
     if (idx != -1)
       glUniform4fv(idx, 1, glm::value_ptr(p.get_light_colour()));
     // Check for position
@@ -475,8 +439,7 @@ void renderer::bind(const std::vector<point_light> &points,
   }
   // Check for error
   if (CHECK_GL_ERROR) {
-    std::cerr << "ERROR - binding vector of point lights to renderer"
-              << std::endl;
+    std::cerr << "ERROR - binding vector of point lights to renderer" << std::endl;
     std::cerr << "OpenGL could not set the uniforms" << std::endl;
     // Throw exception
     throw std::runtime_error("Error using point light with renderer");
@@ -484,8 +447,7 @@ void renderer::bind(const std::vector<point_light> &points,
 }
 
 // Binds a spot light to the currently bound effect
-void renderer::bind(const spot_light &spot,
-                    const std::string &name) throw(...) {
+void renderer::bind(const spot_light &spot, const std::string &name) throw(...) {
   // Check for light colour
   auto idx = _instance->_effect.get_uniform_location(name + ".light_colour");
   if (idx != -1)
@@ -524,8 +486,7 @@ void renderer::bind(const spot_light &spot,
 }
 
 // Binds a vector of spot lights to the renderer
-void renderer::bind(const std::vector<spot_light> &spots,
-                    const std::string &name) throw(...) {
+void renderer::bind(const std::vector<spot_light> &spots, const std::string &name) throw(...) {
   // Iterate through each light, setting values as required
   unsigned int n = 0;
   for (auto &s : spots) {
@@ -533,8 +494,7 @@ void renderer::bind(const std::vector<spot_light> &spots,
     stream << name << "[" << n << "]";
     auto spot_name = stream.str();
     // Check for light colour
-    auto idx =
-        _instance->_effect.get_uniform_location(spot_name + ".light_colour");
+    auto idx = _instance->_effect.get_uniform_location(spot_name + ".light_colour");
     if (idx != -1)
       glUniform4fv(idx, 1, glm::value_ptr(s.get_light_colour()));
     // Check for position
@@ -566,8 +526,7 @@ void renderer::bind(const std::vector<spot_light> &spots,
   }
   // Check for error
   if (CHECK_GL_ERROR) {
-    std::cerr << "ERROR - binding vector of spot lights to renderer"
-              << std::endl;
+    std::cerr << "ERROR - binding vector of spot lights to renderer" << std::endl;
     std::cerr << "OpenGL could not set the uniforms" << std::endl;
     // Throw exception
     throw std::runtime_error("Error using spot light with renderer");
@@ -601,8 +560,7 @@ void renderer::render(const geometry &geom) throw(...) {
       throw std::runtime_error("Error rendering geometry");
     }
     // Draw elements
-    glDrawElements(geom.get_type(), geom.get_index_count(), GL_UNSIGNED_INT,
-                   nullptr);
+    glDrawElements(geom.get_type(), geom.get_index_count(), GL_UNSIGNED_INT, nullptr);
     // Check for error
     if (CHECK_GL_ERROR) {
       // Display error
@@ -650,8 +608,7 @@ void renderer::set_render_target(const shadow_map &shadow) throw(...) {
   // Check for error
   if (CHECK_GL_ERROR) {
     std::cerr << "ERROR - setting render target" << std::endl;
-    std::cerr << "Could not set render target to shadow map buffer"
-              << std::endl;
+    std::cerr << "Could not set render target to shadow map buffer" << std::endl;
     // Throw exception
     throw std::runtime_error("Error setting render target");
   }
@@ -710,8 +667,8 @@ void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer,
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
   // put the data in it
-  glBufferData(GL_ARRAY_BUFFER, linebuffer.size() * sizeof(glm::vec3),
-               &linebuffer[0], GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, linebuffer.size() * sizeof(glm::vec3), &linebuffer[0],
+               GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0,                 // index
@@ -723,10 +680,10 @@ void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer,
                         );
   glDisable(GL_DEPTH_TEST);
 
-  if (lineLength == 1){
+  if (lineLength == 1) {
     glDrawArrays(GL_LINES, 0, linebuffer.size());
-  }else{
-    //TODO: TEST this actually works.
+  } else {
+    // TODO: TEST this actually works.
     std::vector<unsigned int> indices(linebuffer.size());
     std::iota(indices.begin(), indices.end(), 1);
 
@@ -736,9 +693,10 @@ void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer,
 
     // Bind iBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0],
+                 GL_STATIC_DRAW);
 
-    for (unsigned int i = 0; i< (linebuffer.size() / lineLength); i += 2) {
+    for (unsigned int i = 0; i < (linebuffer.size() / lineLength); i += 2) {
       glDrawRangeElements(GL_LINE_STRIP, i, i + lineLength, 1, GL_UNSIGNED_INT, &indices[0]);
     }
     glDeleteBuffers(1, &ibo);

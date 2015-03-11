@@ -22,23 +22,31 @@ private:
 
 public:
   // Creates rendering application.  Initialises the renderer
-  app() { renderer::initialise(800, 600, false); }
-  app(const unsigned int screenX, const unsigned int screenY,
-      const bool fullscreen) {
+
+  app() {
+    // Create renderer instance
+    renderer::_instance = new renderer();
+    renderer::initialise(800, 600, false);
+  }
+  app(const unsigned int screenX, const unsigned int screenY, const bool fullscreen) {
+    // Create renderer instance
+    renderer::_instance = new renderer();
     renderer::initialise(screenX, screenY, fullscreen);
   }
+
   // Deleted copy, move constructor and assignment operator
   app(const app &other) = delete;
   app(app &&other) = delete;
   app &operator=(const app &rhs) = delete;
   // Destroys the rendering application
-  ~app() {}
+  ~app() {
+    // Delete the renderer
+    delete renderer::_instance;
+  }
   // Sets the initialisation function
   void set_initialise(const std::function<bool()> &f) { _init_func = f; }
   // Sets the load content function
-  void set_load_content(const std::function<bool()> &f) {
-    _load_content_func = f;
-  }
+  void set_load_content(const std::function<bool()> &f) { _load_content_func = f; }
   // Sets the update function
   void set_update(const std::function<bool(float)> &f) { _update_func = f; }
   // Sets the render function
@@ -46,9 +54,7 @@ public:
   // Sets the shutdown function
   void set_shutdown(const std::function<void()> &f) { _shutdown_func = f; }
   // Sets the keyboard callback function.  This is handled by GLFW
-  void set_keyboard_callback(GLFWkeyfun f) const {
-    glfwSetKeyCallback(renderer::get_window(), f);
-  }
+  void set_keyboard_callback(GLFWkeyfun f) const { glfwSetKeyCallback(renderer::get_window(), f); }
   // Sets the mouse button callback function.  This is handled by GLFW
   void set_mousebutton_callback(GLFWmousebuttonfun f) const {
     glfwSetMouseButtonCallback(renderer::get_window(), f);

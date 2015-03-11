@@ -6,27 +6,9 @@
 
 namespace graphics_framework {
 // The 6 targets of the the cubemap
-std::array<GLenum, 6> targets = {
-  GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-  GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-  GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-};
-
-// Creates a cubemap object
-cubemap::cubemap() throw(...) {
-  // Generate texture with OpenGL
-  glGenTextures(1, &_id);
-  // Check error
-  if (CHECK_GL_ERROR) {
-    // Display error
-    std::cerr << "ERROR - creating cubemap" << std::endl;
-    std::cerr << "Could not allocate texture with OpenGL" << std::endl;
-    // Set ID to 0
-    _id = 0;
-    // Throw exception
-    throw std::runtime_error("Error creating cubemap texture with OpenGL");
-  }
-}
+std::array<GLenum, 6> targets = {GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+                                 GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+                                 GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
 
 // Creates a cubemap object from an array of six file names
 cubemap::cubemap(const std::array<std::string, 6> &filenames) throw(...) {
@@ -59,17 +41,21 @@ cubemap::cubemap(const std::array<std::string, 6> &filenames) throw(...) {
     images[i] = FreeImage_ConvertTo32Bits(images[i]);
     // Unload temporary (non-converted) image
     FreeImage_Unload(temp);
+    // Set temp to converted image
+    temp = images[i];
+    // Rotate image - OpenGL is a bit silly here
+    images[i] = FreeImage_Rotate(images[i], 180.0f);
+    // Unload temporary (non-rotated) image
+    FreeImage_Unload(temp);
   }
   // Set magnification and minification filters
   glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER,
-                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   CHECK_GL_ERROR; // non-fatal
   // Set the anisotropic filtering at max
   float max_anisotropy;
   glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
-  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                  max_anisotropy);
+  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
   CHECK_GL_ERROR; // non-fatal
   // Load in each image to OpenGL and assign it to the cubemap texture
   for (auto i = 0; i < 6; ++i) {
@@ -82,8 +68,7 @@ cubemap::cubemap(const std::array<std::string, 6> &filenames) throw(...) {
     if (CHECK_GL_ERROR) {
       // Display error
       std::cerr << "ERROR - loading cubemap textures" << std::endl;
-      std::cerr << "Could not load texture data for file " << filenames[i]
-                << std::endl;
+      std::cerr << "Could not load texture data for file " << filenames[i] << std::endl;
       // Unload the FreeImage images
       for (auto i = 0; i < 6; ++i)
         FreeImage_Unload(images[i]);
@@ -105,11 +90,25 @@ cubemap::cubemap(const std::array<std::string, 6> &filenames) throw(...) {
 }
 
 // Sets one of the textures in the cubemap
-bool cubemap::set_texture(GLenum target,
-                          const std::string &filename) throw(...) {
+bool cubemap::set_texture(GLenum target, const std::string &filename) throw(...) {
+  // Check that cubemap has been generated
+  if (_id == 0) {
+    // Generate texture with OpenGL
+    glGenTextures(1, &_id);
+    // Check error
+    if (CHECK_GL_ERROR) {
+      // Display error
+      std::cerr << "ERROR - creating cubemap" << std::endl;
+      std::cerr << "Could not allocate texture with OpenGL" << std::endl;
+      // Set ID to 0
+      _id = 0;
+      // Throw exception
+      throw std::runtime_error("Error creating cubemap texture with OpenGL");
+    }
+  }
+
   // Check that target is valid
-  assert(std::find(std::begin(targets), std::end(targets), target) !=
-         std::end(targets));
+  assert(std::find(std::begin(targets), std::end(targets), target) != std::end(targets));
   // Check that filename is valid
   assert(check_file_exists(filename));
 
@@ -133,16 +132,20 @@ bool cubemap::set_texture(GLenum target,
   image = FreeImage_ConvertTo32Bits(image);
   // Unload temporary (not converted) image
   FreeImage_Unload(temp);
+  // Set temp to converted image
+  temp = image;
+  // Rotate image - OpenGL is a bit silly here
+  image = FreeImage_Rotate(image, 180.0f);
+  // Unload temporary (non-rotated) image
+  FreeImage_Unload(temp);
   // Load the texture into OpenGL
-  glTexImage2D(target, 0, GL_RGBA, FreeImage_GetWidth(image),
-               FreeImage_GetHeight(image), 0, GL_BGRA, GL_UNSIGNED_BYTE,
-               FreeImage_GetBits(image));
+  glTexImage2D(target, 0, GL_RGBA, FreeImage_GetWidth(image), FreeImage_GetHeight(image), 0,
+               GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(image));
   // Check if error
   if (CHECK_GL_ERROR) {
     // Display error
     std::cerr << "ERROR - adding a texture to cubemap" << std::endl;
-    std::cerr << "Could not load texture data for file " << filename
-              << std::endl;
+    std::cerr << "Could not load texture data for file " << filename << std::endl;
     // Unload FreeImage image
     FreeImage_Unload(image);
     // Throw exception

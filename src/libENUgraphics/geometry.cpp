@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "geometry_builder.h"
+
 #include "geometry.h"
 #include "util.h"
 
@@ -8,11 +8,7 @@ namespace graphics_framework {
 Creates a new geometry object
 */
 geometry::geometry() throw(...)
-    : _type(GL_TRIANGLES),
-      _vao(0),
-      _index_buffer(0),
-      _vertices(0),
-      _indices(0) {}
+    : _type(GL_TRIANGLES), _vao(0), _index_buffer(0), _vertices(0), _indices(0) {}
 
 /*
 Creates a piece of geometry by loading in a model
@@ -23,10 +19,9 @@ geometry::geometry(const std::string &filename) throw(...) : geometry() {
   // Create model importer
   Assimp::Importer model_importer;
   // Read in the model data
-  auto sc = model_importer.ReadFile(
-      filename, aiProcess_Triangulate | aiProcess_GenSmoothNormals |
-                    aiProcess_ValidateDataStructure |
-                    aiProcess_FindInvalidData);
+  auto sc = model_importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_GenSmoothNormals |
+                                                  aiProcess_ValidateDataStructure |
+                                                  aiProcess_FindInvalidData);
   // Check that data has been read in correctly
   if (!sc) {
     // Display error
@@ -45,6 +40,7 @@ geometry::geometry(const std::string &filename) throw(...) : geometry() {
   std::vector<glm::vec3> normals;
   std::vector<glm::vec2> tex_coords;
   std::vector<GLuint> indices;
+  unsigned int vertex_begin = 0;
   // Iterate through each sub-mesh in the model
   for (unsigned int n = 0; n < sc->mNumMeshes; ++n) {
     // Get the sub-mesh
@@ -86,8 +82,9 @@ geometry::geometry(const std::string &filename) throw(...) : geometry() {
       for (unsigned int f = 0; f < mesh->mNumFaces; ++f) {
         auto face = mesh->mFaces[f];
         for (auto i = 0; i < 3; ++i)
-          indices.push_back(face.mIndices[i]);
+          indices.push_back(vertex_begin + face.mIndices[i]);
       }
+    vertex_begin += mesh->mNumVertices;
   }
 
   // Calculate the minimal and maximal
@@ -99,14 +96,8 @@ geometry::geometry(const std::string &filename) throw(...) : geometry() {
   // Add the buffers to the geometry
   add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);
   add_buffer(colours, BUFFER_INDEXES::COLOUR_BUFFER);
-  if (normals.size() != 0) {
-    std::vector<glm::vec3> tangent_data;
-    std::vector<glm::vec3> binormal_data;
-    generate_tb(tangent_data, binormal_data, normals);
-    add_buffer(tangent_data, BUFFER_INDEXES::TANGENT_BUFFER);
-    add_buffer(binormal_data, BUFFER_INDEXES::BINORMAL_BUFFER);
+  if (normals.size() != 0)
     add_buffer(normals, BUFFER_INDEXES::NORMAL_BUFFER);
-  }
   if (tex_coords.size() != 0)
     add_buffer(tex_coords, BUFFER_INDEXES::TEXTURE_COORDS_0);
   if (indices.size() != 0)
@@ -130,8 +121,7 @@ geometry::geometry(geometry &&other) {
 }
 
 // Adds a buffer to the geometry object
-bool geometry::add_buffer(const std::vector<glm::vec2> &buffer, GLuint index,
-                          GLenum buffer_type) {
+bool geometry::add_buffer(const std::vector<glm::vec2> &buffer, GLuint index, GLenum buffer_type) {
   // Check that index is viable
   assert(index < 16);
   // Check that buffer is not empty
@@ -148,8 +138,7 @@ bool geometry::add_buffer(const std::vector<glm::vec2> &buffer, GLuint index,
       // Set vertex array object to 0
       _vao = 0;
       // Throw exception
-      throw std::runtime_error(
-          "Error creating vertex array object with OpenGL");
+      throw std::runtime_error("Error creating vertex array object with OpenGL");
     }
   }
   // If we have no vertices yet, set the vertices to the size of this buffer
@@ -158,8 +147,7 @@ bool geometry::add_buffer(const std::vector<glm::vec2> &buffer, GLuint index,
   // Otherwise ensure that the number of vertices matches
   else if (_vertices != buffer.size()) {
     std::cerr << "ERROR - adding buffer to geometry object" << std::endl;
-    std::cerr << "Buffer does not contain correct amount of vertices"
-              << std::endl;
+    std::cerr << "Buffer does not contain correct amount of vertices" << std::endl;
     return false;
   }
   // Now add buffer to the vertex array object.  Bind the vertex array object
@@ -169,8 +157,7 @@ bool geometry::add_buffer(const std::vector<glm::vec2> &buffer, GLuint index,
   glGenBuffers(1, &id);
   glBindBuffer(GL_ARRAY_BUFFER, id);
   // Set the buffer data
-  glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(glm::vec2), &buffer[0],
-               buffer_type);
+  glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(glm::vec2), &buffer[0], buffer_type);
   // Set the vertex pointer and enable
   glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(index);
@@ -186,8 +173,7 @@ bool geometry::add_buffer(const std::vector<glm::vec2> &buffer, GLuint index,
 }
 
 // Adds a buffer to the geometry object
-bool geometry::add_buffer(const std::vector<glm::vec3> &buffer, GLuint index,
-                          GLenum buffer_type) {
+bool geometry::add_buffer(const std::vector<glm::vec3> &buffer, GLuint index, GLenum buffer_type) {
   // Check that index is viable
   assert(index < 16);
   // Check that buffer is not empty
@@ -204,8 +190,7 @@ bool geometry::add_buffer(const std::vector<glm::vec3> &buffer, GLuint index,
       // Set vertex array object to 0
       _vao = 0;
       // Throw exception
-      throw std::runtime_error(
-          "Error creating vertex array object with OpenGL");
+      throw std::runtime_error("Error creating vertex array object with OpenGL");
     }
   }
   // If we have no vertices yet, set the vertices to the size of this buffer
@@ -214,8 +199,7 @@ bool geometry::add_buffer(const std::vector<glm::vec3> &buffer, GLuint index,
   // Otherwise ensure that the number of vertices matches
   else if (_vertices != buffer.size()) {
     std::cerr << "ERROR - adding buffer to geometry object" << std::endl;
-    std::cerr << "Buffer does not contain correct amount of vertices"
-              << std::endl;
+    std::cerr << "Buffer does not contain correct amount of vertices" << std::endl;
     return false;
   }
   // Now add buffer to the vertex array object.  Bind the vertex array object
@@ -225,8 +209,7 @@ bool geometry::add_buffer(const std::vector<glm::vec3> &buffer, GLuint index,
   glGenBuffers(1, &id);
   glBindBuffer(GL_ARRAY_BUFFER, id);
   // Set the buffer data
-  glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(glm::vec3), &buffer[0],
-               buffer_type);
+  glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(glm::vec3), &buffer[0], buffer_type);
   // Set the vertex pointer and enable
   glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(index);
@@ -242,8 +225,7 @@ bool geometry::add_buffer(const std::vector<glm::vec3> &buffer, GLuint index,
 }
 
 // Adds a buffer to the geometry object
-bool geometry::add_buffer(const std::vector<glm::vec4> &buffer, GLuint index,
-                          GLenum buffer_type) {
+bool geometry::add_buffer(const std::vector<glm::vec4> &buffer, GLuint index, GLenum buffer_type) {
   // Check that index is viable
   assert(index < 16);
   // Check that buffer is not empty
@@ -260,8 +242,7 @@ bool geometry::add_buffer(const std::vector<glm::vec4> &buffer, GLuint index,
       // Set vertex array object to 0
       _vao = 0;
       // Throw exception
-      throw std::runtime_error(
-          "Error creating vertex array object with OpenGL");
+      throw std::runtime_error("Error creating vertex array object with OpenGL");
     }
   }
   // If we have no vertices yet, set the vertices to the size of this buffer
@@ -270,8 +251,7 @@ bool geometry::add_buffer(const std::vector<glm::vec4> &buffer, GLuint index,
   // Otherwise ensure that the number of vertices matches
   else if (_vertices != buffer.size()) {
     std::cerr << "ERROR - adding buffer to geometry object" << std::endl;
-    std::cerr << "Buffer does not contain correct amount of vertices"
-              << std::endl;
+    std::cerr << "Buffer does not contain correct amount of vertices" << std::endl;
     return false;
   }
   // Now add buffer to the vertex array object.  Bind the vertex array object
@@ -281,8 +261,7 @@ bool geometry::add_buffer(const std::vector<glm::vec4> &buffer, GLuint index,
   glGenBuffers(1, &id);
   glBindBuffer(GL_ARRAY_BUFFER, id);
   // Set the buffer data
-  glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(glm::vec4), &buffer[0],
-               buffer_type);
+  glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(glm::vec4), &buffer[0], buffer_type);
   // Set the vertex pointer and enable
   glVertexAttribPointer(index, 4, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(index);
@@ -310,8 +289,7 @@ bool geometry::add_index_buffer(const std::vector<GLuint> &buffer) {
   // Add buffer
   glGenBuffers(1, &_index_buffer);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _index_buffer);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.size() * sizeof(GLuint),
-               &buffer[0], GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, buffer.size() * sizeof(GLuint), &buffer[0], GL_STATIC_DRAW);
   // Check for error
   if (CHECK_GL_ERROR) {
     std::cerr << "Error - adding index buffer to geometry object" << std::endl;

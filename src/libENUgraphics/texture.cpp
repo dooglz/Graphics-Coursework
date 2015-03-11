@@ -6,8 +6,7 @@
 
 namespace graphics_framework {
 // Creates a new texture object with the given dimensions
-texture::texture(GLuint width, GLuint height) throw(...)
-    : _width(width), _height(height) {
+texture::texture(GLuint width, GLuint height) throw(...) : _width(width), _height(height) {
   // Initialise texture with OpenGL
   glGenTextures(1, &_id);
   _type = GL_TEXTURE_2D;
@@ -24,13 +23,10 @@ texture::texture(GLuint width, GLuint height) throw(...)
 }
 
 // Creates a new texture object from the given file
-texture::texture(const std::string &filename) throw(...)
-    : texture(filename, true, true) {}
+texture::texture(const std::string &filename) throw(...) : texture(filename, true, true) {}
 
-// Creates a new texture object from the given file with mipmaps and anisotropic
-// filtering defined
-texture::texture(const std::string &filename, bool mipmaps,
-                 bool anisotropic) throw(...) {
+// Creates a new texture object from the given file with mipmaps and anisotropic filtering defined
+texture::texture(const std::string &filename, bool mipmaps, bool anisotropic) throw(...) {
   // Check if file exists
   assert(check_file_exists(filename));
 
@@ -69,8 +65,7 @@ texture::texture(const std::string &filename, bool mipmaps,
   // Set texture parameters
   if (mipmaps) {
     // Turn on linear mipmaps
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                    GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     CHECK_GL_ERROR; // Not considered fatal here
   } else {
@@ -84,14 +79,12 @@ texture::texture(const std::string &filename, bool mipmaps,
     float max_anisotropy;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
     CHECK_GL_ERROR; // Non-fatal
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                    max_anisotropy);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
     CHECK_GL_ERROR; // Non-fatal
   }
 
   // Now set texture data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA,
-               GL_UNSIGNED_BYTE, pixel_data);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, pixel_data);
 
   // Check if error
   if (CHECK_GL_ERROR) {
@@ -125,14 +118,12 @@ texture::texture(const std::string &filename, bool mipmaps,
 }
 
 // Creates a new texture from the given colour data
-texture::texture(const std::vector<glm::vec4> &data, GLuint width,
-                 GLuint height) throw(...)
+texture::texture(const std::vector<glm::vec4> &data, GLuint width, GLuint height) throw(...)
     : texture(data, width, height, true, true) {}
 
-// Creates a new texture from the given colour data and mipmap and anisotropic
-// filtering defined
-texture::texture(const std::vector<glm::vec4> &data, GLuint width,
-                 GLuint height, bool mipmaps, bool anisotropic) throw(...) {
+// Creates a new texture from the given colour data and mipmap and anisotropic filtering defined
+texture::texture(const std::vector<glm::vec4> &data, GLuint width, GLuint height, bool mipmaps,
+                 bool anisotropic) throw(...) {
   // Check if dimensions are correct
   assert(data.size() == width * height);
 
@@ -154,8 +145,7 @@ texture::texture(const std::vector<glm::vec4> &data, GLuint width,
     // Set parameters
     if (mipmaps) {
       // Set mipmap scaling
-      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER,
-                      GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else {
       // Normal scaling
@@ -166,14 +156,12 @@ texture::texture(const std::vector<glm::vec4> &data, GLuint width,
       // Turn on anisotropic filtering
       float max_anisotropy;
       glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
-      glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                      max_anisotropy);
+      glTexParameterf(GL_TEXTURE_1D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
     }
     CHECK_GL_ERROR; // Non-fatal
 
     // Add texture data
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, width, 0, GL_RGBA, GL_FLOAT,
-                 &data[0]);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, width, 0, GL_RGBA, GL_FLOAT, &data[0]);
     // Check error
     if (CHECK_GL_ERROR) {
       // Display error
@@ -194,8 +182,7 @@ texture::texture(const std::vector<glm::vec4> &data, GLuint width,
     // Set parameters
     if (mipmaps) {
       // Set mipmap scaling
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                      GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else {
       // Normal scaling
@@ -206,14 +193,12 @@ texture::texture(const std::vector<glm::vec4> &data, GLuint width,
       // Turn on anisotropic filtering
       float max_anisotropy;
       glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
-      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT,
-                      max_anisotropy);
+      glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
     }
     CHECK_GL_ERROR; // Non-fatal
 
     // Add texture data
-    glTexImage1D(GL_TEXTURE_2D, 0, GL_RGBA, width, 0, GL_RGBA, GL_FLOAT,
-                 &data[0]);
+    glTexImage1D(GL_TEXTURE_2D, 0, GL_RGBA, width, 0, GL_RGBA, GL_FLOAT, &data[0]);
     // Check error
     if (CHECK_GL_ERROR) {
       // Display error

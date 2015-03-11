@@ -18,15 +18,12 @@ private:
 public:
   // Creates a directional light with some default colour values
   directional_light()
-      : _ambient(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f)),
-        _colour(glm::vec4(0.9f, 0.9f, 0.9f, 1.0f)),
+      : _ambient(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f)), _colour(glm::vec4(0.9f, 0.9f, 0.9f, 1.0f)),
         _direction(glm::vec3(1.0f, 0.0f, 0.0f)) {}
   // Creates a directional light with provided values
-  directional_light(const glm::vec4 &ambient_intensity,
-                    const glm::vec4 &light_colour, const glm::vec3 &direction)
-      : _ambient(ambient_intensity),
-        _colour(light_colour),
-        _direction(direction) {}
+  directional_light(const glm::vec4 &ambient_intensity, const glm::vec4 &light_colour,
+                    const glm::vec3 &direction)
+      : _ambient(ambient_intensity), _colour(light_colour), _direction(direction) {}
   // Default copy constructor and assignment operator
   directional_light(const directional_light &other) = default;
   directional_light &operator=(const directional_light &rhs) = default;

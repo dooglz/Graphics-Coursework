@@ -26,16 +26,11 @@ void chase_camera::update(float delta_time) {
 }
 
 // Moves the camera by updating the target position and rotation
-void chase_camera::move(const glm::vec3 &new_target_pos,
-                        const glm::vec3 &new_target_rotation) {
+void chase_camera::move(const glm::vec3 &new_target_pos, const glm::vec3 &new_target_rotation) {
   _target_pos = new_target_pos;
   _target_rotation = new_target_rotation;
 }
 
 // Rotates the camera around the target
-void chase_camera::rotate(const glm::vec3 &delta_rotation) {
-  _relative_rotation += delta_rotation;
-}
-
-chase_camera::chase_camera() { _springiness = 0.0f; }
+void chase_camera::rotate(const glm::vec3 &delta_rotation) { _relative_rotation += delta_rotation; }
 }

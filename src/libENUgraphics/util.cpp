@@ -2,12 +2,98 @@
 #include "util.h"
 
 namespace graphics_framework {
+inline std::string get_severity(GLenum severity) {
+  switch (severity) {
+  case GL_DEBUG_SEVERITY_LOW:
+    return "LOW SEVERITY";
+
+  case GL_DEBUG_SEVERITY_MEDIUM:
+    return "MEDIUM SEVERITY";
+
+  case GL_DEBUG_SEVERITY_HIGH:
+    return "HIGH SEVERITY";
+  }
+  return "UNKNOWN SEVERITY";
+}
+
+inline std::string get_source(GLenum source) {
+  switch (source) {
+  case GL_DEBUG_SOURCE_API:
+    return "Source: API";
+
+  case GL_DEBUG_SOURCE_APPLICATION:
+    return "Source: APPLICATION";
+
+  case GL_DEBUG_SOURCE_OTHER:
+    return "Source: OTHER";
+
+  case GL_DEBUG_SOURCE_SHADER_COMPILER:
+    return "Source: SHADER COMPILER";
+
+  case GL_DEBUG_SOURCE_THIRD_PARTY:
+    return "Source: THIRD PARTY";
+
+  case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+    return "Source: WINDOW SYSTEM";
+  }
+  return "Source: UNKNOWN";
+}
+
+// Debug message callback for OpenGL
+// Thanks to Sam Serrels for this one
+void __stdcall opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
+                                     GLsizei length, const GLchar *message,
+                                     const void *user_param) {
+  switch (type) {
+  case GL_DEBUG_TYPE_ERROR:
+    std::cerr << "An OpenGL debug error has been detected: " << message << std::endl;
+    std::cerr << get_severity(severity) << std::endl;
+    std::cerr << get_source(source) << std::endl;
+    break;
+
+  case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+    std::cerr << "OpenGL deprecated behaviour detected: " << message << std::endl;
+    std::cerr << get_severity(severity) << std::endl;
+    std::cerr << get_source(source) << std::endl;
+    break;
+
+  case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+    std::cerr << "OpenGL undefined behaviour detected: " << message << std::endl;
+    std::cerr << get_severity(severity) << std::endl;
+    std::cerr << get_source(source) << std::endl;
+    break;
+
+  case GL_DEBUG_TYPE_PORTABILITY:
+    std::cerr << "OpenGL portability problem detected: " << message << std::endl;
+    std::cerr << get_severity(severity) << std::endl;
+    std::cerr << get_source(source) << std::endl;
+    break;
+
+  case GL_DEBUG_TYPE_PERFORMANCE:
+    std::cerr << "OpenGL performance problem detected: " << message << std::endl;
+    std::cerr << get_severity(severity) << std::endl;
+    std::cerr << get_source(source) << std::endl;
+    break;
+
+#ifdef OGL_DEBUG_OTHER
+  case GL_DEBUG_TYPE_OTHER:
+    std::cerr << "Other OpenGL error detected: " << message << std::endl;
+    std::cerr << get_severity(severity) << std::endl;
+    std::cerr << get_source(source) << std::endl;
+    break;
+#endif
+  }
+}
+
+// GLFW error callback
+void glfw_debug_callback(int error, const char *message) {
+  std::cerr << "A GLFW error has occurred: " << message << std::endl;
+}
+
 // Utility function to convert screen pos to world ray
-void screen_pos_to_world_ray(float mouse_X, float mouse_Y,
-                             unsigned int screen_width,
+void screen_pos_to_world_ray(float mouse_X, float mouse_Y, unsigned int screen_width,
                              unsigned int screen_height, const glm::mat4 &view,
-                             const glm::mat4 &proj, glm::vec3 &origin,
-                             glm::vec3 &direction) {
+                             const glm::mat4 &proj, glm::vec3 &origin, glm::vec3 &direction) {
   // The ray start and end positions, screen coordinates
   float xx = (2.0f * mouse_X) / screen_width - 1.0f;
   float yy = (2.0f * (screen_height - mouse_Y)) / screen_height - 1.0f;
@@ -32,9 +118,8 @@ void screen_pos_to_world_ray(float mouse_X, float mouse_Y,
 }
 
 // Utility function to test intersection between ray and mesh bounding box
-bool test_ray_oobb(const glm::vec3 &origin, const glm::vec3 &direction,
-                   const glm::vec3 &aabb_min, const glm::vec3 &aabb_max,
-                   const glm::mat4 &model, float &distance) {
+bool test_ray_oobb(const glm::vec3 &origin, const glm::vec3 &direction, const glm::vec3 &aabb_min,
+                   const glm::vec3 &aabb_max, const glm::mat4 &model, float &distance) {
   float t_min = 0.0f;
   float t_max = 100000.0f;
 

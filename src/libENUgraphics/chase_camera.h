@@ -21,11 +21,11 @@ private:
   // The rotation of the camera relative to the target
   glm::vec3 _relative_rotation;
   // Springiness factor of the camera
-  float _springiness;
+  float _springiness = 5.0f;
 
 public:
   // Creates a chase camera
-  chase_camera();
+  chase_camera() {}
   // Chase camera destructor
   ~chase_camera() {}
   // Gets the position of the target
@@ -47,9 +47,7 @@ public:
   // Gets the camera's rotation relative to the target
   glm::vec3 get_relative_rotation() const { return _relative_rotation; }
   // Sets the camera's rotation relative to the target
-  void set_relative_rotation(const glm::vec3 &value) {
-    _relative_rotation = value;
-  }
+  void set_relative_rotation(const glm::vec3 &value) { _relative_rotation = value; }
   // Gets the springiness coefficient for the camera
   float get_springiness() const { return _springiness; }
   // Sets the springiness coefficient for the camera
@@ -57,8 +55,7 @@ public:
   // Updates the camera
   void update(float delta_time);
   // Moves the camera by updating the target position and rotation
-  void move(const glm::vec3 &new_target_pos,
-            const glm::vec3 &new_target_rotation);
+  void move(const glm::vec3 &new_target_pos, const glm::vec3 &new_target_rotation);
   // Rotates the camera around the target
   void rotate(const glm::vec3 &delta_rotation);
 };

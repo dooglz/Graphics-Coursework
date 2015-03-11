@@ -19,8 +19,7 @@ frame_buffer::frame_buffer(GLuint width, GLuint height) throw(...)
   glBindTexture(GL_TEXTURE_2D, _frame.get_id());
 
   // Create the image data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   // Check if any errors
   if (CHECK_GL_ERROR) {
     // Display error
@@ -49,8 +48,8 @@ frame_buffer::frame_buffer(GLuint width, GLuint height) throw(...)
     throw std::runtime_error("Error creating depth texture with OpenGL");
   }
   // Create the depth image data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0,
-               GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+               nullptr);
   // Check if error
   if (CHECK_GL_ERROR) {
     // Display error
@@ -67,8 +66,7 @@ frame_buffer::frame_buffer(GLuint width, GLuint height) throw(...)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
                    glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
-                  GL_COMPARE_REF_TO_TEXTURE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
   CHECK_GL_ERROR; // Non-fatal
 
@@ -88,10 +86,8 @@ frame_buffer::frame_buffer(GLuint width, GLuint height) throw(...)
   }
 
   // Attach the frame and depth textures
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         _frame.get_id(), 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                         _depth.get_id(), 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _frame.get_id(), 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth.get_id(), 0);
   // Check for errors
   if (CHECK_GL_ERROR) {
     // Display error
@@ -138,8 +134,8 @@ void frame_buffer::save(const std::string &filename) const {
   CHECK_GL_ERROR;
   // Create bitmap
   FIBITMAP *bitmap = FreeImage_ConvertFromRawBits(
-      data, _width, _height, (unsigned int)(((_width * 24 + 31) / 32) * 4), 24,
-      FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK);
+      data, _width, _height, (unsigned int)(((_width * 24 + 31) / 32) * 4), 24, FI_RGBA_RED_MASK,
+      FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK);
   // Save image
   auto saved = FreeImage_Save(FIF_BMP, bitmap, filename.c_str());
   // Unload bitmap

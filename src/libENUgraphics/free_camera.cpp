@@ -7,14 +7,12 @@ Updates the free camera.  Delta time is not used
 */
 void free_camera::update(float delta_time) {
   // Calculate the forward direction - spherical coordinates to Cartesian
-  glm::vec3 forward(cosf(_pitch) * -sinf(_yaw), sinf(_pitch),
-                    -cosf(_yaw) * cosf(_pitch));
+  glm::vec3 forward(cosf(_pitch) * -sinf(_yaw), sinf(_pitch), -cosf(_yaw) * cosf(_pitch));
   // Normalize forward
   forward = glm::normalize(forward);
 
   // Calculate standard right.  Rotate right vector by yaw
-  glm::vec3 right =
-      glm::vec3(glm::eulerAngleY(_yaw) * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+  glm::vec3 right = glm::vec3(glm::eulerAngleY(_yaw) * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
   // Normalize right
   right = glm::normalize(right);
 

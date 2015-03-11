@@ -28,14 +28,10 @@ public:
   mesh() {}
   // Creates a mesh object with the provided geometry
   mesh(geometry &geom)
-      : _geometry(geom),
-        _minimal(geom.get_minimal_point()),
-        _maximal(geom.get_maximal_point()) {}
+      : _geometry(geom), _minimal(geom.get_minimal_point()), _maximal(geom.get_maximal_point()) {}
   // Creates a mesh object with the provided geometry and material
   mesh(geometry &geom, material &mat)
-      : _geometry(geom),
-        _minimal(geom.get_minimal_point()),
-        _maximal(geom.get_maximal_point()) {}
+      : _geometry(geom), _minimal(geom.get_minimal_point()), _maximal(geom.get_maximal_point()) {}
   // Default copy constructor and assignment operator
   mesh(const mesh &other) = default;
   mesh &operator=(const mesh &rhs) = default;
