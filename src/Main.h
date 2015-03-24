@@ -47,6 +47,7 @@ public:
   texture sandTexture;
   texture goodsandTexture;
   texture goodsandTextureBump;
+  texture noise16;
 
   effect simpleEffect;
   effect gouradEffect;

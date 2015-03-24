@@ -120,7 +120,7 @@ void Graphics::UpdateLights() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-#define rings 3
+#define rings 16
 void Graphics::MakeGyroscope() {
   meshes["torus0"] = mesh(geometry_builder::create_torus(32, 32, 0.5f, rings));
   meshes["torus0"].get_transform().translate(vec3(10.0f, rings + 2.0f, -30.0f));
@@ -237,7 +237,7 @@ bool Graphics::Load_content() {
   sandTexture = texture("textures\\sand_512_1.png");
   goodsandTexture = texture("textures\\Goodsand_1024.jpg");
   goodsandTextureBump = texture("textures\\Goodsand_bump_1024.jpg");
-
+  noise16 = texture("textures\\tex16.png");
   // shaders
   phongEffect.add_shader("shaders\\phong.vert", GL_VERTEX_SHADER);
   phongEffect.add_shader("shaders\\phong.frag", GL_FRAGMENT_SHADER);
@@ -282,9 +282,10 @@ bool Graphics::Load_content() {
 
   return true;
 }
-
+float realtime;
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
+  realtime += delta_time;
   counter += (delta_time * 0.16f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   UpdateGyroscope(delta_time);
@@ -485,6 +486,14 @@ void Graphics::RenderSky() {
   glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
   glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
   glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
+  
+  mat3 camrot = mat3(activeCam->get_view()); //* mat3(-1.0f);
+
+  glUniformMatrix3fv(skyeffect.get_uniform_location("playerrot"), 1, false, glm::value_ptr(camrot));
+
+  renderer::bind(noise16,0);
+  glUniform1i(skyeffect.get_uniform_location("iChannel0"), 0);
+  glUniform1f(skyeffect.get_uniform_location("iGlobalTime"), realtime);
 
   graphics_framework::geometry geo;
   std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
