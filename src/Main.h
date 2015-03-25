@@ -37,6 +37,8 @@ public:
   float aspect;
   float counter = 0;
   float dayscale;
+  bool daymode;
+  float sunscale;
 
   // The current active camera, used for rendering
   camera *activeCam;
@@ -55,6 +57,7 @@ public:
   effect texturedEffect;
   effect texturedBumpEffect;
   effect skyeffect;
+  effect skyeffect2;
 
   mesh *desertM;
   mesh mirror;
@@ -73,6 +76,8 @@ public:
   std::vector<point_light> PLights;
   std::vector<spot_light> SLights;
 
+
+  mesh skygeo;
   std::vector<const glm::vec3> linebuffer;
 
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);

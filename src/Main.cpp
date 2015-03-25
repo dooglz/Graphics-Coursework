@@ -264,6 +264,10 @@ bool Graphics::Load_content() {
   skyeffect.add_shader("shaders\\sky.frag", GL_FRAGMENT_SHADER);
   skyeffect.build();
 
+  skyeffect2.add_shader("shaders\\sky2.vert", GL_VERTEX_SHADER);
+  skyeffect2.add_shader("shaders\\sky2.frag", GL_FRAGMENT_SHADER);
+  skyeffect2.build();
+
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -280,13 +284,15 @@ bool Graphics::Load_content() {
   desertM->get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_shininess(1000.0f);
 
+  //std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+  skygeo = mesh(geometry_builder::create_sphere(32, 15, vec3(900.0f, 900.0f, 900.0f)));
   return true;
 }
 float realtime;
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
- // counter += (delta_time * 0.16f);
+  counter += (delta_time * 0.09f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   UpdateGyroscope(delta_time);
   float s = sinf(counter);
@@ -295,18 +301,24 @@ bool Graphics::Update(float delta_time) {
     counter = 0;
   }
 
-  // counter		0			pi/2			 pi
-  //            midday		midnight		midday
-  // dayscale	  1.0			0				1.0
+  // counter		0			          pi/2			        pi
+  //            midday   Dusk   midnight  Dawn   Midday
+  // dayscale	  1.0			 0.5    0				   0.5   1.0
+  // sunscale   1.0      0      0          0     1.0
+  // daymode    0        0      0          1     1
+  const float oldd = dayscale;
   dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
-  // printf("%f\n", dayscale);
+  daymode = (dayscale > oldd);
+  sunscale = (dayscale - 0.5f) / 0.5f;
+  
+  printf("%f\t\t%f\t\t%d\n", dayscale, sunscale, daymode);
 
   vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
   dlight.set_direction(glm::rotateZ(rot, counter));
 
-  if (dayscale < 0.5) {
+  if (true) {
     dlight.set_light_colour(
-        mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale / 0.5f));
+      mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), sunscale + 0.2f));
   } else {
     dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
@@ -455,63 +467,47 @@ void Graphics::ProcessLines() {
 }
 
 void Graphics::RenderSky() {
-  // verticle fov = 25.3125deg = 0.441786467 radians
-  float verticleFov = 0.2208932335f; // vfov/2 in radians
 
-  vec3 camview = normalize(activeCam->get_target() - activeCam->get_position());
-  vec3 camUp = normalize(activeCam->get_up());
-
-  float r = atanf(verticleFov);
-
-  vec3 topofscreentoplayer = normalize((r * camUp) + camview);
-  vec3 bottomofscreentoplayer = normalize((-r * camUp) + camview);
-
-  float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
-  float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
-  printf("top %f , bottom, %f \n",topDot, bottomDot);
-  renderer::bind(skyeffect);
-  float p = pi<float>();
-
-  vec3 bottomcol;
-  if (dayscale < 0.6f) {
-    bottomcol = mix(vec3(0.94, 0.427, 0.117), vec3(0.73, 0.796, 0.99), dayscale / 0.6f) * dayscale;
-  } else {
-    bottomcol = vec3(0.73, 0.796, 0.99) * dayscale;
-  }
-  vec3 topcol = vec3(0.067, 0.129, 0.698) * dayscale;
-  // vec3 bottomcol = vec3(0.73, 0.796, 0.99) * dayscale;
-
-  glUniform3fv(skyeffect.get_uniform_location("topcol"), 1, &topcol[0]);
-  glUniform3fv(skyeffect.get_uniform_location("bottomcol"), 1, &bottomcol[0]);
-  glUniform1f(skyeffect.get_uniform_location("topdot"), topDot);
-  glUniform1f(skyeffect.get_uniform_location("bottomdot"), bottomDot);
-  glUniform3f(skyeffect.get_uniform_location("playerview"), camview.x, camview.y, camview.z);
-  
-  mat3 camrot = mat3(activeCam->get_view()); //* mat3(-1.0f);
-
-  glUniformMatrix3fv(skyeffect.get_uniform_location("playerrot"), 1, false, glm::value_ptr(camrot));
-
-  //auto M = m.get_transform().get_transform_matrix();
+  renderer::bind(skyeffect2);
+  //vert uniforms
+  mat4 modelMatrix = mat4(1.0f);
   auto V = activeCam->get_view();
   auto P = activeCam->get_projection();
-  auto MVP = P * V;// *M;
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(skyeffect.get_uniform_location("MVP"), // Location of uniform
-	  1,                               // Number of values - 1 mat4
-	  GL_FALSE,                        // Transpose the matrix?
-	  value_ptr(MVP));                 // Pointer to matrix data
+  mat4 MVP = P * V * modelMatrix;
+  //frag uniforms
+  
+  float luminance = 1.0f;
+  float turbidity = 10.0f;
+  float reileigh = 4.0f;
+  float mieCoefficient = 0.005f;
+  float mieDirectionalG = 0.8f;
+  //
+  float inclination = (daymode ? dayscale : (1.0f - dayscale));//0.49f; // elevation / inclination
+  float azimuth = (daymode ? 0.75f : 0.25f);//0.25f; // Facing front
+  float distance = 900.0f;
+  float theta = pi<float>() * (inclination - 0.5);
+  float phi = 2 * pi<float>() * (azimuth - 0.5);
+  vec3 sunPosition = vec3(distance * cos(phi), distance * sin(phi) * sin(theta), distance * sin(phi) * cos(theta));
 
-  renderer::bind(noise16,0);
-  glUniform1i(skyeffect.get_uniform_location("iChannel0"), 0);
-  glUniform1f(skyeffect.get_uniform_location("iGlobalTime"), realtime);
+  //set uniforms
+  {
+    //v
+    glUniformMatrix4fv(skyeffect2.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP)); 
+    glUniformMatrix4fv(skyeffect2.get_uniform_location("modelMatrix"), 1, GL_FALSE, value_ptr(modelMatrix));
+    //f
+    glUniform3fv(skyeffect2.get_uniform_location("sunPosition"), 1, &sunPosition[0]);
+    glUniform1f(skyeffect2.get_uniform_location("luminance"), luminance);
+    glUniform1f(skyeffect2.get_uniform_location("turbidity"), turbidity);
+    glUniform1f(skyeffect2.get_uniform_location("reileigh"), reileigh);
+    glUniform1f(skyeffect2.get_uniform_location("mieCoefficient"), mieCoefficient);
+    glUniform1f(skyeffect2.get_uniform_location("mieDirectionalG"), mieDirectionalG);
+  }
 
-  graphics_framework::geometry geo;
-  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1),
-                         vec2(1, 1),   vec2(1, -1), vec2(-1, -1)};
-  geo.add_buffer(v, 0);
   glDisable(GL_CULL_FACE);
-  renderer::render(geo);
+  renderer::render(skygeo);
   glEnable(GL_CULL_FACE);
+
+  return;  
 }
 
 bool Graphics::Render() {

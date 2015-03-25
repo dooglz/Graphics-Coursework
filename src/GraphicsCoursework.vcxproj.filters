@@ -101,4 +101,12 @@
       <Filter>Shaders</Filter>
     </CustomBuild>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\res\shaders\sky2.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\res\shaders\sky2.frag">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
 </Project>
