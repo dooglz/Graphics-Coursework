@@ -468,7 +468,7 @@ void Graphics::RenderSky() {
 
   float topDot = dot(topofscreentoplayer, vec3(0, 1.0, 0));
   float bottomDot = dot(bottomofscreentoplayer, vec3(0, 1.0, 0));
-
+  printf("top %f , bottom, %f \n",topDot, bottomDot);
   renderer::bind(skyeffect);
   float p = pi<float>();
 
