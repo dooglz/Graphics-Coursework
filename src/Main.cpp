@@ -286,7 +286,7 @@ float realtime;
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
-  counter += (delta_time * 0.16f);
+ // counter += (delta_time * 0.16f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   UpdateGyroscope(delta_time);
   float s = sinf(counter);
@@ -490,6 +490,16 @@ void Graphics::RenderSky() {
   mat3 camrot = mat3(activeCam->get_view()); //* mat3(-1.0f);
 
   glUniformMatrix3fv(skyeffect.get_uniform_location("playerrot"), 1, false, glm::value_ptr(camrot));
+
+  //auto M = m.get_transform().get_transform_matrix();
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto MVP = P * V;// *M;
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(skyeffect.get_uniform_location("MVP"), // Location of uniform
+	  1,                               // Number of values - 1 mat4
+	  GL_FALSE,                        // Transpose the matrix?
+	  value_ptr(MVP));                 // Pointer to matrix data
 
   renderer::bind(noise16,0);
   glUniform1i(skyeffect.get_uniform_location("iChannel0"), 0);

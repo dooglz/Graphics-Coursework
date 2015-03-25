@@ -7,6 +7,7 @@ uniform vec3 bottomcol;
 
 layout (location = 0) in vec2 vertexIn;
 layout (location = 0) out vec4 out_colour;
+layout (location = 1) out vec4 dots;
 
 void main()
 {
@@ -15,6 +16,7 @@ void main()
 	}else{
 		out_colour = vec4(mix(bottomcol,topcol,bottomdot),1.0);
 	}
+	dots = vec4(topdot, bottomdot, topdot, bottomdot);
 	// Calculate screen position of vertex
 	gl_Position = vec4(vertexIn.xy,0.99999,1.0);
 }

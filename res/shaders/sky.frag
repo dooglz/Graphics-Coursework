@@ -1,15 +1,18 @@
 #version 430
+//https://www.shadertoy.com/view/XsBXDc
 precision highp float;
 const float hverticalcuttoff = -0.2;
 const vec2 iResolution = vec2(1280,720);
 uniform float iGlobalTime;           // shader playback time (in seconds)
 uniform sampler2D iChannel0;          // input channel. XX = 2D/Cube
 uniform mat3 playerrot;
+uniform mat4 MVP;
 //direction the player is facing
 uniform vec3 playerview;
 
 // Incoming vertex colour
 layout (location = 0) in vec4 in_colour;
+layout (location = 1) in vec4 dots;
 
 // Outgoing pixel colour
 layout (location = 0) out vec4 out_colour;
@@ -102,7 +105,7 @@ vec3 shadeBg(vec3 nml, vec2 fragCoord, vec2 aspect, vec2 uv)
     float sunD = dot(bgLight, nml) > 0.995 ? 1.0 : 0.0;
 	vec3 sun = vec3(6.5, 3.5, 2.0);
 	float skyPow = dot(nml, vec3(0.0, -1.0, 0.0));
-    float centerPow = 0.0; //-dot(uv,uv);
+    float centerPow = 0.0;// -dot(uv,uv);
     float horizonPow = pow(1.0-abs(skyPow), 3.0)*(5.0+centerPow);
 	float sunPow = dot(nml, bgLight);
 	float sp = max(sunPow, 0.0);
@@ -122,18 +125,8 @@ vec3 shadeBg(vec3 nml, vec2 fragCoord, vec2 aspect, vec2 uv)
     //nighttime fade
     bgCol *= 1.0 - clamp(bgLight.y*3.0, 0.0, 0.6);
   
-    bgCol += clouds(skyPow,nml);
+   // bgCol += clouds(skyPow,nml);
 	return pow(max(vec3(0.0), bgCol), vec3(2.6));
-}
-
-mat3 rotationXY(vec2 angle) {
-  float cp = cos(angle.x);
-  float sp = sin(angle.x);
-  float cy = cos(angle.y);
-  float sy = sin(angle.y);
-
-  return mat3(cy, -sy, 0.0, sy, cy, 0.0, 0.0, 0.0, 1.0) *
-         mat3(cp, 0.0, -sp, 0.0, 1.0, 0.0, sp, 0.0, cp);
 }
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -146,25 +139,48 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
        // return;
     }
 
-    mat3 rot = rotationXY( vec2( 0.2+0.2*cos(0.5*iGlobalTime), -0.15*sin(0.5+0.5*iGlobalTime) ) );
+    //mat3 rot = rotationXY( vec2( 0.2+0.2*cos(0.5*iGlobalTime), -0.15*sin(0.5+0.5*iGlobalTime) ) );
    // vec3 d = rot * normalize(vec3(uv, 1.0));
 	vec3 fragnormal = playerrot * normalize(vec3(uv, 1.0));
-
+	//vec3 fragnormal = vec3(MVP * vec4(normalize(vec3(uv, 1.0)),1.0));
+	//fragnormal.z  *= -1.0;
     vec3 col = shadeBg(-fragnormal, fragCoord,aspect,uv);
     
     vec4 noise = (texture2D(iChannel0, mod(fragCoord.xy/256.0, 1.0))-0.5) / 64.0;
     fragColor = pow(vec4( noise.rgb + (1.0 - exp(-1.3 * col.rgb)), 1.0 ), vec4(1.3));
 }
 
+vec4 calculateSun(){
+	//vec4 sun = vec4(0.929,0.866,0.619,0);
+	vec4 sun = vec4(1.0,0,0,1.0);
+	//sun = vec4(0,0,0,0);
+	const vec2 fragcord = gl_FragCoord.xy;
+
+	vec2 screenPercent = 1.0 - (fragcord / iResolution);
+	//screenPercent.y, 0.0 = bottom of screen, 1.0 = top
+
+	//	dots = vec4(topdot, bottomdot, topdot, bottomdot);
+	float Sy = (screenPercent.y * (dots.z - dots.w)) + dots.w;	//updown
+	float Sx = (screenPercent.x * (dots.x - dots.y)) + dots.y;	//leftright = broken for now
+
+	const vec2 sunPos = vec2(0.15,0.15);
+
+	float Sundist = (sunPos.x - Sy) * 10.0;
+	float SunAmount = 1.0 /  pow(Sundist,4);
+	sun *= clamp(SunAmount, 0.0, 1.0);
+	
+	return sun;
+}
 
 void main()
 {
     //float f = dot(playerview,up);
     // Simply set outgoing colour
     //out_colour = vec4(mix(bottomcol,topcol,f),1.0);
-    vec4 ocol;
-	vec2 fragcord =  gl_FragCoord.xy;
-	mainImage(ocol,fragcord);
+	out_colour = calculateSun();
+    ////vec4 ocol;
+	//vec2 fragcord =  gl_FragCoord.xy;
+	//mainImage(ocol,fragcord);
 
-    out_colour = ocol;
+   // out_colour = ocol;
 }
