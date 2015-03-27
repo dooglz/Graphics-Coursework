@@ -58,7 +58,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../lib/$(Platform)_$(Configuration)/; ../lib/$(Platform)/</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libENUgraphics.lib;OpenGL32.lib;GLU32.lib;glew32.lib;glfw3dll.lib;FreeImage.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libENUgraphics.lib;OpenGL32.lib;GLU32.lib;glew32s.lib;glfw3dll.lib;FreeImage.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>cd ..

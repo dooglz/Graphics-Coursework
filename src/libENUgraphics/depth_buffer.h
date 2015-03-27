@@ -20,6 +20,8 @@ private:
   GLuint _height;
 
 public:
+  // Default constructor - doesn't initialise depth buffer
+  depth_buffer() {}
   // Creates a new depth buffer
   depth_buffer(GLuint width, GLuint height) throw(...);
   // Default copy constructor and asignment operator

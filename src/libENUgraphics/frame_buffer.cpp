@@ -60,11 +60,9 @@ frame_buffer::frame_buffer(GLuint width, GLuint height) throw(...) : _width(widt
   // Set texture properties
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
   CHECK_GL_ERROR; // Non-fatal
 
   // Create and set up the FBO
@@ -126,7 +124,7 @@ void frame_buffer::save(const std::string &filename) const {
   // Bind the frame
   glBindFramebuffer(GL_FRAMEBUFFER, _buffer);
   // Get the pixel data
-  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glPixelStorei(GL_PACK_ALIGNMENT, 4);
   glReadPixels(0, 0, _width, _height, GL_RGBA, GL_UNSIGNED_BYTE, data);
   CHECK_GL_ERROR;
   // Create bitmap

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include <numeric>
+
 #include "renderer.h"
 #include "util.h"
 

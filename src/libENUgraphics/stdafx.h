@@ -11,6 +11,7 @@
 #define VC_EXTRALEAN
 #define GLFW_INCLUDE_GLU
 #define GLFW_DLL
+#define GLEW_STATIC
 #define GLM_FORCE_RADIANS
 
 #if !(defined(DEBUG) | defined(_DEBUG))

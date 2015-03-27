@@ -261,11 +261,6 @@ void effect::build() throw(...) {
 
   // Effect built sucessfully.  Log
   std::clog << "LOG - effect built" << std::endl;
-  // Detach and delete shaders
-  for (auto &s : _shaders) {
-    glDetachShader(_program, s);
-    glDeleteShader(s);
-  }
 }
 
 // Gets the uniform location of the named

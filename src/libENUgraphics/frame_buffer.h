@@ -21,6 +21,8 @@ private:
   GLuint _height;
 
 public:
+  // Default constructor - doesn't initialise buffer
+  frame_buffer() {}
   // Creates a frame buffer
   frame_buffer(GLuint width, GLuint height) throw(...);
   // Default copy constructor and assignment operator
