@@ -58,8 +58,7 @@ public:
   // Gets the effect currently bound by the renderer
   static const effect &get_bound_effect() { return _instance->_effect; }
   // Initialises the renderer
-  static bool initialise(const unsigned int screenX, const unsigned int screenY,
-                         const bool fullscreen);
+  static bool initialise(const unsigned int screenX, const unsigned int screenY, const bool fullscreen);
   // Begins a render
   static bool begin_render();
   // Ends a render
@@ -100,8 +99,7 @@ public:
   static void set_render_target(const depth_buffer &depth) throw(...);
   // Sets the render target of the renderer to a frame buffer
   static void set_render_target(const frame_buffer &frame) throw(...);
-  //Renders lines between a vector of points, lineLength 1 = 1 line joining 2 points.
+  // Renders lines between a vector of points, lineLength 1 = 1 line joining 2 points.
   static void RenderLines(const std::vector<const glm::vec3> &points, unsigned int lineLength);
- 
 };
 }

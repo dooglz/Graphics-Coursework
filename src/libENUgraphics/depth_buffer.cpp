@@ -6,8 +6,7 @@
 
 namespace graphics_framework {
 // Creates a depth buffer object
-depth_buffer::depth_buffer(GLuint width, GLuint height) throw(...)
-    : _width(width), _height(height) {
+depth_buffer::depth_buffer(GLuint width, GLuint height) throw(...) : _width(width), _height(height) {
   // Create depth texture
   _depth = texture(width, height);
   glActiveTexture(GL_TEXTURE0);
@@ -22,8 +21,7 @@ depth_buffer::depth_buffer(GLuint width, GLuint height) throw(...)
   }
 
   // Create the depth image data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT,
-               GL_FLOAT, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
   // Check if error
   if (CHECK_GL_ERROR) {
     // Display error
@@ -38,8 +36,7 @@ depth_buffer::depth_buffer(GLuint width, GLuint height) throw(...)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR,
-                   glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)));
   CHECK_GL_ERROR; // Not considered fatal here
 
   // Create and set up the FBO
@@ -101,9 +98,8 @@ void depth_buffer::save(const std::string &filename) const {
   glReadPixels(0, 0, _width, _height, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, data);
   CHECK_GL_ERROR;
   // Create bitmap
-  FIBITMAP *bitmap =
-      FreeImage_ConvertFromRawBits(data, _width, _height, (unsigned int)(((_width * 8) / 32) * 4),
-                                   8, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK);
+  FIBITMAP *bitmap = FreeImage_ConvertFromRawBits(data, _width, _height, (unsigned int)(((_width * 8) / 32) * 4), 8,
+                                                  FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK);
   // Save image
   auto saved = FreeImage_Save(FIF_PNG, bitmap, filename.c_str());
   // Unload bitmap

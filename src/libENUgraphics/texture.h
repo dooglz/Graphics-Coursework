@@ -35,8 +35,7 @@ public:
   Creates a texture from the colour data provided and with user defined
   mipmaps and anisotropic filtering
   */
-  texture(const std::vector<glm::vec4> &data, GLuint width, GLuint height, bool mipmaps,
-          bool anisotropic) throw(...);
+  texture(const std::vector<glm::vec4> &data, GLuint width, GLuint height, bool mipmaps, bool anisotropic) throw(...);
   // Default copy constructor and assignment operator
   texture(const texture &other) = default;
   texture &operator=(const texture &rhs) = default;

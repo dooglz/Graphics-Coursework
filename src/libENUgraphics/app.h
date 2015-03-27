@@ -56,17 +56,11 @@ public:
   // Sets the keyboard callback function.  This is handled by GLFW
   void set_keyboard_callback(GLFWkeyfun f) const { glfwSetKeyCallback(renderer::get_window(), f); }
   // Sets the mouse button callback function.  This is handled by GLFW
-  void set_mousebutton_callback(GLFWmousebuttonfun f) const {
-    glfwSetMouseButtonCallback(renderer::get_window(), f);
-  }
+  void set_mousebutton_callback(GLFWmousebuttonfun f) const { glfwSetMouseButtonCallback(renderer::get_window(), f); }
   // Sets the mouse position callback function.  This is handled by GLFW
-  void set_mouseposition_callback(GLFWcursorposfun f) const {
-    glfwSetCursorPosCallback(renderer::get_window(), f);
-  }
+  void set_mouseposition_callback(GLFWcursorposfun f) const { glfwSetCursorPosCallback(renderer::get_window(), f); }
   // Sets the mouse wheel scroll callback function.  This is handled by GLFW
-  void set_scroll_callback(GLFWscrollfun f) const {
-    glfwSetScrollCallback(renderer::get_window(), f);
-  }
+  void set_scroll_callback(GLFWscrollfun f) const { glfwSetScrollCallback(renderer::get_window(), f); }
   // Runs the application
   void run();
 };

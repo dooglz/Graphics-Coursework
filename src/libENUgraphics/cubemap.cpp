@@ -60,9 +60,8 @@ cubemap::cubemap(const std::array<std::string, 6> &filenames) throw(...) {
   // Load in each image to OpenGL and assign it to the cubemap texture
   for (auto i = 0; i < 6; ++i) {
     // Load the image into OpenGL
-    glTexImage2D(targets[i], 0, GL_RGBA, FreeImage_GetWidth(images[i]),
-                 FreeImage_GetHeight(images[i]), 0, GL_BGRA, GL_UNSIGNED_BYTE,
-                 FreeImage_GetBits(images[i]));
+    glTexImage2D(targets[i], 0, GL_RGBA, FreeImage_GetWidth(images[i]), FreeImage_GetHeight(images[i]), 0, GL_BGRA,
+                 GL_UNSIGNED_BYTE, FreeImage_GetBits(images[i]));
 
     // Check if loaded OK
     if (CHECK_GL_ERROR) {
@@ -139,8 +138,8 @@ bool cubemap::set_texture(GLenum target, const std::string &filename) throw(...)
   // Unload temporary (non-rotated) image
   FreeImage_Unload(temp);
   // Load the texture into OpenGL
-  glTexImage2D(target, 0, GL_RGBA, FreeImage_GetWidth(image), FreeImage_GetHeight(image), 0,
-               GL_BGRA, GL_UNSIGNED_BYTE, FreeImage_GetBits(image));
+  glTexImage2D(target, 0, GL_RGBA, FreeImage_GetWidth(image), FreeImage_GetHeight(image), 0, GL_BGRA, GL_UNSIGNED_BYTE,
+               FreeImage_GetBits(image));
   // Check if error
   if (CHECK_GL_ERROR) {
     // Display error

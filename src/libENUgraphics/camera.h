@@ -25,21 +25,21 @@ public:
   // Destroys the camera.  Virtual destructor as this is an abstract class
   virtual ~camera() {}
   // Gets the current position of the camera
-  const glm::vec3& get_position() const { return _position; }
+  const glm::vec3 &get_position() const { return _position; }
   // Sets the position of the camera
-  void set_position(const glm::vec3& value) { _position = value; }
+  void set_position(const glm::vec3 &value) { _position = value; }
   // Gets the current target of the camera
-  const glm::vec3& get_target() const { return _target; }
+  const glm::vec3 &get_target() const { return _target; }
   // Sets the target of the camera
-  void set_target(const glm::vec3& value) { _target = value; }
+  void set_target(const glm::vec3 &value) { _target = value; }
   // Gets the current up direction of the camera
-  const glm::vec3& get_up() const { return _up; }
+  const glm::vec3 &get_up() const { return _up; }
   // Sets the up direction of the camera
-  void set_up(const glm::vec3& value) { _up = value; }
+  void set_up(const glm::vec3 &value) { _up = value; }
   // Gets the current view matrix for the camera
-  const glm::mat4& get_view() const { return _view; }
+  const glm::mat4 &get_view() const { return _view; }
   // Overide the view Matrix
-  void set_view(const glm::mat4& value) { _view = value; }
+  void set_view(const glm::mat4 &value) { _view = value; }
   // Gets the current projection matrix for the camera
   glm::mat4 get_projection() const { return _projection; }
   // Builds projection matrix

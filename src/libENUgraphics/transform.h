@@ -14,7 +14,7 @@ struct transform {
   // The scale of the 3D object
   glm::vec3 scale;
 
-  transform* parent = nullptr;
+  transform *parent = nullptr;
 
   // Creates a transform object
   transform() : scale(glm::vec3(1.0f, 1.0f, 1.0f)) {}
@@ -38,9 +38,7 @@ struct transform {
     glm::quat rot(rotation);
     setrotation(rot);
   }
-  void setrotation(const glm::quat &q) {
-    orientation = glm::normalize(q);
-  }
+  void setrotation(const glm::quat &q) { orientation = glm::normalize(q); }
 
   // Gets the transformation matrix representing the defined transform
   glm::mat4 get_transform_matrix() {
@@ -48,7 +46,7 @@ struct transform {
     auto S = glm::scale(glm::mat4(1.0f), scale);
     auto R = glm::mat4_cast(orientation);
     auto matrix = T * R * S;
-    if (parent != nullptr){
+    if (parent != nullptr) {
       matrix = parent->get_transform_matrix() * matrix;
     }
 

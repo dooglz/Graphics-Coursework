@@ -20,8 +20,7 @@ void print_GL_info() {
 void build_content() {}
 
 // Initialises the renderer
-bool renderer::initialise(const unsigned int screenX, const unsigned int screenY,
-                          const bool fullscreen) {
+bool renderer::initialise(const unsigned int screenX, const unsigned int screenY, const bool fullscreen) {
   // Set running to false
   _instance->_running = false;
 
@@ -40,7 +39,7 @@ bool renderer::initialise(const unsigned int screenX, const unsigned int screenY
 
   // Set window hints for GLFW
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-  //glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+  // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
   glfwWindowHint(GLFW_SAMPLES, 4);
   glfwWindowHint(GLFW_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
@@ -53,8 +52,8 @@ bool renderer::initialise(const unsigned int screenX, const unsigned int screenY
   _instance->_height = screenY;
 #else
   // If in release mode, set as fullscreen
-  _instance->_window =
-  _instance->_window = glfwCreateWindow(video_mode->width, video_mode->height, "Render Framework", nullptr, nullptr);
+  _instance->_window = _instance->_window =
+      glfwCreateWindow(video_mode->width, video_mode->height, "Render Framework", nullptr, nullptr);
   _instance->_width = video_mode->width;
   _instance->_height = video_mode->height;
 #endif
@@ -640,8 +639,7 @@ void renderer::set_render_target(const frame_buffer &frame) throw(...) {
   }
 }
 
-void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer,
-                           unsigned int lineLength) {
+void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer, unsigned int lineLength) {
   if (linebuffer.size() < 1) {
     return;
   }
@@ -667,8 +665,7 @@ void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer,
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
   // put the data in it
-  glBufferData(GL_ARRAY_BUFFER, linebuffer.size() * sizeof(glm::vec3), &linebuffer[0],
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, linebuffer.size() * sizeof(glm::vec3), &linebuffer[0], GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0,                 // index
@@ -693,8 +690,7 @@ void renderer::RenderLines(const std::vector<const glm::vec3> &linebuffer,
 
     // Bind iBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0],
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
 
     for (unsigned int i = 0; i < (linebuffer.size() / lineLength); i += 2) {
       glDrawRangeElements(GL_LINE_STRIP, i, i + lineLength, 1, GL_UNSIGNED_INT, &indices[0]);

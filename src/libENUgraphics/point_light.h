@@ -22,13 +22,11 @@ private:
 public:
   // Creates a point light with a default colour
   point_light()
-      : _colour(glm::vec4(0.9f, 0.9f, 0.9f, 1.0f)), _position(glm::vec3(0.0f, 0.0f, 0.0f)),
-        _constant(0.5f), _linear(0.2f), _quadratic(0.01f) {}
+      : _colour(glm::vec4(0.9f, 0.9f, 0.9f, 1.0f)), _position(glm::vec3(0.0f, 0.0f, 0.0f)), _constant(0.5f),
+        _linear(0.2f), _quadratic(0.01f) {}
   // Creates a point light with provided properties
-  point_light(const glm::vec4 &colour, const glm::vec3 &pos, float constant, float linear,
-              float quadratic)
-      : _colour(colour), _position(pos), _constant(constant), _linear(linear),
-        _quadratic(quadratic) {}
+  point_light(const glm::vec4 &colour, const glm::vec3 &pos, float constant, float linear, float quadratic)
+      : _colour(colour), _position(pos), _constant(constant), _linear(linear), _quadratic(quadratic) {}
   // Default copy constructor and assignment operator
   point_light(const point_light &other) = default;
   point_light &operator=(const point_light &rhs) = default;

@@ -7,8 +7,8 @@ namespace graphics_framework {
 
 // Debug message callback for OpenGL
 // Thanks to Sam Serrels for this one
-void __stdcall opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                     GLsizei length, const GLchar *message, const void *user_param);
+void __stdcall opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                     const GLchar *message, const void *user_param);
 
 // GLFW error callback
 void glfw_debug_callback(int error, const char *message);
@@ -50,9 +50,8 @@ inline bool check_file_exists(const std::string &filename) {
 }
 
 // Utility function to convert screen pos to world ray
-void screen_pos_to_world_ray(float mouse_X, float mouse_Y, unsigned int screen_width,
-                             unsigned int screen_height, const glm::mat4 &view,
-                             const glm::mat4 &proj, glm::vec3 &origin, glm::vec3 &direction);
+void screen_pos_to_world_ray(float mouse_X, float mouse_Y, unsigned int screen_width, unsigned int screen_height,
+                             const glm::mat4 &view, const glm::mat4 &proj, glm::vec3 &origin, glm::vec3 &direction);
 
 // Utility function to test intersection between ray and mesh bounding box
 bool test_ray_oobb(const glm::vec3 &origin, const glm::vec3 &direction, const glm::vec3 &aabb_min,

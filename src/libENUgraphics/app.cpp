@@ -36,13 +36,11 @@ void app::run() {
     // Get current time
     current_time_stamp = std::chrono::system_clock::now();
     // Calculate elapsed time
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time_stamp -
-                                                                         prev_time_stamp).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(current_time_stamp - prev_time_stamp).count();
     auto seconds = static_cast<float>(elapsed) / 1000.0f;
 
     // Check if escape is pressed or window should be closing
-    if (glfwGetKey(renderer::get_window(), GLFW_KEY_ESCAPE) ||
-        glfwWindowShouldClose(renderer::get_window())) {
+    if (glfwGetKey(renderer::get_window(), GLFW_KEY_ESCAPE) || glfwWindowShouldClose(renderer::get_window())) {
       // Display message
       std::clog << "LOG - escape pressed or window closed.  Exiting" << std::endl;
       break;

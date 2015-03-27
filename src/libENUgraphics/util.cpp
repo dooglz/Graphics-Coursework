@@ -41,9 +41,8 @@ inline std::string get_source(GLenum source) {
 
 // Debug message callback for OpenGL
 // Thanks to Sam Serrels for this one
-void __stdcall opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
-                                     GLsizei length, const GLchar *message,
-                                     const void *user_param) {
+void __stdcall opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                     const GLchar *message, const void *user_param) {
   switch (type) {
   case GL_DEBUG_TYPE_ERROR:
     std::cerr << "An OpenGL debug error has been detected: " << message << std::endl;
@@ -91,9 +90,8 @@ void glfw_debug_callback(int error, const char *message) {
 }
 
 // Utility function to convert screen pos to world ray
-void screen_pos_to_world_ray(float mouse_X, float mouse_Y, unsigned int screen_width,
-                             unsigned int screen_height, const glm::mat4 &view,
-                             const glm::mat4 &proj, glm::vec3 &origin, glm::vec3 &direction) {
+void screen_pos_to_world_ray(float mouse_X, float mouse_Y, unsigned int screen_width, unsigned int screen_height,
+                             const glm::mat4 &view, const glm::mat4 &proj, glm::vec3 &origin, glm::vec3 &direction) {
   // The ray start and end positions, screen coordinates
   float xx = (2.0f * mouse_X) / screen_width - 1.0f;
   float yy = (2.0f * (screen_height - mouse_Y)) / screen_height - 1.0f;

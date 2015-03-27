@@ -61,8 +61,7 @@ void Graphics::UpdateLights() {
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
     // this might not be the best way to copy data, but it works.
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0],
-                 GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
   //  point lights
@@ -84,8 +83,7 @@ void Graphics::UpdateLights() {
       S_PLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0],
-                 GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
   // spot lights
@@ -110,8 +108,7 @@ void Graphics::UpdateLights() {
       S_SLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0],
-                 GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
   }
 
@@ -125,8 +122,7 @@ void Graphics::MakeGyroscope() {
   meshes["torus0"] = mesh(geometry_builder::create_torus(32, 32, 0.5f, rings));
   meshes["torus0"].get_transform().translate(vec3(10.0f, rings + 2.0f, -30.0f));
   for (unsigned int i = 1; i < rings; i++) {
-    meshes["torus" + std::to_string(i)] =
-        mesh(geometry_builder::create_torus(20, 20, 0.5f, rings - i));
+    meshes["torus" + std::to_string(i)] = mesh(geometry_builder::create_torus(20, 20, 0.5f, rings - i));
     meshes["torus" + std::to_string(i)].get_transform().parent =
         &meshes["torus" + std::to_string(i - 1)].get_transform();
     meshes["torus" + std::to_string(i)].get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
@@ -271,8 +267,7 @@ bool Graphics::Load_content() {
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
-  aspect = static_cast<float>(renderer::get_screen_width()) /
-           static_cast<float>(renderer::get_screen_height());
+  aspect = static_cast<float>(renderer::get_screen_width()) / static_cast<float>(renderer::get_screen_height());
   cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
   activeCam = &cam;
 
@@ -284,7 +279,7 @@ bool Graphics::Load_content() {
   desertM->get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_shininess(1000.0f);
 
-  //std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+  // std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
   skygeo = mesh(geometry_builder::create_sphere(32, 15, vec3(900.0f, 900.0f, 900.0f)));
   return true;
 }
@@ -310,26 +305,23 @@ bool Graphics::Update(float delta_time) {
   dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
   daymode = (dayscale > oldd);
   sunscale = (dayscale - 0.5f) / 0.5f;
-  
+
   printf("%f\t\t%f\t\t%d\n", dayscale, sunscale, daymode);
 
   vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
   dlight.set_direction(glm::rotateZ(rot, counter));
 
   if (true) {
-    dlight.set_light_colour(
-      mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), sunscale + 0.2f));
+    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), sunscale + 0.2f));
   } else {
     dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
   UpdateLights();
   // The ratio of pixels to rotation - remember the fov
-  static double ratio_width =
-      quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
-  static double ratio_height =
-      (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
-                              static_cast<float>(renderer::get_screen_width()))) /
-      static_cast<float>(renderer::get_screen_height());
+  static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
+  static double ratio_height = (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
+                                                       static_cast<float>(renderer::get_screen_width()))) /
+                               static_cast<float>(renderer::get_screen_height());
 
   double current_x;
   double current_y;
@@ -388,8 +380,7 @@ void Graphics::Rendermesh(mesh &m, texture &t) {
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
-  glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
-                     value_ptr(m.get_transform().get_normal_matrix()));
+  glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // **********
@@ -425,8 +416,7 @@ void Graphics::RendermeshB(mesh &m, const texture &t, const texture &tb, const f
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
-  glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE,
-                     value_ptr(m.get_transform().get_normal_matrix()));
+  glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // **********
@@ -469,32 +459,32 @@ void Graphics::ProcessLines() {
 void Graphics::RenderSky() {
 
   renderer::bind(skyeffect2);
-  //vert uniforms
+  // vert uniforms
   mat4 modelMatrix = mat4(1.0f);
   auto V = activeCam->get_view();
   auto P = activeCam->get_projection();
   mat4 MVP = P * V * modelMatrix;
-  //frag uniforms
-  
+  // frag uniforms
+
   float luminance = 1.0f;
   float turbidity = 10.0f;
   float reileigh = 4.0f;
   float mieCoefficient = 0.005f;
   float mieDirectionalG = 0.8f;
   //
-  float inclination = (daymode ? dayscale : (1.0f - dayscale));//0.49f; // elevation / inclination
-  float azimuth = (daymode ? 0.75f : 0.25f);//0.25f; // Facing front
+  float inclination = (daymode ? dayscale : (1.0f - dayscale)); // 0.49f; // elevation / inclination
+  float azimuth = (daymode ? 0.75f : 0.25f); // 0.25f; // Facing front
   float distance = 900.0f;
   float theta = pi<float>() * (inclination - 0.5);
   float phi = 2 * pi<float>() * (azimuth - 0.5);
   vec3 sunPosition = vec3(distance * cos(phi), distance * sin(phi) * sin(theta), distance * sin(phi) * cos(theta));
 
-  //set uniforms
+  // set uniforms
   {
-    //v
-    glUniformMatrix4fv(skyeffect2.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP)); 
+    // v
+    glUniformMatrix4fv(skyeffect2.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
     glUniformMatrix4fv(skyeffect2.get_uniform_location("modelMatrix"), 1, GL_FALSE, value_ptr(modelMatrix));
-    //f
+    // f
     glUniform3fv(skyeffect2.get_uniform_location("sunPosition"), 1, &sunPosition[0]);
     glUniform1f(skyeffect2.get_uniform_location("luminance"), luminance);
     glUniform1f(skyeffect2.get_uniform_location("turbidity"), turbidity);
@@ -507,7 +497,7 @@ void Graphics::RenderSky() {
   renderer::render(skygeo);
   glEnable(GL_CULL_FACE);
 
-  return;  
+  return;
 }
 
 bool Graphics::Render() {

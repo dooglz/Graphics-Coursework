@@ -81,14 +81,11 @@ public:
   // Gets the number of indices in the index buffer
   GLuint get_index_count() const { return _indices; }
   // Adds a buffer of vec2 data to the geometry object
-  bool add_buffer(const std::vector<glm::vec2> &buffer, GLuint index,
-                  GLenum buffer_type = GL_STATIC_DRAW);
+  bool add_buffer(const std::vector<glm::vec2> &buffer, GLuint index, GLenum buffer_type = GL_STATIC_DRAW);
   // Adds a buffer of vec3 data to the geometry object
-  bool add_buffer(const std::vector<glm::vec3> &buffer, GLuint index,
-                  GLenum buffer_type = GL_STATIC_DRAW);
+  bool add_buffer(const std::vector<glm::vec3> &buffer, GLuint index, GLenum buffer_type = GL_STATIC_DRAW);
   // Adds a buffer of vec4 data to the geometry object
-  bool add_buffer(const std::vector<glm::vec4> &buffer, GLuint index,
-                  GLenum buffer_type = GL_STATIC_DRAW);
+  bool add_buffer(const std::vector<glm::vec4> &buffer, GLuint index, GLenum buffer_type = GL_STATIC_DRAW);
   // Adds an index buffer to the geometry object
   bool add_index_buffer(const std::vector<GLuint> &buffer);
   // Gets the minimal point of the geometry

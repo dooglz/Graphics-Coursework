@@ -7,8 +7,7 @@ namespace graphics_framework {
 /*
 Creates a new geometry object
 */
-geometry::geometry() throw(...)
-    : _type(GL_TRIANGLES), _vao(0), _index_buffer(0), _vertices(0), _indices(0) {}
+geometry::geometry() throw(...) : _type(GL_TRIANGLES), _vao(0), _index_buffer(0), _vertices(0), _indices(0) {}
 
 /*
 Creates a piece of geometry by loading in a model
@@ -20,8 +19,7 @@ geometry::geometry(const std::string &filename) throw(...) : geometry() {
   Assimp::Importer model_importer;
   // Read in the model data
   auto sc = model_importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_GenSmoothNormals |
-                                                  aiProcess_ValidateDataStructure |
-                                                  aiProcess_FindInvalidData);
+                                                  aiProcess_ValidateDataStructure | aiProcess_FindInvalidData);
   // Check that data has been read in correctly
   if (!sc) {
     // Display error
