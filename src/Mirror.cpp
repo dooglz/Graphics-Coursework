@@ -10,6 +10,7 @@
 #include "mirror.h"
 #include "main.h"
 #include "Math.h"
+#include "Enviroment.h"
 #include "libENUgraphics\graphics_framework.h"
 
 using namespace std;
@@ -82,17 +83,12 @@ void RenderMirror(mesh &mirror) {
     // Rerender scene
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    // glDisable(GL_CULL_FACE);
-    for (auto &e : gfx->meshes) {
-      gfx->Rendermesh(e.second, gfx->checkedTexture);
-    }
-    // glDisable(GL_CULL_FACE);
-    gfx->Rendermesh(*gfx->desertM, gfx->sandTexture);
-    gfx->RenderSky();
+    
+    gfx->DrawScene();
 
-    // end render
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    // end render
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     gfx->activeCam = &gfx->cam;
   }

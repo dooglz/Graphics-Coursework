@@ -36,6 +36,12 @@
     <ClInclude Include="mirror.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Enviroment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Gimbal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -54,6 +60,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Math.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Enviroment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -100,7 +109,11 @@
     <CustomBuild Include="..\res\shaders\phong.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\res\shaders\sky2.frag" />
-    <CustomBuild Include="..\res\shaders\sky2.vert" />
+    <CustomBuild Include="..\res\shaders\sky2.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\sky2.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

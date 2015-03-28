@@ -36,9 +36,7 @@ public:
   double cursor_y = 0.0;
   float aspect;
   float counter = 0;
-  float dayscale;
-  bool daymode;
-  float sunscale;
+  float realtime;
 
   // The current active camera, used for rendering
   camera *activeCam;
@@ -56,8 +54,7 @@ public:
   effect phongEffect;
   effect texturedEffect;
   effect texturedBumpEffect;
-  effect skyeffect;
-  effect skyeffect2;
+
 
   mesh *desertM;
   mesh mirror;
@@ -77,7 +74,7 @@ public:
   std::vector<spot_light> SLights;
 
 
-  mesh skygeo;
+
   std::vector<const glm::vec3> linebuffer;
 
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
@@ -89,7 +86,7 @@ public:
   void Rendermesh(mesh &m, texture &t);
   // Renders a mesh with a bump map
   void RendermeshB(mesh &m, const texture &t, const texture &tb, const float scale);
-
+  void DrawScene();
   void RenderSky();
   // Send all light data to SSBOs on the GPU
   void UpdateLights();

@@ -12,6 +12,8 @@
 #include "DesertGen.h"
 #include "Math.h"
 #include "mirror.h"
+#include "Enviroment.h"
+#include "Gimbal.h"
 #include <functional>
 
 using namespace std;
@@ -41,6 +43,7 @@ bool Graphics::Initialise() {
 
   return true;
 }
+
 
 // Send all light data to SSBOs on the GPU
 void Graphics::UpdateLights() {
@@ -117,48 +120,7 @@ void Graphics::UpdateLights() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-#define rings 16
-void Graphics::MakeGyroscope() {
-  meshes["torus0"] = mesh(geometry_builder::create_torus(32, 32, 0.5f, rings));
-  meshes["torus0"].get_transform().translate(vec3(10.0f, rings + 2.0f, -30.0f));
-  for (unsigned int i = 1; i < rings; i++) {
-    meshes["torus" + std::to_string(i)] = mesh(geometry_builder::create_torus(20, 20, 0.5f, rings - i));
-    meshes["torus" + std::to_string(i)].get_transform().parent =
-        &meshes["torus" + std::to_string(i - 1)].get_transform();
-    meshes["torus" + std::to_string(i)].get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
-    meshes["torus" + std::to_string(i)].get_material().set_diffuse(
-        vec4(((i - 3) % 9) / 9.0f, (i % 9) / 9.0f, ((i - 6) % 9) / 9.0f, 1.0f));
-    meshes["torus" + std::to_string(i)].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-  }
-}
-
-void Graphics::UpdateGyroscope(float delta_time) {
-  for (unsigned int i = 0; i < rings; i++) {
-    vec3 rot;
-    switch (i % 2) {
-    case (0):
-      rot = vec3(0, 0, 1);
-      break;
-    case (1):
-      rot = vec3(-1, 0, 0);
-      break;
-    case (2):
-      rot = vec3(0, 1, 0);
-      break;
-    case (3):
-      rot = vec3(0, 0, -1);
-      break;
-    case (4):
-      rot = vec3(1, 0, 0);
-      break;
-    case (5):
-      rot = vec3(0, -1, 0);
-      break;
-    }
-    meshes["torus" + std::to_string(i)].get_transform().rotate((delta_time)*0.6f * rot);
-  }
-}
-
+Gimbal* gimbal;
 bool Graphics::Load_content() {
   // Lights
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
@@ -203,8 +165,6 @@ bool Graphics::Load_content() {
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());
   meshes["pyramid"] = mesh(geometry_builder::create_pyramid());
-  // meshes["torus2"].get_transform().translate(vec3(10.0f, 6.0f, -30.0f));
-  // meshes["torus3"].get_transform().translate(vec3(10.0f, 6.0f, -30.0f));
   meshes["box"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
   meshes["box"].get_transform().translate(vec3(-10.0f, 2.5f, -30.0f));
   meshes["pyramid"].get_transform().scale = vec3(8.0f, 100.0f, 8.0f);
@@ -217,8 +177,6 @@ bool Graphics::Load_content() {
   meshes["pyramid"].get_material().set_diffuse(vec4(0.0f, 0.0f, 1.0f, 1.0f));
   meshes["pyramid"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["pyramid"].get_material().set_shininess(25.0f);
-  MakeGyroscope();
-  SetupMirror();
 
   goodsand = mesh(geometry_builder::create_disk(10, vec2(1.0, 1.0)));
   goodsand.get_transform().translate(vec3(0, 0.01f, 0));
@@ -256,14 +214,6 @@ bool Graphics::Load_content() {
   texturedEffect.add_shader("shaders\\simple_texture.frag", GL_FRAGMENT_SHADER);
   texturedEffect.build();
 
-  skyeffect.add_shader("shaders\\sky.vert", GL_VERTEX_SHADER);
-  skyeffect.add_shader("shaders\\sky.frag", GL_FRAGMENT_SHADER);
-  skyeffect.build();
-
-  skyeffect2.add_shader("shaders\\sky2.vert", GL_VERTEX_SHADER);
-  skyeffect2.add_shader("shaders\\sky2.frag", GL_FRAGMENT_SHADER);
-  skyeffect2.build();
-
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -279,87 +229,80 @@ bool Graphics::Load_content() {
   desertM->get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   desertM->get_material().set_shininess(1000.0f);
 
-  // std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
-  skygeo = mesh(geometry_builder::create_sphere(32, 15, vec3(900.0f, 900.0f, 900.0f)));
+  Enviroment::Load();
+  gimbal = new Gimbal(16);
+  SetupMirror();
+
   return true;
 }
-float realtime;
+
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
   counter += (delta_time * 0.09f);
   // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
-  UpdateGyroscope(delta_time);
+  gimbal->Update(delta_time);
+
   float s = sinf(counter);
   float c = cosf(counter);
   if (counter > pi<float>()) {
     counter = 0;
   }
-
-  // counter		0			          pi/2			        pi
-  //            midday   Dusk   midnight  Dawn   Midday
-  // dayscale	  1.0			 0.5    0				   0.5   1.0
-  // sunscale   1.0      0      0          0     1.0
-  // daymode    0        0      0          1     1
-  const float oldd = dayscale;
-  dayscale = fabs(counter - half_pi<float>()) / half_pi<float>();
-  daymode = (dayscale > oldd);
-  sunscale = (dayscale - 0.5f) / 0.5f;
-
-  printf("%f\t\t%f\t\t%d\n", dayscale, sunscale, daymode);
-
+  Enviroment::Update(delta_time);
   vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
   dlight.set_direction(glm::rotateZ(rot, counter));
 
   if (true) {
-    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), sunscale + 0.2f));
+    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), Enviroment::dayscale  - 0.2f));
   } else {
     dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
   UpdateLights();
-  // The ratio of pixels to rotation - remember the fov
-  static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
-  static double ratio_height = (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
-                                                       static_cast<float>(renderer::get_screen_width()))) /
-                               static_cast<float>(renderer::get_screen_height());
 
-  double current_x;
-  double current_y;
-  // Get the current cursor position
-  glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
-  // Calculate delta of cursor positions from last frame
-  double delta_x = current_x - cursor_x;
-  double delta_y = current_y - cursor_y;
-  // Multiply deltas by ratios - gets actual change in orientation
-  delta_x *= ratio_width;
-  delta_y *= -ratio_height;
+  {//Camera update
+    // The ratio of pixels to rotation - remember the fov
+    static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
+    static double ratio_height = (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
+                                                         static_cast<float>(renderer::get_screen_width()))) /
+                                 static_cast<float>(renderer::get_screen_height());
 
-  // Rotate cameras by delta
-  // delta_y - x-axis rotation
-  // delta_x - y-axis rotation
-  cam.rotate(static_cast<float>(delta_x), static_cast<float>(delta_y));
+    double current_x;
+    double current_y;
+    // Get the current cursor position
+    glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
+    // Calculate delta of cursor positions from last frame
+    double delta_x = current_x - cursor_x;
+    double delta_y = current_y - cursor_y;
+    // Multiply deltas by ratios - gets actual change in orientation
+    delta_x *= ratio_width;
+    delta_y *= -ratio_height;
 
-  // Use keyboard to move the camera
-  vec3 translation(0.0f, 0.0f, 0.0f);
-  if (glfwGetKey(renderer::get_window(), 'W'))
-    translation.z += 5.0f * delta_time;
-  if (glfwGetKey(renderer::get_window(), 'S'))
-    translation.z -= 5.0f * delta_time;
-  if (glfwGetKey(renderer::get_window(), 'A'))
-    translation.x -= 5.0f * delta_time;
-  if (glfwGetKey(renderer::get_window(), 'D'))
-    translation.x += 5.0f * delta_time;
+    // Rotate cameras by delta
+    // delta_y - x-axis rotation
+    // delta_x - y-axis rotation
+    cam.rotate(static_cast<float>(delta_x), static_cast<float>(delta_y));
 
-  float moveSpeed = 2.0f;
-  if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT))
-    moveSpeed = 6.0f;
+    // Use keyboard to move the camera
+    vec3 translation(0.0f, 0.0f, 0.0f);
+    if (glfwGetKey(renderer::get_window(), 'W'))
+      translation.z += 5.0f * delta_time;
+    if (glfwGetKey(renderer::get_window(), 'S'))
+      translation.z -= 5.0f * delta_time;
+    if (glfwGetKey(renderer::get_window(), 'A'))
+      translation.x -= 5.0f * delta_time;
+    if (glfwGetKey(renderer::get_window(), 'D'))
+      translation.x += 5.0f * delta_time;
 
-  cam.move(translation * moveSpeed);
-  cam.update(delta_time);
+    float moveSpeed = 2.0f;
+    if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT))
+      moveSpeed = 6.0f;
 
-  cursor_x = current_x;
-  cursor_y = current_y;
+    cam.move(translation * moveSpeed);
+    cam.update(delta_time);
 
+    cursor_x = current_x;
+    cursor_y = current_y;
+  }
   return true;
 }
 
@@ -456,76 +399,22 @@ void Graphics::ProcessLines() {
   linebuffer.clear();
 }
 
-void Graphics::RenderSky() {
-
-  renderer::bind(skyeffect2);
-  // vert uniforms
-  mat4 modelMatrix = mat4(1.0f);
-  auto V = activeCam->get_view();
-  auto P = activeCam->get_projection();
-  mat4 MVP = P * V * modelMatrix;
-  // frag uniforms
-
-  float luminance = 1.0f;
-  float turbidity = 10.0f;
-  float reileigh = 4.0f;
-  float mieCoefficient = 0.005f;
-  float mieDirectionalG = 0.8f;
-  //
-  float inclination = (daymode ? dayscale : (1.0f - dayscale)); // 0.49f; // elevation / inclination
-  float azimuth = (daymode ? 0.75f : 0.25f); // 0.25f; // Facing front
-  float distance = 900.0f;
-  float theta = pi<float>() * (inclination - 0.5);
-  float phi = 2 * pi<float>() * (azimuth - 0.5);
-  vec3 sunPosition = vec3(distance * cos(phi), distance * sin(phi) * sin(theta), distance * sin(phi) * cos(theta));
-
-  // set uniforms
-  {
-    // v
-    glUniformMatrix4fv(skyeffect2.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-    glUniformMatrix4fv(skyeffect2.get_uniform_location("modelMatrix"), 1, GL_FALSE, value_ptr(modelMatrix));
-    // f
-    glUniform3fv(skyeffect2.get_uniform_location("sunPosition"), 1, &sunPosition[0]);
-    glUniform1f(skyeffect2.get_uniform_location("luminance"), luminance);
-    glUniform1f(skyeffect2.get_uniform_location("turbidity"), turbidity);
-    glUniform1f(skyeffect2.get_uniform_location("reileigh"), reileigh);
-    glUniform1f(skyeffect2.get_uniform_location("mieCoefficient"), mieCoefficient);
-    glUniform1f(skyeffect2.get_uniform_location("mieDirectionalG"), mieDirectionalG);
-  }
-
-  glDisable(GL_CULL_FACE);
-  renderer::render(skygeo);
-  glEnable(GL_CULL_FACE);
-
-  return;
-}
-
-bool Graphics::Render() {
-  glEnable(GL_FOG); // enable the fog
-  GLfloat density = 0.3f;
-  GLfloat fogColor[4] = {0.5, 0.5, 0.5, 1.0};
-  glFogi(GL_FOG_MODE, GL_EXP2); // set the fog mode to GL_EXP2
-  glFogfv(GL_FOG_COLOR, fogColor);
-  glFogf(GL_FOG_DENSITY, density);
-  glHint(GL_FOG_HINT, GL_NICEST);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  // Render meshes
+void Graphics::DrawScene(){
   for (auto &e : meshes) {
     Rendermesh(e.second, checkedTexture);
   }
-
   Rendermesh(*desertM, sandTexture);
-
   RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-
-  RenderSky();
-
-  RenderMirror(mirror);
-
+  Enviroment::RenderSky();
+  gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
-
   ProcessLines();
+}
+
+bool Graphics::Render() {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  DrawScene();
+  RenderMirror(mirror);
   return true;
 }
 
@@ -545,6 +434,7 @@ void main() {
 
   // Run application
   application.run();
+  delete gimbal;
   delete gfx;
   gfx = nullptr;
 }

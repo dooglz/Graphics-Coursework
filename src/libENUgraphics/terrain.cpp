@@ -32,11 +32,11 @@ terrain::terrain(const std::string &heightmap) : terrain() {
   glm::vec3 point;
 
   // Iterate through each point, calculate vertex and add to vector
-  for (int x = 0; x < tex.get_width(); ++x) {
+  for (unsigned int x = 0; x < tex.get_width(); ++x) {
     // Calculate x position of point
     point.x = -(tex.get_width() / 2.0f) + (width_point * static_cast<float>(x));
 
-    for (int z = 0; z < tex.get_height(); ++z) {
+    for (unsigned int z = 0; z < tex.get_height(); ++z) {
       // Calculate z position of point
       point.z = -(tex.get_height() / 2.0f) + (depth_point * static_cast<float>(z));
       // Y position based on red component of height map data
