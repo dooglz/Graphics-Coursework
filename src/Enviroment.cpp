@@ -31,7 +31,7 @@ void Enviroment::Update(float delta_time)
   dayscale = fabs(gfx->counter - half_pi<float>()) / half_pi<float>();
   daymode = (dayscale > oldd);
 
-  printf("%f\t\t%f\t\t%d\n", dayscale, daymode);
+  //printf("%f\t\t%f\t\t%d\n", dayscale, daymode);
 
 }
 

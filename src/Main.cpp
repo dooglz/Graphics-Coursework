@@ -35,6 +35,7 @@ void Graphics::DrawCross(const glm::vec3 &p1, const float size) {
 }
 
 bool Graphics::Initialise() {
+  counter = quarter_pi<float>() * 3.0f;
   // Set input mode - hide the cursor
   glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -240,7 +241,7 @@ bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
   counter += (delta_time * 0.09f);
-  // mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
+   mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
 
   float s = sinf(counter);

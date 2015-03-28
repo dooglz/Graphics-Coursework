@@ -55,8 +55,7 @@ void SetupMirror() {
   // set dimensions, fill with undefined
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1280, 720);
   // attach to fbo depth output
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
-                            depthrenderbuffer);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
   // unbind
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -65,32 +64,39 @@ void SetupMirror() {
 void RenderMirror(mesh &mirror) {
   // render the reflected scene into a texture
   {
-    bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
+    const vec3 mirrorPos = mirror.get_transform().position;
+    const vec3 mirrorNormal = normalize(GetUpVector(mirror.get_transform().orientation));
 
-    vec3 mirrorPos = mirror.get_transform().position;
-    vec3 mirrorNormal = normalize(GetUpVector(mirror.get_transform().orientation));
-    mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
+    // we don't have clipping, so don't render the opposite side
+    const vec3 cpos = vec3(inverse(gfx->cam.get_view())[3]);
+    const float plneq = dot(mirrorNormal, (cpos - mirrorPos));
 
-    bouncecam.set_view(gfx->cam.get_view() * reflectionMat);
     // renderer::set_render_target(*mirrorFB);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
 
     // Clear the depth and colour buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    gfx->activeCam = &bouncecam;
+    if (plneq > 0) {
 
-    // Rerender scene
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    
-    gfx->DrawScene();
+      const mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
+      const mat4 viewMat = gfx->cam.get_view() * reflectionMat;
+      bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
+      bouncecam.set_view(viewMat);
+      gfx->activeCam = &bouncecam;
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+      // Rerender scene
+      glEnable(GL_CULL_FACE);
+      glCullFace(GL_FRONT);
+
+      gfx->DrawScene();
+
+      glEnable(GL_CULL_FACE);
+      glCullFace(GL_BACK);
+      gfx->activeCam = &gfx->cam;
+    } 
     // end render
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    gfx->activeCam = &gfx->cam;
   }
 
   // render texture onto plane
@@ -113,8 +119,7 @@ void RenderMirror(mesh &mirror) {
 
   // Set MVP matrix uniform
   glUniformMatrix4fv(waterEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  glUniformMatrix4fv(waterEffect.get_uniform_location("reflected_MVP"), 1, GL_FALSE,
-                     value_ptr(RMVP));
+  glUniformMatrix4fv(waterEffect.get_uniform_location("reflected_MVP"), 1, GL_FALSE, value_ptr(RMVP));
   glDisable(GL_CULL_FACE);
   renderer::render(mirror);
   glEnable(GL_CULL_FACE);
