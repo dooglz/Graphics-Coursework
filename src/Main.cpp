@@ -35,7 +35,7 @@ void Graphics::DrawCross(const glm::vec3 &p1, const float size) {
 }
 
 bool Graphics::Initialise() {
-  counter = quarter_pi<float>() * 3.0f;
+ // counter = quarter_pi<float>() * 3.0f;
   // Set input mode - hide the cursor
   glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -167,7 +167,7 @@ bool Graphics::Load_content() {
   meshes["box"] = mesh(geometry_builder::create_box());
   meshes["pyramid"] = mesh(geometry_builder::create_pyramid());
   meshes["box"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
-  meshes["box"].get_transform().translate(vec3(-10.0f, 2.5f, -30.0f));
+  meshes["box"].get_transform().translate(vec3(0, 5.0f, 37.0f));
   meshes["pyramid"].get_transform().scale = vec3(8.0f, 100.0f, 8.0f);
   meshes["pyramid"].get_transform().translate(vec3(0, 50, 0));
   meshes["box"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -240,8 +240,8 @@ bool Graphics::Load_content() {
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
-  counter += (delta_time * 0.09f);
-   mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
+ // counter += (delta_time * 0.09f);
+ //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
 
   float s = sinf(counter);

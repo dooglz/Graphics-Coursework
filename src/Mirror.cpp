@@ -7,6 +7,7 @@
 #include <glm\gtx\rotate_vector.hpp>
 #include <glm\gtx\quaternion.hpp>
 #include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtc\matrix_access.hpp>
 #include "mirror.h"
 #include "main.h"
 #include "Math.h"
@@ -77,12 +78,50 @@ void RenderMirror(mesh &mirror) {
     // Clear the depth and colour buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (plneq > 0) {
+    if (true || plneq > 0) {
 
       const mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
       const mat4 viewMat = gfx->cam.get_view() * reflectionMat;
       bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
       bouncecam.set_view(viewMat);
+
+      mat4 projmat = bouncecam.get_projection();
+
+      // clipping stuff
+      vec4 clipPlane = vec4(0, 0, 0, 0);
+
+      clipPlane = vec4(-mirrorNormal, 30.0f);
+
+      clipPlane = clipPlane * viewMat;
+
+      // clipSpaceCorner = (sgn(clipPlane.x), sgn(clipPlane.y), 1.0, 1.0)
+      vec4 clipSpaceCorner = vec4(sgn(clipPlane.x), sgn(clipPlane.y), 1.0, 1.0);
+
+      // clipSpaceCorner = clipSpaceCorner * projection.inverse()
+      clipSpaceCorner = clipSpaceCorner * inverse(projmat);
+
+      // clipPlane = clipPlane * (2.0 / clipSpaceCorner.clipPlane)
+      clipPlane = clipPlane * (2.0f / dot(clipSpaceCorner, clipPlane));
+
+      // projmatrow3 = (clipPlane.x, clipPlane.y, clipPlane.z + 1, clipPlane.w)
+      clipPlane = vec4(clipPlane.x, clipPlane.y, clipPlane.z + 1, clipPlane.w);
+
+      //   printf("\nprojmat is: (%f,%f,%f,%f)\n", glm::row(projmat, 2).x, glm::row(projmat, 2).y, glm::row(projmat,
+      //   2).z, glm::row(projmat, 2).w);
+      projmat = glm::row(projmat, 2, clipPlane);
+
+      // printf("projmat is: (%f,%f,%f,%f)\n", glm::row(projmat, 2).x, glm::row(projmat, 2).y, glm::row(projmat, 2).z, glm::row(projmat, 2).w);
+      // printf("\nBouncecam projection is: (%f,%f,%f,%f)\n", glm::row(bouncecam.get_projection(), 2).x, glm::row(bouncecam.get_projection(), 2).y, glm::row(bouncecam.get_projection(), 2).z, glm::row(bouncecam.get_projection(), 2).w);
+      // printf("set Bouncecam projection to: (%f,%f,%f,%f)\n", clipPlane.x, clipPlane.y, clipPlane.z, clipPlane.w);
+
+      bouncecam.set_projection2(projmat);
+
+      //  printf("Bouncecam projection is: (%f,%f,%f,%f)\n", glm::row(bouncecam.get_projection(), 2).x,
+      //  glm::row(bouncecam.get_projection(), 2).y, glm::row(bouncecam.get_projection(), 2).z,
+      //  glm::row(bouncecam.get_projection(), 2).w);
+
+      projmat = bouncecam.get_projection();
+
       gfx->activeCam = &bouncecam;
 
       // Rerender scene
@@ -94,7 +133,7 @@ void RenderMirror(mesh &mirror) {
       glEnable(GL_CULL_FACE);
       glCullFace(GL_BACK);
       gfx->activeCam = &gfx->cam;
-    } 
+    }
     // end render
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }

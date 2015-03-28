@@ -80,6 +80,7 @@
   <ItemGroup>
     <ClCompile Include="app.cpp" />
     <ClCompile Include="arc_ball_camera.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="chase_camera.cpp" />
     <ClCompile Include="cubemap.cpp" />
     <ClCompile Include="depth_buffer.cpp" />

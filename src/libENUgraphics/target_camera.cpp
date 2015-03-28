@@ -13,4 +13,10 @@ void target_camera::update(float delta_time) {
   // Set view matrix accordingly
   _view = glm::lookAt(_position, _target, up);
 }
+
+void target_camera::set_projection2(const glm::mat4 &value)
+{
+  _projection = value;
+}
+
 }

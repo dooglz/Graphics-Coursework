@@ -42,6 +42,7 @@ public:
   void set_view(const glm::mat4 &value) { _view = value; }
   // Gets the current projection matrix for the camera
   glm::mat4 get_projection() const { return _projection; }
+
   // Builds projection matrix
   void set_projection(float fov, float aspect, float near, float far) {
     // Call GLM's perspective function

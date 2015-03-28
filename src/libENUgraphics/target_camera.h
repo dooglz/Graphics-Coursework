@@ -14,6 +14,10 @@ public:
   // Default copy constructor and assignment operator
   target_camera(const target_camera &other) = default;
   target_camera &operator=(const target_camera &rhs) = default;
+
+  // Overide the projection Matrix
+  void set_projection2(const glm::mat4 &value);
+
   // Destroys the target camera
   ~target_camera() {}
   // Updates the camera
