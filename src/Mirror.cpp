@@ -85,43 +85,48 @@ void RenderMirror(mesh &mirror) {
       bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
       bouncecam.set_view(viewMat);
 
-      mat4 projmat = bouncecam.get_projection();
+      vec3 mirrorInCameraSpace = vec3(vec4(-mirrorNormal, -1.0f) * viewMat);
+      vec4 clipPlane4d(mirrorNormal.x, mirrorNormal.y, mirrorNormal.z, 15.0f);
 
-      // clipping stuff
-      vec4 clipPlane = vec4(0, 0, 0, 0);
+     mat4 projmat = bouncecam.get_projection();
+     /*{
+        vec4 q;
+        q.x = (sgn(mirrorNormal.x) + projmat[2][0]) / projmat[0][0];
+        q.y = (sgn(mirrorNormal.y) + projmat[2][1]) / projmat[1][1];
+        q.z = -1.0F;
+        q.w = (1.0F + projmat[2][2]) / projmat[3][2];
 
-      clipPlane = vec4(-mirrorNormal, 30.0f);
+        // Calculate the scaled plane vector
+      
+        vec4 c = clipPlane4d * (2.0F / dot(clipPlane4d, q));
 
-      clipPlane = clipPlane * viewMat;
+        // Replace the third row of the projection matrix
+        projmat[0][2] = c.x;
+        projmat[1][2] = c.y;
+        projmat[2][2] = c.z + 1.0F;
+        projmat[3][2] = c.w;
 
-      // clipSpaceCorner = (sgn(clipPlane.x), sgn(clipPlane.y), 1.0, 1.0)
-      vec4 clipSpaceCorner = vec4(sgn(clipPlane.x), sgn(clipPlane.y), 1.0, 1.0);
+        bouncecam.set_projection2(projmat);
+      }*/
+      {
+        // clipping stuff
+        clipPlane4d = clipPlane4d * viewMat;
 
-      // clipSpaceCorner = clipSpaceCorner * projection.inverse()
-      clipSpaceCorner = clipSpaceCorner * inverse(projmat);
+        // clipSpaceCorner = (sgn(clipPlane.x), sgn(clipPlane.y), 1.0, 1.0)
+        vec4 clipSpaceCorner = vec4(sgn(clipPlane4d.x), sgn(clipPlane4d.y), 1.0, 1.0);
 
-      // clipPlane = clipPlane * (2.0 / clipSpaceCorner.clipPlane)
-      clipPlane = clipPlane * (2.0f / dot(clipSpaceCorner, clipPlane));
+        // clipSpaceCorner = clipSpaceCorner * projection.inverse()
+        clipSpaceCorner = clipSpaceCorner * inverse(projmat);
 
-      // projmatrow3 = (clipPlane.x, clipPlane.y, clipPlane.z + 1, clipPlane.w)
-      clipPlane = vec4(clipPlane.x, clipPlane.y, clipPlane.z + 1, clipPlane.w);
+        // clipPlane = clipPlane * (2.0 / clipSpaceCorner.clipPlane)
+        clipPlane4d = clipPlane4d * (2.0f / dot(clipSpaceCorner, clipPlane4d));
 
-      //   printf("\nprojmat is: (%f,%f,%f,%f)\n", glm::row(projmat, 2).x, glm::row(projmat, 2).y, glm::row(projmat,
-      //   2).z, glm::row(projmat, 2).w);
-      projmat = glm::row(projmat, 2, clipPlane);
+        // projmatrow3 = (clipPlane.x, clipPlane.y, clipPlane.z + 1, clipPlane.w)
+        clipPlane4d = vec4(clipPlane4d.x, clipPlane4d.y, clipPlane4d.z + 1, clipPlane4d.w);
+        projmat = glm::row(projmat, 2, clipPlane4d);
 
-      // printf("projmat is: (%f,%f,%f,%f)\n", glm::row(projmat, 2).x, glm::row(projmat, 2).y, glm::row(projmat, 2).z, glm::row(projmat, 2).w);
-      // printf("\nBouncecam projection is: (%f,%f,%f,%f)\n", glm::row(bouncecam.get_projection(), 2).x, glm::row(bouncecam.get_projection(), 2).y, glm::row(bouncecam.get_projection(), 2).z, glm::row(bouncecam.get_projection(), 2).w);
-      // printf("set Bouncecam projection to: (%f,%f,%f,%f)\n", clipPlane.x, clipPlane.y, clipPlane.z, clipPlane.w);
-
-      bouncecam.set_projection2(projmat);
-
-      //  printf("Bouncecam projection is: (%f,%f,%f,%f)\n", glm::row(bouncecam.get_projection(), 2).x,
-      //  glm::row(bouncecam.get_projection(), 2).y, glm::row(bouncecam.get_projection(), 2).z,
-      //  glm::row(bouncecam.get_projection(), 2).w);
-
-      projmat = bouncecam.get_projection();
-
+        bouncecam.set_projection2(projmat);
+      }
       gfx->activeCam = &bouncecam;
 
       // Rerender scene
