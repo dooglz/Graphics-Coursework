@@ -24,9 +24,17 @@ GLuint FramebufferName = 0;
 GLuint renderedTexture = 0;
 GLuint depthrenderbuffer = 0;
 effect waterEffect;
+bool frozen;
+mat4 frozenviewMat;
+
+void FreezeMirror(bool b) {
+  frozenviewMat = gfx->cam.get_view();
+  frozen = b;
+}
 
 // loads shaders and creates a FBO for reflected texture
 void SetupMirror() {
+  frozen = false;
   waterEffect.add_shader("shaders\\water.vert", GL_VERTEX_SHADER);
   waterEffect.add_shader("shaders\\water.frag", GL_FRAGMENT_SHADER);
   waterEffect.build();
@@ -64,12 +72,24 @@ void SetupMirror() {
 
 void RenderMirror(mesh &mirror) {
   // render the reflected scene into a texture
+  mat4 playerView;
+
+  // reflected viewmat
+  mat4 viewMat;
+  // reflected projmat
+  mat4 projmat;
   {
+    if (frozen) {
+      playerView = frozenviewMat;
+    } else {
+      playerView = gfx->cam.get_view();
+    }
+
     const vec3 mirrorPos = mirror.get_transform().position;
     const vec3 mirrorNormal = normalize(GetUpVector(mirror.get_transform().orientation));
 
     // we don't have clipping, so don't render the opposite side
-    const vec3 cpos = vec3(inverse(gfx->cam.get_view())[3]);
+    const vec3 cpos = vec3(inverse(playerView)[3]);
     const float plneq = dot(mirrorNormal, (cpos - mirrorPos));
 
     // renderer::set_render_target(*mirrorFB);
@@ -81,24 +101,58 @@ void RenderMirror(mesh &mirror) {
     if (true || plneq > 0) {
 
       const mat4 reflectionMat = MirrorMatrix(mirrorNormal, mirrorPos);
-      const mat4 viewMat = gfx->cam.get_view() * reflectionMat;
+      viewMat = playerView * reflectionMat;
       bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
       bouncecam.set_view(viewMat);
 
-      vec3 mirrorInCameraSpace = vec3(vec4(-mirrorNormal, -1.0f) * viewMat);
-      vec4 clipPlane4d(mirrorNormal.x, mirrorNormal.y, mirrorNormal.z, 15.0f);
+      projmat = bouncecam.get_projection();
 
-     mat4 projmat = bouncecam.get_projection();
-     /*{
-        vec4 q;
-        q.x = (sgn(mirrorNormal.x) + projmat[2][0]) / projmat[0][0];
-        q.y = (sgn(mirrorNormal.y) + projmat[2][1]) / projmat[1][1];
+ 
+      vec3 normalInViewSpace = normalize(vec3(inverse(viewMat) * vec4(mirrorNormal, 1.0f)));
+      vec3 mirrorPosInViewSpace = vec3(inverse(viewMat) * vec4(mirrorPos, 1.0f));
+      // vec4 clipPlane4d(mirrorInCameraSpace);
+
+      //THIS GOODAM WORKS
+      //BUT ONLY ON ONE SIDE OF THE MIRROR
+      vec4 clipPlane4d(mirrorNormal, 30.0f);
+      clipPlane4d = glm::transpose(glm::inverse(viewMat)) *clipPlane4d;
+     // vec4 clipPlane4d(normalInViewSpace, -dot(mirrorPosInViewSpace, normalInViewSpace));
+
+      {
+        vec4  q;
+
+        // Calculate the clip-space corner point opposite the clipping plane
+        // as (sgn(clipPlane.x), sgn(clipPlane.y), 1, 1) and
+        // transform it into camera space by multiplying it
+        // by the inverse of the projection matrix
+
+        q.x = (sgn(clipPlane4d.x) + projmat[2][0]) / projmat[0][0];
+        q.y = (sgn(clipPlane4d.y) + projmat[2][1]) / projmat[1][1];
         q.z = -1.0F;
         q.w = (1.0F + projmat[2][2]) / projmat[3][2];
 
         // Calculate the scaled plane vector
-      
-        vec4 c = clipPlane4d * (2.0F / dot(clipPlane4d, q));
+        vec4 c = clipPlane4d * (2.0f / dot(clipPlane4d, q));
+
+        // Replace the third row of the projection matrix
+        projmat[0][2] = c.x;
+        projmat[1][2] = c.y;
+        projmat[2][2] = c.z + 1.0F;
+        projmat[3][2] = c.w;
+
+        bouncecam.set_projection2(projmat);
+       }
+      /*{
+        vec4 pln(vec3(0, 0, 1), 30.0f);
+        vec4 qq = glm::transpose(glm::inverse(viewMat)) * pln;
+        vec4 q;
+        q.x = (sgn(qq.x) + projmat[0][2]) / projmat[0][0];
+        q.y = (sgn(qq.y) + projmat[1][2]) / projmat[1][1];
+        q.z = -1.0F;
+        q.w = (1.0F + projmat[2][2]) / projmat[2][3];
+
+        // Calculate the scaled plane vector
+        vec4 c = qq * (2.0F / dot(qq, q));
 
         // Replace the third row of the projection matrix
         projmat[0][2] = c.x;
@@ -108,7 +162,26 @@ void RenderMirror(mesh &mirror) {
 
         bouncecam.set_projection2(projmat);
       }*/
-      {
+      /* {
+          // clipping stuff
+          //clipPlane4d = clipPlane4d * viewMat;
+
+          // clipSpaceCorner = (sgn(clipPlane.x), sgn(clipPlane.y), 1.0, 1.0)
+          vec4 clipSpaceCorner = vec4(sgn(clipPlane4d.x), sgn(clipPlane4d.y), 1.0, 1.0);
+
+          // clipSpaceCorner = clipSpaceCorner * projection.inverse()
+          clipSpaceCorner = clipSpaceCorner * inverse(projmat);
+
+          // clipPlane = clipPlane * (2.0 / clipSpaceCorner.clipPlane)
+          clipPlane4d = clipPlane4d * (2.0f / dot(clipSpaceCorner, clipPlane4d));
+
+          // projmatrow3 = (clipPlane.x, clipPlane.y, clipPlane.z + 1, clipPlane.w)
+          clipPlane4d = vec4(clipPlane4d.x, clipPlane4d.y, clipPlane4d.z + 1, clipPlane4d.w);
+          projmat = glm::row(projmat, 2, clipPlane4d);
+
+          bouncecam.set_projection2(projmat);
+       }*/
+      /* {
         // clipping stuff
         clipPlane4d = clipPlane4d * viewMat;
 
@@ -126,7 +199,8 @@ void RenderMirror(mesh &mirror) {
         projmat = glm::row(projmat, 2, clipPlane4d);
 
         bouncecam.set_projection2(projmat);
-      }
+      }*/
+
       gfx->activeCam = &bouncecam;
 
       // Rerender scene
@@ -167,4 +241,32 @@ void RenderMirror(mesh &mirror) {
   glDisable(GL_CULL_FACE);
   renderer::render(mirror);
   glEnable(GL_CULL_FACE);
+
+  vec4 fr[8] = {// near
+                vec4(-1, -1, -1, 1), vec4(1, -1, -1, 1), vec4(1, 1, -1, 1), vec4(-1, 1, -1, 1),
+                // far
+                vec4(-1, -1, 1, 1), vec4(1, -1, 1, 1), vec4(1, 1, 1, 1), vec4(-1, 1, 1, 1)};
+
+  for (int i = 0; i < 8; i++) {
+    fr[i] = inverse(projmat * viewMat) * fr[i];
+    //
+    fr[i].x /= fr[i].w;
+    fr[i].y /= fr[i].w;
+    fr[i].z /= fr[i].w;
+    fr[i].w = 1.0f;
+    gfx->DrawCross(vec3(fr[i]), 1.0f);
+  }
+  gfx->DrawLine(vec3(fr[0]), vec3(fr[1]));
+  gfx->DrawLine(vec3(fr[1]), vec3(fr[2]));
+  gfx->DrawLine(vec3(fr[2]), vec3(fr[3]));
+  gfx->DrawLine(vec3(fr[3]), vec3(fr[0]));
+  gfx->DrawLine(vec3(fr[4]), vec3(fr[5]));
+  gfx->DrawLine(vec3(fr[5]), vec3(fr[6]));
+  gfx->DrawLine(vec3(fr[6]), vec3(fr[7]));
+  gfx->DrawLine(vec3(fr[7]), vec3(fr[4]));
+  gfx->DrawLine(vec3(fr[0]), vec3(fr[4]));
+  gfx->DrawLine(vec3(fr[1]), vec3(fr[5]));
+  gfx->DrawLine(vec3(fr[2]), vec3(fr[6]));
+  gfx->DrawLine(vec3(fr[3]), vec3(fr[7]));
+  gfx->ProcessLines();
 }

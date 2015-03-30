@@ -294,6 +294,13 @@ bool Graphics::Update(float delta_time) {
     if (glfwGetKey(renderer::get_window(), 'D'))
       translation.x += 5.0f * delta_time;
 
+    if (glfwGetKey(renderer::get_window(), 'U')){
+      FreezeMirror(true);
+    }
+    if (glfwGetKey(renderer::get_window(), 'I')){
+      FreezeMirror(false);
+    }
+
     float moveSpeed = 2.0f;
     if (glfwGetKey(renderer::get_window(), GLFW_KEY_LEFT_SHIFT))
       moveSpeed = 6.0f;
