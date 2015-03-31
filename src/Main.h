@@ -20,12 +20,28 @@
 
 using namespace graphics_framework;
 
+#define SCREENHEIGHT 720
+#define SCREENWIDTH 1280
+
 class Graphics {
 public:
+  //deferred rendering
+  enum GBUFFER_TEXTURE_TYPE {
+    GBUFFER_TEXTURE_TYPE_POSITION,
+    GBUFFER_TEXTURE_TYPE_DIFFUSE,
+    GBUFFER_TEXTURE_TYPE_NORMAL,
+    GBUFFER_TEXTURE_TYPE_TEXCOORD,
+    GBUFFER_NUM_TEXTURES
+  };
+  GLuint fbo;
+  GLuint fbo_textures[GBUFFER_NUM_TEXTURES];
+  GLuint fbo_depthTexture;
+
   bool Render();
   bool Update(float delta_time);
   bool Load_content();
   bool Initialise();
+  void DSLightPass();
 
   Graphics();
   ~Graphics();
@@ -54,7 +70,7 @@ public:
   effect phongEffect;
   effect texturedEffect;
   effect texturedBumpEffect;
-
+  effect geoPassEffect;
 
   mesh *desertM;
   mesh mirror;
@@ -80,9 +96,9 @@ public:
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
   void ProcessLines();
-  void Graphics::MakeGyroscope();
-  void Graphics::UpdateGyroscope(float delta_time);
-
+  void MakeGyroscope();
+  void UpdateGyroscope(float delta_time);
+  bool createMRT();
   void Rendermesh(mesh &m, texture &t);
   // Renders a mesh with a bump map
   void RendermeshB(mesh &m, const texture &t, const texture &tb, const float scale);

@@ -35,7 +35,7 @@ void Graphics::DrawCross(const glm::vec3 &p1, const float size) {
 }
 
 bool Graphics::Initialise() {
- // counter = quarter_pi<float>() * 3.0f;
+  // counter = quarter_pi<float>() * 3.0f;
   // Set input mode - hide the cursor
   glfwSetInputMode(renderer::get_window(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -44,7 +44,6 @@ bool Graphics::Initialise() {
 
   return true;
 }
-
 
 // Send all light data to SSBOs on the GPU
 void Graphics::UpdateLights() {
@@ -121,7 +120,46 @@ void Graphics::UpdateLights() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-Gimbal* gimbal;
+bool Graphics::createMRT() {
+
+  // Create the FBO
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  // Create the gbuffer textures
+  glGenTextures(GBUFFER_NUM_TEXTURES, fbo_textures);
+  glGenTextures(1, &fbo_depthTexture);
+
+  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
+    glBindTexture(GL_TEXTURE_2D, fbo_textures[i]);
+    // setup dimensions, fill with Nulll
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    // attach to one of the fbo outputs
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, fbo_textures[i], 0);
+  }
+  // depth
+  glBindTexture(GL_TEXTURE_2D, fbo_depthTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+               NULL);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo_depthTexture, 0);
+
+  // set drawmode
+  GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
+  glDrawBuffers(4, DrawBuffers);
+
+  GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+  if (Status != GL_FRAMEBUFFER_COMPLETE) {
+    printf("FB error, status: 0x%x\n", Status);
+    return false;
+  }
+
+  // restore default FBO
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+  return true;
+}
+
+Gimbal *gimbal;
 bool Graphics::Load_content() {
   // Lights
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
@@ -159,7 +197,7 @@ bool Graphics::Load_content() {
   }
 
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
-  mirror.get_transform().translate(vec3(0.0f, 10.0f, 30.0f));
+  mirror.get_transform().translate(vec3(0.0f, 30.0f, 50.0f));
   mirror.get_transform().scale = vec3(0.5f, 0.5f, 0.5f);
   mirror.get_transform().rotate(vec3(half_pi<float>(), pi<float>(), 0.0f));
 
@@ -215,6 +253,10 @@ bool Graphics::Load_content() {
   texturedEffect.add_shader("shaders\\simple_texture.frag", GL_FRAGMENT_SHADER);
   texturedEffect.build();
 
+  geoPassEffect.add_shader("shaders\\GeoPass.vert", GL_VERTEX_SHADER);
+  geoPassEffect.add_shader("shaders\\GeoPass.frag", GL_FRAGMENT_SHADER);
+  geoPassEffect.build();
+
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -234,14 +276,15 @@ bool Graphics::Load_content() {
   gimbal = new Gimbal(16);
   SetupMirror();
 
+  createMRT();
   return true;
 }
 
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
- // counter += (delta_time * 0.09f);
- //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
+  // counter += (delta_time * 0.09f);
+  //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
 
   float s = sinf(counter);
@@ -254,13 +297,13 @@ bool Graphics::Update(float delta_time) {
   dlight.set_direction(glm::rotateZ(rot, counter));
 
   if (true) {
-    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), Enviroment::dayscale  - 0.2f));
+    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), Enviroment::dayscale - 0.2f));
   } else {
     dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   }
   UpdateLights();
 
-  {//Camera update
+  { // Camera update
     // The ratio of pixels to rotation - remember the fov
     static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
     static double ratio_height = (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
@@ -294,10 +337,10 @@ bool Graphics::Update(float delta_time) {
     if (glfwGetKey(renderer::get_window(), 'D'))
       translation.x += 5.0f * delta_time;
 
-    if (glfwGetKey(renderer::get_window(), 'U')){
+    if (glfwGetKey(renderer::get_window(), 'U')) {
       FreezeMirror(true);
     }
-    if (glfwGetKey(renderer::get_window(), 'I')){
+    if (glfwGetKey(renderer::get_window(), 'I')) {
       FreezeMirror(false);
     }
 
@@ -315,7 +358,7 @@ bool Graphics::Update(float delta_time) {
 }
 
 void Graphics::Rendermesh(mesh &m, texture &t) {
-  effect eff = phongEffect;
+  effect eff = geoPassEffect;
   // Bind effect
   renderer::bind(eff);
   // Create MVP matrix
@@ -407,22 +450,51 @@ void Graphics::ProcessLines() {
   linebuffer.clear();
 }
 
-void Graphics::DrawScene(){
+void Graphics::DrawScene() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
   for (auto &e : meshes) {
     Rendermesh(e.second, checkedTexture);
   }
   Rendermesh(*desertM, sandTexture);
-  RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-  Enviroment::RenderSky();
+
+// RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
+  //Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
   ProcessLines();
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
+
+void Graphics::DSLightPass() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+
+  GLsizei HalfWidth = (GLsizei)(SCREENWIDTH / 2.0f);
+  GLsizei HalfHeight = (GLsizei)(SCREENHEIGHT / 2.0f);
+
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_POSITION);
+  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, HalfWidth, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_DIFFUSE);
+  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT,0, HalfHeight, HalfWidth, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+  
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_NORMAL);
+  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, HalfWidth, HalfHeight, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+  
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_TEXCOORD);
+  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, HalfWidth, 0, SCREENWIDTH, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 bool Graphics::Render() {
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   DrawScene();
-  RenderMirror(mirror);
+  //RenderMirror(mirror);
+  DSLightPass();
   return true;
 }
 
@@ -432,7 +504,7 @@ Graphics::~Graphics() {}
 
 void main() {
   // Create application
-  app application(1280, 720, 0);
+  app application(SCREENWIDTH, SCREENHEIGHT, 0);
   gfx = new Graphics();
   // Set load content, update and render methods
   application.set_load_content(std::bind(&Graphics::Load_content, gfx));

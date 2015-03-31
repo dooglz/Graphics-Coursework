@@ -72,6 +72,7 @@ void create_plane(const unsigned int &width, const unsigned int &depth, const fl
 #define prelinscaleY 4.0f
 #define dunedistance (farSize / 5)
 #define groundcutoff (farSize / 9)
+#define optimise false
 
 void create_plane2(const unsigned int &width, const unsigned int &depth, const float &resolution,
                    const float &uvScale, std::vector<glm::vec3> &positions,
@@ -128,7 +129,7 @@ void create_plane2(const unsigned int &width, const unsigned int &depth, const f
 
     if (abs(center1.x) > groundcutoff || abs(center1.z) > groundcutoff) {
       const float dt1 = glm::dot(n1, center1);
-      if (dt1 < -0.2f) {
+      if (optimise && dt1 < -0.2f) {
         k++;
       } else {
         indices.push_back(j);
@@ -148,7 +149,7 @@ void create_plane2(const unsigned int &width, const unsigned int &depth, const f
     const glm::vec3 center2 = (v0 + v1 + v3) / 3.0f;
     if (abs(center2.x) > groundcutoff || abs(center2.z) > groundcutoff) {
       const float dt2 = glm::dot(n2, center2);
-      if (dt2 < -0.5f) {
+      if (optimise && dt2 < -0.5f) {
         k++;
       } else {
         indices.push_back(j);
@@ -202,8 +203,6 @@ void DesertGen::makefarGeometry() {
   // get a flat plane
   create_plane2(farSize, farSize, farRes, 24.0f, positions, normals, tex_coords, indices);
   VerifyIndices(positions, &normals, &tex_coords, indices, true);
-  printf("\nyololo\n");
-  VerifyIndices(positions, NULL, NULL, indices, 0);
 
   _farGeo = geometry();
   _farGeo.add_buffer(positions, BUFFER_INDEXES::POSITION_BUFFER);

@@ -7,10 +7,14 @@ uniform mat4 reflected_MVP;
 
 // Incoming texture coordinate
 layout(location = 0) in vec2 tex_coord;
-// Outgoing colour
-layout(location = 0) out vec4 out_colour;
-
 layout(location = 1) in vec3 position;
+
+// Outgoing colour
+layout (location = 0) out vec3 WorldPosOut; 
+layout (location = 1) out vec3 DiffuseOut; 
+layout (location = 2) out vec3 NormalOut; 
+layout (location = 3) out vec3 TexCoordOut; 
+
 
 void main()
 {
@@ -22,6 +26,6 @@ void main()
   vec4 reflectionTextureColor = texture2D (tex, transformedUV);
 
   reflectionTextureColor.a = 1.0;
-  out_colour = reflectionTextureColor;
+  DiffuseOut = reflectionTextureColor.xyz;
   //out_colour = texture2D (tex, tex_coord);
 }

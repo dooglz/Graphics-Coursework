@@ -40,7 +40,8 @@ bool renderer::initialise(const unsigned int screenX, const unsigned int screenY
   // Set window hints for GLFW
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-  glfwWindowHint(GLFW_SAMPLES, 4);
+  //desired number of samples to use for multisampling. Zero = no multisampling. GLFW_DONT_CARE = no preference.  
+  glfwWindowHint(GLFW_SAMPLES, 0); 
   glfwWindowHint(GLFW_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 

@@ -14,7 +14,7 @@ void Enviroment::Load(){
   skyeffect.add_shader("shaders\\sky2.vert", GL_VERTEX_SHADER);
   skyeffect.add_shader("shaders\\sky2.frag", GL_FRAGMENT_SHADER);
   skyeffect.build();
-  skygeo = mesh(geometry_builder::create_sphere(32, 15, vec3(900.0f, 900.0f, 900.0f)));
+  skygeo = mesh(geometry_builder::create_sphere(32, 15, vec3(2000.0f, 2000.0f, 2000.0f)));
   dayscale = 0;
   daymode = false;
 }
@@ -72,7 +72,9 @@ void Enviroment::RenderSky() {
     glUniform1f(skyeffect.get_uniform_location("mieDirectionalG"), mieDirectionalG);
   }
   glDisable(GL_CULL_FACE);
+  glDepthMask(false);
   renderer::render(skygeo);
+  glDepthMask(true);
   glEnable(GL_CULL_FACE);
   return;
 }

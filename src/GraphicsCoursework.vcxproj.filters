@@ -67,12 +67,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\res\shaders\sky.frag">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\res\shaders\sky.vert">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\shaders\water.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
@@ -113,6 +107,12 @@
       <Filter>Shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\sky2.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\GeoPass.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\GeoPass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
   </ItemGroup>
