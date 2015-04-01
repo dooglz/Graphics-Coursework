@@ -23,6 +23,13 @@ using namespace graphics_framework;
 #define SCREENHEIGHT 720
 #define SCREENWIDTH 1280
 
+#define POSITIONBUFFER GL_COLOR_ATTACHMENT0
+#define DIFFUSEBUFFER GL_COLOR_ATTACHMENT1
+#define NORMALBUFFER GL_COLOR_ATTACHMENT2
+#define TEXCOORDBUFFER GL_COLOR_ATTACHMENT3
+#define DEPTHBUFFER GL_COLOR_ATTACHMENT4 //possibly should be GL_DEPTH_ATTACHMENT
+#define FINALBUFFER GL_COLOR_ATTACHMENT5
+
 class Graphics {
 public:
   //deferred rendering
@@ -36,6 +43,7 @@ public:
   GLuint fbo;
   GLuint fbo_textures[GBUFFER_NUM_TEXTURES];
   GLuint fbo_depthTexture;
+  GLuint fbo_finalTexture;
 
   bool Render();
   bool Update(float delta_time);
@@ -43,6 +51,7 @@ public:
   bool Initialise();
   void DSLightPass();
   void DSLightPassDebug();
+  void DSLightPassDebug2();
   void DSFinalPass();
 
   void DSStencilPass(unsigned int PointLightIndex);
@@ -79,11 +88,14 @@ public:
   effect geoPassEffect;
   effect nullEffect;
   effect pointLightPassEffect;
+  effect df_lighttest;
 
   mesh *desertM;
   mesh mirror;
   mesh goodsand;
   mesh sphereMesh;
+  geometry plane;
+
 
   // Light stuff
   directional_light dlight;

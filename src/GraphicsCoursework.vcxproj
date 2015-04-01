@@ -81,7 +81,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libENUgraphics.lib;OpenGL32.lib;GLU32.lib;glew32.lib;glfw3dll.lib;FreeImage.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libENUgraphics.lib;OpenGL32.lib;GLU32.lib;glew32s.lib;glfw3dll.lib;FreeImage.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../lib/$(Platform)_$(Configuration)/; ../lib/$(Platform)/</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -289,6 +289,17 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\point_light_pass.frag">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)/%(Filename);%(Outputs)shaders\</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename);%(Outputs)shaders\</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\res\shaders\df_lighttest.frag">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>

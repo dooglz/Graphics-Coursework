@@ -118,13 +118,10 @@
     <CustomBuild Include="..\res\shaders\point_light_pass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\res\shaders\null.frag">
+    <CustomBuild Include="..\res\shaders\null.frag" />
+    <CustomBuild Include="..\res\shaders\null.vert" />
+    <CustomBuild Include="..\res\shaders\df_lighttest.frag">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\res\shaders\null.vert">
-      <Filter>Shaders</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
 </Project>

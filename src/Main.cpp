@@ -128,22 +128,34 @@ bool Graphics::createMRT() {
   // Create the gbuffer textures
   glGenTextures(GBUFFER_NUM_TEXTURES, fbo_textures);
   glGenTextures(1, &fbo_depthTexture);
+  glGenTextures(1, &fbo_finalTexture);
 
   for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
     glBindTexture(GL_TEXTURE_2D, fbo_textures[i]);
     // setup dimensions, fill with Nulll
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     // attach to one of the fbo outputs
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, fbo_textures[i], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, fbo_textures[i], 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   }
   // depth
   glBindTexture(GL_TEXTURE_2D, fbo_depthTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT,
-               NULL);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo_depthTexture, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fbo_depthTexture, 0);
+
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT,NULL);
+ // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo_depthTexture, 0);
+
+
+  // final
+  glBindTexture(GL_TEXTURE_2D, fbo_finalTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, FINALBUFFER, GL_TEXTURE_2D, fbo_finalTexture, 0);
+
 
   // set drawmode
-  GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
+  GLenum DrawBuffers[] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER };
   glDrawBuffers(4, DrawBuffers);
 
   GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -155,6 +167,7 @@ bool Graphics::createMRT() {
 
   // restore default FBO
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   return true;
 }
@@ -265,8 +278,13 @@ bool Graphics::Load_content() {
   pointLightPassEffect.add_shader("shaders\\point_light_pass.frag", GL_FRAGMENT_SHADER);
   pointLightPassEffect.build();
 
-  sphereMesh = mesh(geometry_builder::create_sphere(16, 16, vec3(1.0f, 1.0f, 1.0f)));
+  df_lighttest.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
+  df_lighttest.add_shader("shaders\\df_lighttest.frag", GL_FRAGMENT_SHADER);
+  df_lighttest.build();
 
+  sphereMesh = mesh(geometry_builder::create_sphere(16, 16, vec3(1.0f, 1.0f, 1.0f)));
+  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
+  plane.add_buffer(v, 0);
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -489,21 +507,55 @@ float CalcPointLightBSphere(const point_light& Light)
   return ret;
 }
 
+//Combines the fbo textures in one shader, output to FINALBUFFER
+void Graphics::DSLightPassDebug2() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+  effect eff = df_lighttest;
+  // Bind effect
+  renderer::bind(eff);
+
+  glDrawBuffer(FINALBUFFER);
+  glClear(GL_COLOR_BUFFER_BIT);
+  glDisable(GL_DEPTH_TEST);
+  glDisable(GL_CULL_FACE);
+  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
+  }
+
+  glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
+  glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
+  glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
+  glUniform1i(eff.get_uniform_location("gNormalMap"), GBUFFER_TEXTURE_TYPE_NORMAL);
+
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto MVP = mat4(1.0f);
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  //glDisable(GL_DEPTH_TEST);
+  //glDepthMask(GL_FALSE);
+  renderer::render(plane);
+  glEnable(GL_CULL_FACE);
+}
 
 
 void Graphics::DSStencilPass(unsigned int PointLightIndex)
 {
-  effect eff = nullEffect;
+  //effect eff = nullEffect;
+   effect eff = simpleEffect;
   // Bind effect
   renderer::bind(eff);
 
   // Disable color/depth write and enable stencil 
-  glDrawBuffer(GL_NONE);
+  //glDrawBuffer(GL_NONE);
+  glDrawBuffer(FINALBUFFER);
   glEnable(GL_DEPTH_TEST);
 
   glDisable(GL_CULL_FACE);
 
-  glClear(GL_STENCIL_BUFFER_BIT);
+  //glClear(GL_STENCIL_BUFFER_BIT);
 
   // We need the stencil test to be enabled but we want it
   // to succeed always. Only the depth test matters.
@@ -523,12 +575,13 @@ void Graphics::DSStencilPass(unsigned int PointLightIndex)
 
 void Graphics::DSPointLightPass(unsigned int PointLightIndex)
 {
-  glDrawBuffer(GL_COLOR_ATTACHMENT4);
+  glDrawBuffer(FINALBUFFER);
 
   for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
   }
+
 
   effect eff = pointLightPassEffect;
   // Bind effect
@@ -536,6 +589,9 @@ void Graphics::DSPointLightPass(unsigned int PointLightIndex)
   
   glUniform3fv(eff.get_uniform_location("gEyeWorldPos"),1, &activeCam->get_position()[0]);
   glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
+  glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
+  glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
+  glUniform1i(eff.get_uniform_location("gNormalMap"), GBUFFER_TEXTURE_TYPE_NORMAL);
 
   glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
 
@@ -555,6 +611,7 @@ void Graphics::DSPointLightPass(unsigned int PointLightIndex)
   glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), light.get_constant_attenuation());
   glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), light.get_linear_attenuation());
   glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), light.get_quadratic_attenuation());
+//
 
 
   auto M = glm::scale(vec3(light._range))*glm::translate(light.get_position());
@@ -573,7 +630,7 @@ void Graphics::DSFinalPass()
 {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_DIFFUSE);
+  glReadBuffer(FINALBUFFER);
 
   glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
@@ -587,7 +644,7 @@ void Graphics::DSLightPass() {
 
   for (unsigned int i = 0; i < PLights.size(); i++) {
     DSStencilPass(i);
-    DSPointLightPass(i);
+  //  DSPointLightPass(i);
   }
 
   // The directional light does not need a stencil test because its volume
@@ -595,15 +652,14 @@ void Graphics::DSLightPass() {
   glDisable(GL_STENCIL_TEST);
 
  // DSDirectionalLightPass();
-
-  DSFinalPass();
 }
 
 
 void Graphics::DrawScene() {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  //glDrawBuffer(GL_COLOR_ATTACHMENT4);
-  glClear(GL_COLOR_BUFFER_BIT);
+   //clear the final buffer
+  glDrawBuffer(FINALBUFFER);
+//  glClear(GL_COLOR_BUFFER_BIT);
   // set drawmode
   GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
   glDrawBuffers(4, DrawBuffers);
@@ -629,7 +685,6 @@ void Graphics::DrawScene() {
   // When we get here the depth buffer is already populated and the stencil pass
   // depends on it, but it does not write to it.
   glDepthMask(GL_FALSE);
- // glDisable(GL_DEPTH_TEST);
  
 }
 
@@ -642,13 +697,13 @@ bool Graphics::Render() {
 
   DrawScene();
 
-  // We need stencil to be enabled in the stencil pass to get the stencil buffer
-  // updated and we also need it in the light pass because we render the light
-  // only if the stencil passes.
-  glEnable(GL_STENCIL_TEST);
+//RenderMirror(mirror);
 
-  //RenderMirror(mirror);
-  DSLightPass();
+  //DSLightPass();
+  DSLightPassDebug2();
+
+  DSFinalPass();
+
   return true;
 }
 
