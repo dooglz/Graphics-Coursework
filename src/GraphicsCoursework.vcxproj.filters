@@ -115,5 +115,16 @@
     <CustomBuild Include="..\res\shaders\GeoPass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\res\shaders\point_light_pass.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\res\shaders\null.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\res\shaders\null.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

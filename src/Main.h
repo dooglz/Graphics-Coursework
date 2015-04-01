@@ -42,6 +42,12 @@ public:
   bool Load_content();
   bool Initialise();
   void DSLightPass();
+  void DSLightPassDebug();
+  void DSFinalPass();
+
+  void DSStencilPass(unsigned int PointLightIndex);
+
+  void DSPointLightPass(unsigned int PointLightIndex);
 
   Graphics();
   ~Graphics();
@@ -71,10 +77,13 @@ public:
   effect texturedEffect;
   effect texturedBumpEffect;
   effect geoPassEffect;
+  effect nullEffect;
+  effect pointLightPassEffect;
 
   mesh *desertM;
   mesh mirror;
   mesh goodsand;
+  mesh sphereMesh;
 
   // Light stuff
   directional_light dlight;

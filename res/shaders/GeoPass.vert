@@ -6,6 +6,7 @@ layout (location = 10) in vec2 TexCoord;
 
 uniform mat4 MVP;
 uniform mat4 M;
+uniform mat3 N;
 
 out vec2 TexCoord0; 
 out vec3 Normal0; 
@@ -15,6 +16,6 @@ void main()
 { 
     gl_Position = MVP * vec4(Position, 1.0);
     TexCoord0 = TexCoord; 
-    Normal0 = (M * vec4(Normal, 0.0)).xyz; 
+    Normal0 = (N * Normal); 
     WorldPos0 = (M * vec4(Position, 1.0)).xyz;
 }

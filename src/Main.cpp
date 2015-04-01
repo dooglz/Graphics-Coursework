@@ -257,6 +257,16 @@ bool Graphics::Load_content() {
   geoPassEffect.add_shader("shaders\\GeoPass.frag", GL_FRAGMENT_SHADER);
   geoPassEffect.build();
 
+  nullEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
+  nullEffect.add_shader("shaders\\null.frag", GL_FRAGMENT_SHADER);
+  nullEffect.build();
+
+  pointLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
+  pointLightPassEffect.add_shader("shaders\\point_light_pass.frag", GL_FRAGMENT_SHADER);
+  pointLightPassEffect.build();
+
+  sphereMesh = mesh(geometry_builder::create_sphere(16, 16, vec3(1.0f, 1.0f, 1.0f)));
+
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -367,27 +377,17 @@ void Graphics::Rendermesh(mesh &m, texture &t) {
   auto P = activeCam->get_projection();
   auto MVP = P * V * M;
   // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), // Location of uniform
-                     1,                               // Number of values - 1 mat4
-                     GL_FALSE,                        // Transpose the matrix?
-                     value_ptr(MVP));                 // Pointer to matrix data
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
   // Set M matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
   // Bind material
   renderer::bind(m.get_material(), "mat");
-  // **********
-  // Bind light
-  // **********
-  renderer::bind(dlight, "light");
   // Bind texture
   renderer::bind(t, 0);
   // Set tex uniform
   glUniform1i(eff.get_uniform_location("tex"), 0);
-  // Set eye position
-  glUniform3fv(eff.get_uniform_location("eye_pos"), 1, value_ptr(activeCam->get_position()));
-
   // Render mesh
   renderer::render(m);
 }
@@ -450,24 +450,11 @@ void Graphics::ProcessLines() {
   linebuffer.clear();
 }
 
-void Graphics::DrawScene() {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  for (auto &e : meshes) {
-    Rendermesh(e.second, checkedTexture);
-  }
-  Rendermesh(*desertM, sandTexture);
 
-// RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-  //Enviroment::RenderSky();
-  gimbal->Render();
-  DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
-  ProcessLines();
+void Graphics::DSLightPassDebug() {
+  
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-}
-
-void Graphics::DSLightPass() {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
+  glDepthMask(GL_TRUE);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
@@ -479,20 +466,187 @@ void Graphics::DSLightPass() {
   glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, HalfWidth, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
   glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_DIFFUSE);
-  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT,0, HalfHeight, HalfWidth, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  
+  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, HalfHeight, HalfWidth, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
   glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_NORMAL);
   glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, HalfWidth, HalfHeight, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-  
+
   glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_TEXCOORD);
   glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, HalfWidth, 0, SCREENWIDTH, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
 }
 
-bool Graphics::Render() {
-  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+//calculates the size of the bounding box for the specified light source
+float CalcPointLightBSphere(const point_light& Light)
+{
+  float MaxChannel = fmax(fmax(Light.get_light_colour().x, Light.get_light_colour().y), Light.get_light_colour().z);
+
+  float ret =
+      (-Light.get_linear_attenuation() +
+       sqrtf(Light.get_linear_attenuation() * Light.get_linear_attenuation() -
+             4 * Light.get_quadratic_attenuation() * (Light.get_quadratic_attenuation() - 256 * MaxChannel * 1.0f))) /
+      2 * Light.get_quadratic_attenuation();
+  return ret;
+}
+
+
+
+void Graphics::DSStencilPass(unsigned int PointLightIndex)
+{
+  effect eff = nullEffect;
+  // Bind effect
+  renderer::bind(eff);
+
+  // Disable color/depth write and enable stencil 
+  glDrawBuffer(GL_NONE);
+  glEnable(GL_DEPTH_TEST);
+
+  glDisable(GL_CULL_FACE);
+
+  glClear(GL_STENCIL_BUFFER_BIT);
+
+  // We need the stencil test to be enabled but we want it
+  // to succeed always. Only the depth test matters.
+  glStencilFunc(GL_ALWAYS, 0, 0);
+
+  glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
+  glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
+
+  auto M = glm::scale(vec3(PLights[PointLightIndex]._range))*glm::translate(PLights[PointLightIndex].get_position());
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto MVP = P * V * M;
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  renderer::render(sphereMesh);
+}
+
+void Graphics::DSPointLightPass(unsigned int PointLightIndex)
+{
+  glDrawBuffer(GL_COLOR_ATTACHMENT4);
+
+  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
+  }
+
+  effect eff = pointLightPassEffect;
+  // Bind effect
+  renderer::bind(eff);
+  
+  glUniform3fv(eff.get_uniform_location("gEyeWorldPos"),1, &activeCam->get_position()[0]);
+  glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
+
+  glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+
+  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendEquation(GL_FUNC_ADD);
+  glBlendFunc(GL_ONE, GL_ONE);
+
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_FRONT);
+
+  point_light light = PLights[PointLightIndex];
+  glUniform3fv(eff.get_uniform_location("gPointLight.Base.Color"), 1, &light.get_light_colour()[0]);
+  glUniform1f(eff.get_uniform_location("gPointLight.Base.AmbientIntensity"), 1.0f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Base.DiffuseIntensity"), 1.0f);
+  glUniform3fv(eff.get_uniform_location("gPointLight.Position"), 1, &light.get_position()[0]);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), light.get_constant_attenuation());
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), light.get_linear_attenuation());
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), light.get_quadratic_attenuation());
+
+
+  auto M = glm::scale(vec3(light._range))*glm::translate(light.get_position());
+  auto V = activeCam->get_view();
+  auto P = activeCam->get_projection();
+  auto MVP = P * V * M;
+  // Set MVP matrix uniform
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  renderer::render(sphereMesh);
+
+  glCullFace(GL_BACK);
+  glDisable(GL_BLEND);
+}
+
+void Graphics::DSFinalPass()
+{
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_DIFFUSE);
+
+  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+}
+
+void Graphics::DSLightPass() {
+
+  // We need stencil to be enabled in the stencil pass to get the stencil buffer
+  // updated and we also need it in the light pass because we render the light
+  // only if the stencil passes.
+  glEnable(GL_STENCIL_TEST);
+
+  for (unsigned int i = 0; i < PLights.size(); i++) {
+    DSStencilPass(i);
+    DSPointLightPass(i);
+  }
+
+  // The directional light does not need a stencil test because its volume
+  // is unlimited and the final pass simply copies the texture.
+  glDisable(GL_STENCIL_TEST);
+
+ // DSDirectionalLightPass();
+
+  DSFinalPass();
+}
+
+
+void Graphics::DrawScene() {
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+  //glDrawBuffer(GL_COLOR_ATTACHMENT4);
+  glClear(GL_COLOR_BUFFER_BIT);
+  // set drawmode
+  GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+  glDrawBuffers(4, DrawBuffers);
+
+  // Only the geometry pass updates the depth buffer
+  glDepthMask(GL_TRUE);
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glEnable(GL_DEPTH_TEST);
+
+  for (auto &e : meshes) {
+    Rendermesh(e.second, checkedTexture);
+  }
+  Rendermesh(*desertM, sandTexture);
+
+  // RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
+  //Enviroment::RenderSky();
+  gimbal->Render();
+  DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
+  ProcessLines();
+
+  // When we get here the depth buffer is already populated and the stencil pass
+  // depends on it, but it does not write to it.
+  glDepthMask(GL_FALSE);
+ // glDisable(GL_DEPTH_TEST);
+ 
+}
+
+
+bool Graphics::Render() {
+ // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   DrawScene();
+
+  // We need stencil to be enabled in the stencil pass to get the stencil buffer
+  // updated and we also need it in the light pass because we render the light
+  // only if the stencil passes.
+  glEnable(GL_STENCIL_TEST);
+
   //RenderMirror(mirror);
   DSLightPass();
   return true;
