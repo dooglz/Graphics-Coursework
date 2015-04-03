@@ -12,6 +12,7 @@
 #include "DesertGen.h"
 #include "Math.h"
 #include "mirror.h"
+#include "UI.h"
 #include "Enviroment.h"
 #include "Gimbal.h"
 #include <functional>
@@ -42,6 +43,7 @@ bool Graphics::Initialise() {
   // Capture initial mouse position
   glfwGetCursorPos(renderer::get_window(), &cursor_x, &cursor_y);
 
+  initUI();
   return true;
 }
 
@@ -382,6 +384,8 @@ bool Graphics::Update(float delta_time) {
     cursor_x = current_x;
     cursor_y = current_y;
   }
+
+  UpdateUI();
   return true;
 }
 
@@ -703,7 +707,7 @@ bool Graphics::Render() {
   DSLightPassDebug2();
 
   DSFinalPass();
-
+  DrawUI();
   return true;
 }
 
@@ -726,4 +730,5 @@ void main() {
   delete gimbal;
   delete gfx;
   gfx = nullptr;
+  ShutDownUI();
 }
