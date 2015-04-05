@@ -17,13 +17,13 @@ static DefferedMode defMode;
 RenderMode getRM() { return renderMode; }
 DefferedMode getDM() { return defMode; }
 
-static const vec3 lightpositions[] = {vec3(15.0f, 3.0f, 0.0f),   vec3(-15.0f, 3.0f, 0.0f),  vec3(0.0f, 3.0f, 15.0f),
+static vec3 lightpositions[] = {vec3(15.0f, 3.0f, 0.0f),   vec3(-15.0f, 3.0f, 0.0f),  vec3(0.0f, 3.0f, 15.0f),
                                       vec3(0.0f, 3.0f, -15.0f),  vec3(15.0f, 3.0f, 15.0f),  vec3(-15.0f, 3.0f, 15.0f),
                                       vec3(15.0f, 3.0f, -15.0f), vec3(-15.0f, 3.0f, -15.0f)};
 
-static const float lightScale = 10.0f;
+static const float lightScale = 30.0f;
 static const vec3 lightcolour = vec3(0.2f, 1.0f, 0.0f);
-static const vec3 lightcolour2 = vec3(1.0f, 0.0f, 0.0f);
+static const vec3 lightcolour2 = vec3(1.0f, 0.8f, 0.8f);
 
 // combines all buffers to one buffer
 static graphics_framework::effect df_lighttest;
@@ -38,8 +38,32 @@ void SetMode(const RenderMode rm, const DefferedMode dm) {
     CreateDeferredFbo();
   }
 }
+static float count2 = 0;
+
+vec3 col(float plus){
+  float r = (sin((0.1f * (count2+ plus)) + 0) * 127.0f) + 50.0f;
+  float g = (sin((0.1f * (count2+ plus)) + 2) * 127.0f) + 50.0f;
+  float b = (sin((0.1f * (count2+ plus)) + 4) * 127.0f) + 50.0f;
+  return vec3(r / 255.0f, g / 255.0f, b / 255.0f);
+}
+
+
+float rr(){
+  return (((float)rand()) / ((float)RAND_MAX));
+}
+static float aa =0;
+void Animate(){
+  aa += 0.001f;
+  count2 += 0.05f;
+  for (unsigned int i = 0; i < 8; ++i) {
+    float pp = (((float) i) / 8.0f) * 6.28f;
+    //lightpositions[i] = lightpositions[i] + vec3((2.0f* rr()) - 1.0f, 0, (2.0f* rr()) - 1.0f);
+    lightpositions[i] = vec3(sin(aa + pp)* cos(aa) *30.0f, 3.0f, cos(aa + pp)* cos(aa) *30.0f);
+  }
+}
 
 void BeginOpaque() {
+  Animate();
   if (renderMode) {
     // Deferred, render to fbo
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
@@ -87,12 +111,15 @@ void EndOpaque() {
       FlipToOutput();
 
     } else {
-      // NORMAL
       glEnable(GL_STENCIL_TEST);
-      StencilPass();
-      PointLightPass();
-      // The directional light does not need a stencil test because its volume
-      // is unlimited and the final pass simply copies the texture.
+
+      for (unsigned int i = 0; i < 8; ++i) {
+        StencilPass(i);
+        PointLightPass(i);
+      }
+
+      // The directional light does not need a stencil test because its volume is unlimited
+      // and the final pass simply copies the texture.
       glDisable(GL_STENCIL_TEST);
       DirectionalLightPass();
       // light pass
@@ -236,7 +263,7 @@ float CalcPointLightBSphere(const point_light &Light) {
   return ret;
 }
 
-void StencilPass() {
+void StencilPass(unsigned int PointLightIndex) {
   // effect eff = nullEffect;
   effect eff = gfx->nullEffect;
   // Bind effect
@@ -257,16 +284,13 @@ void StencilPass() {
   glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
   auto VP = gfx->activeCam->get_projection() * gfx->activeCam->get_view();
-  for (vec3 var : lightpositions) {
-    // render all the lights
-    auto M = glm::translate(var) * glm::scale(vec3(lightScale));
-    auto MVP = VP * M;
-    glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-    renderer::render(gfx->sphereMesh);
-  }
+  auto M = glm::translate(lightpositions[PointLightIndex]) * glm::scale(vec3(lightScale));
+  auto MVP = VP * M;
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  renderer::render(gfx->sphereMesh);
 }
 
-void PointLightPass() {
+void PointLightPass(unsigned int PointLightIndex) {
   glDrawBuffer(FINALBUFFER);
   // bind the fbo textures as input textures
   for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
@@ -300,24 +324,22 @@ void PointLightPass() {
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
 
-  glUniform3fv(eff.get_uniform_location("gPointLight.Base.Color"), 1, &lightcolour[0]);
-  glUniform1f(eff.get_uniform_location("gPointLight.Base.AmbientIntensity"), 0.3f);
-  glUniform1f(eff.get_uniform_location("gPointLight.Base.DiffuseIntensity"), 0.7f);
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), 3.0f);
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), 3.0f);
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), 1.0f);
+  float pp = (((float)PointLightIndex) / 8.0f) * 6.28f;
+  vec3 colour = col(0+pp);
+  glUniform3fv(eff.get_uniform_location("gPointLight.Base.Color"), 1, &colour[0]);
+  glUniform1f(eff.get_uniform_location("gPointLight.Base.AmbientIntensity"), 0.0f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Base.DiffuseIntensity"), 0.9f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), 0.0f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), 0.0f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), 0.01f);
 
+  glUniform3fv(eff.get_uniform_location("gPointLight.Position"), 1, &lightpositions[PointLightIndex][0]);
   auto VP = gfx->activeCam->get_projection() * gfx->activeCam->get_view();
+  auto M = glm::translate(lightpositions[PointLightIndex]) * glm::scale(vec3(lightScale));
+  auto MVP = VP * M;
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  renderer::render(gfx->sphereMesh);
 
-  for (vec3 var : lightpositions) {
-    glUniform3fv(eff.get_uniform_location("gPointLight.Position"), 1, &var[0]);
-
-    // render all the lights
-    auto M = glm::translate(var) * glm::scale(vec3(lightScale));
-    auto MVP = VP * M;
-    glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-    renderer::render(gfx->sphereMesh);
-  }
   glDisable(GL_BLEND);
 }
 
@@ -333,7 +355,6 @@ void DirectionalLightPass() {
     directionalLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
     directionalLightPassEffect.add_shader("shaders\\dir_light_pass.frag", GL_FRAGMENT_SHADER);
     directionalLightPassEffect.build();
-
   }
 
   effect eff = directionalLightPassEffect;
@@ -365,24 +386,3 @@ void DirectionalLightPass() {
 
   glDisable(GL_BLEND);
 }
-
-/*
-void DSLightPass() {
-
-  // We need stencil to be enabled in the stencil pass to get the stencil buffer
-  // updated and we also need it in the light pass because we render the light
-  // only if the stencil passes.
-  glEnable(GL_STENCIL_TEST);
-
-  for (unsigned int i = 0; i < PLights.size(); i++) {
-    DSStencilPass(i);
-    //  DSPointLightPass(i);
-  }
-
-  // The directional light does not need a stencil test because its volume
-  // is unlimited and the final pass simply copies the texture.
-  glDisable(GL_STENCIL_TEST);
-
-  // DSDirectionalLightPass();
-}
-*/

@@ -233,7 +233,7 @@ bool Graphics::Load_content() {
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
   aspect = static_cast<float>(renderer::get_screen_width()) / static_cast<float>(renderer::get_screen_height());
-  cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 2000.0f);
+  cam.set_projection(quarter_pi<float>(), aspect, 2.414f, 25000.0f);
   activeCam = &cam;
 
   // build
@@ -255,7 +255,7 @@ bool Graphics::Load_content() {
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
-  // counter += (delta_time * 0.09f);
+   counter += (delta_time * 0.09f);
   //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
 
@@ -435,7 +435,7 @@ void Graphics::DrawScene() {
   Rendermesh(*desertM, sandTexture);
 
   // RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-  // Enviroment::RenderSky();
+   //Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
   ProcessLines();

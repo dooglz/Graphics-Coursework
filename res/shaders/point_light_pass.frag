@@ -79,5 +79,5 @@ void main() {
 
   FragColor = vec4(Color, 1.0) * CalcPointLight(WorldPos, Normal);
   //FragColor = vec4(0,1.0,0, 1.0);
-  FragColor = vec4(Color, 1.0);
+  //FragColor = vec4(Color, 1.0);
 }

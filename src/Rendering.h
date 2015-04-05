@@ -42,6 +42,6 @@ static void CreateDeferredFbo();
 static void CombineToFinalBuffer();
 static void CombineToOuput();
 static void FlipToOutput();
-static void StencilPass();
-static void PointLightPass();
+static void StencilPass(unsigned int PointLightIndex);
+static void PointLightPass(unsigned int PointLightIndex);
 static void DirectionalLightPass();
