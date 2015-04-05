@@ -104,6 +104,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
     <ClInclude Include="Math.h" />
     <ClInclude Include="Perlin.h" />
     <ClInclude Include="mirror.h" />
+    <ClInclude Include="Rendering.h" />
     <ClInclude Include="stb_rect_pack.h" />
     <ClInclude Include="stb_textedit.h" />
     <ClInclude Include="stb_truetype.h" />
@@ -119,6 +120,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Perlin.cpp" />
     <ClCompile Include="Mirror.cpp" />
+    <ClCompile Include="Rendering.cpp" />
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -9,13 +9,14 @@
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
+#include <functional>
 #include "DesertGen.h"
 #include "Math.h"
 #include "mirror.h"
 #include "UI.h"
 #include "Enviroment.h"
 #include "Gimbal.h"
-#include <functional>
+#include "Rendering.h"
 
 using namespace std;
 using namespace graphics_framework;
@@ -23,6 +24,7 @@ using namespace glm;
 
 // Init the global extern to the graphics instance
 Graphics *gfx = nullptr;
+bool showUI;
 
 void Graphics::DrawLine(const glm::vec3 &p1, const glm::vec3 &p2) {
   linebuffer.push_back(p1);
@@ -42,7 +44,7 @@ bool Graphics::Initialise() {
 
   // Capture initial mouse position
   glfwGetCursorPos(renderer::get_window(), &cursor_x, &cursor_y);
-
+  showUI = true;
   initUI();
   return true;
 }
@@ -120,58 +122,6 @@ void Graphics::UpdateLights() {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
   glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights), &NumberOfLights, GL_DYNAMIC_COPY);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
-
-bool Graphics::createMRT() {
-
-  // Create the FBO
-  glGenFramebuffers(1, &fbo);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  // Create the gbuffer textures
-  glGenTextures(GBUFFER_NUM_TEXTURES, fbo_textures);
-  glGenTextures(1, &fbo_depthTexture);
-  glGenTextures(1, &fbo_finalTexture);
-
-  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
-    glBindTexture(GL_TEXTURE_2D, fbo_textures[i]);
-    // setup dimensions, fill with Nulll
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
-    // attach to one of the fbo outputs
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, fbo_textures[i], 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  }
-  // depth
-  glBindTexture(GL_TEXTURE_2D, fbo_depthTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, fbo_depthTexture, 0);
-
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT,NULL);
- // glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, fbo_depthTexture, 0);
-
-
-  // final
-  glBindTexture(GL_TEXTURE_2D, fbo_finalTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, FINALBUFFER, GL_TEXTURE_2D, fbo_finalTexture, 0);
-
-
-  // set drawmode
-  GLenum DrawBuffers[] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER };
-  glDrawBuffers(4, DrawBuffers);
-
-  GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-  if (Status != GL_FRAMEBUFFER_COMPLETE) {
-    printf("FB error, status: 0x%x\n", Status);
-    return false;
-  }
-
-  // restore default FBO
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-
-  return true;
 }
 
 Gimbal *gimbal;
@@ -280,13 +230,9 @@ bool Graphics::Load_content() {
   pointLightPassEffect.add_shader("shaders\\point_light_pass.frag", GL_FRAGMENT_SHADER);
   pointLightPassEffect.build();
 
-  df_lighttest.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
-  df_lighttest.add_shader("shaders\\df_lighttest.frag", GL_FRAGMENT_SHADER);
-  df_lighttest.build();
-
   sphereMesh = mesh(geometry_builder::create_sphere(16, 16, vec3(1.0f, 1.0f, 1.0f)));
-  std::vector<vec2> v = { vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1) };
-  plane.add_buffer(v, 0);
+  std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1)};
+  planegeo.add_buffer(v, 0);
   // Set camera properties
   cam.set_position(vec3(0.0f, 10.0f, 0.0f));
   cam.set_target(vec3(0.0f, 0.0f, 0.0f));
@@ -306,7 +252,7 @@ bool Graphics::Load_content() {
   gimbal = new Gimbal(16);
   SetupMirror();
 
-  createMRT();
+  SetMode(DEFFERED,DEBUG_PASSTHROUGH);
   return true;
 }
 
@@ -344,17 +290,25 @@ bool Graphics::Update(float delta_time) {
     double current_y;
     // Get the current cursor position
     glfwGetCursorPos(renderer::get_window(), &current_x, &current_y);
-    // Calculate delta of cursor positions from last frame
-    double delta_x = current_x - cursor_x;
-    double delta_y = current_y - cursor_y;
-    // Multiply deltas by ratios - gets actual change in orientation
-    delta_x *= ratio_width;
-    delta_y *= -ratio_height;
+    if (glfwGetInputMode(renderer::get_window(), GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+      // Calculate delta of cursor positions from last frame
+      double delta_x = current_x - cursor_x;
+      double delta_y = current_y - cursor_y;
+      // Multiply deltas by ratios - gets actual change in orientation
+      delta_x *= ratio_width;
+      delta_y *= -ratio_height;
 
-    // Rotate cameras by delta
-    // delta_y - x-axis rotation
-    // delta_x - y-axis rotation
-    cam.rotate(static_cast<float>(delta_x), static_cast<float>(delta_y));
+      // Rotate cameras by delta
+      // delta_y - x-axis rotation
+      // delta_x - y-axis rotation
+      cam.rotate(static_cast<float>(delta_x), static_cast<float>(delta_y));
+      cursor_x = current_x;
+      cursor_y = current_y;
+    }
+    else{
+      cursor_x = current_x;
+      cursor_y = current_y;
+    }
 
     // Use keyboard to move the camera
     vec3 translation(0.0f, 0.0f, 0.0f);
@@ -381,11 +335,17 @@ bool Graphics::Update(float delta_time) {
     cam.move(translation * moveSpeed);
     cam.update(delta_time);
 
-    cursor_x = current_x;
-    cursor_y = current_y;
   }
+  static int keystate;
+  int newkeystate = glfwGetKey(renderer::get_window(), 'N');
+  if (newkeystate && newkeystate != keystate){
+    showUI = !showUI;
+  }
+  keystate = newkeystate;
 
-  UpdateUI();
+  if (showUI) {
+    UpdateUI();
+  }
   return true;
 }
 
@@ -472,242 +432,40 @@ void Graphics::ProcessLines() {
   linebuffer.clear();
 }
 
-
-void Graphics::DSLightPassDebug() {
-  
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glDepthMask(GL_TRUE);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-
-  GLsizei HalfWidth = (GLsizei)(SCREENWIDTH / 2.0f);
-  GLsizei HalfHeight = (GLsizei)(SCREENHEIGHT / 2.0f);
-
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_POSITION);
-  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, HalfWidth, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_DIFFUSE);
-  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, HalfHeight, HalfWidth, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_NORMAL);
-  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, HalfWidth, HalfHeight, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-  glReadBuffer(GL_COLOR_ATTACHMENT0 + GBUFFER_TEXTURE_TYPE_TEXCOORD);
-  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, HalfWidth, 0, SCREENWIDTH, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-}
-
-//calculates the size of the bounding box for the specified light source
-float CalcPointLightBSphere(const point_light& Light)
-{
-  float MaxChannel = fmax(fmax(Light.get_light_colour().x, Light.get_light_colour().y), Light.get_light_colour().z);
-
-  float ret =
-      (-Light.get_linear_attenuation() +
-       sqrtf(Light.get_linear_attenuation() * Light.get_linear_attenuation() -
-             4 * Light.get_quadratic_attenuation() * (Light.get_quadratic_attenuation() - 256 * MaxChannel * 1.0f))) /
-      2 * Light.get_quadratic_attenuation();
-  return ret;
-}
-
-//Combines the fbo textures in one shader, output to FINALBUFFER
-void Graphics::DSLightPassDebug2() {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-
-  effect eff = df_lighttest;
-  // Bind effect
-  renderer::bind(eff);
-
-  glDrawBuffer(FINALBUFFER);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
-  }
-
-  glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
-  glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
-  glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
-  glUniform1i(eff.get_uniform_location("gNormalMap"), GBUFFER_TEXTURE_TYPE_NORMAL);
-
-  auto V = activeCam->get_view();
-  auto P = activeCam->get_projection();
-  auto MVP = mat4(1.0f);
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  //glDisable(GL_DEPTH_TEST);
-  //glDepthMask(GL_FALSE);
-  renderer::render(plane);
-  glEnable(GL_CULL_FACE);
-}
-
-
-void Graphics::DSStencilPass(unsigned int PointLightIndex)
-{
-  //effect eff = nullEffect;
-   effect eff = simpleEffect;
-  // Bind effect
-  renderer::bind(eff);
-
-  // Disable color/depth write and enable stencil 
-  //glDrawBuffer(GL_NONE);
-  glDrawBuffer(FINALBUFFER);
-  glEnable(GL_DEPTH_TEST);
-
-  glDisable(GL_CULL_FACE);
-
-  //glClear(GL_STENCIL_BUFFER_BIT);
-
-  // We need the stencil test to be enabled but we want it
-  // to succeed always. Only the depth test matters.
-  glStencilFunc(GL_ALWAYS, 0, 0);
-
-  glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
-  glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
-
-  auto M = glm::scale(vec3(PLights[PointLightIndex]._range))*glm::translate(PLights[PointLightIndex].get_position());
-  auto V = activeCam->get_view();
-  auto P = activeCam->get_projection();
-  auto MVP = P * V * M;
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  renderer::render(sphereMesh);
-}
-
-void Graphics::DSPointLightPass(unsigned int PointLightIndex)
-{
-  glDrawBuffer(FINALBUFFER);
-
-  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
-  }
-
-
-  effect eff = pointLightPassEffect;
-  // Bind effect
-  renderer::bind(eff);
-  
-  glUniform3fv(eff.get_uniform_location("gEyeWorldPos"),1, &activeCam->get_position()[0]);
-  glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
-  glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
-  glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
-  glUniform1i(eff.get_uniform_location("gNormalMap"), GBUFFER_TEXTURE_TYPE_NORMAL);
-
-  glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-
-  glDisable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
-  glBlendEquation(GL_FUNC_ADD);
-  glBlendFunc(GL_ONE, GL_ONE);
-
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_FRONT);
-
-  point_light light = PLights[PointLightIndex];
-  glUniform3fv(eff.get_uniform_location("gPointLight.Base.Color"), 1, &light.get_light_colour()[0]);
-  glUniform1f(eff.get_uniform_location("gPointLight.Base.AmbientIntensity"), 1.0f);
-  glUniform1f(eff.get_uniform_location("gPointLight.Base.DiffuseIntensity"), 1.0f);
-  glUniform3fv(eff.get_uniform_location("gPointLight.Position"), 1, &light.get_position()[0]);
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), light.get_constant_attenuation());
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), light.get_linear_attenuation());
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), light.get_quadratic_attenuation());
-//
-
-
-  auto M = glm::scale(vec3(light._range))*glm::translate(light.get_position());
-  auto V = activeCam->get_view();
-  auto P = activeCam->get_projection();
-  auto MVP = P * V * M;
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  renderer::render(sphereMesh);
-
-  glCullFace(GL_BACK);
-  glDisable(GL_BLEND);
-}
-
-void Graphics::DSFinalPass()
-{
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-  glReadBuffer(FINALBUFFER);
-
-  glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-}
-
-void Graphics::DSLightPass() {
-
-  // We need stencil to be enabled in the stencil pass to get the stencil buffer
-  // updated and we also need it in the light pass because we render the light
-  // only if the stencil passes.
-  glEnable(GL_STENCIL_TEST);
-
-  for (unsigned int i = 0; i < PLights.size(); i++) {
-    DSStencilPass(i);
-  //  DSPointLightPass(i);
-  }
-
-  // The directional light does not need a stencil test because its volume
-  // is unlimited and the final pass simply copies the texture.
-  glDisable(GL_STENCIL_TEST);
-
- // DSDirectionalLightPass();
-}
-
-
 void Graphics::DrawScene() {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-   //clear the final buffer
-  glDrawBuffer(FINALBUFFER);
-//  glClear(GL_COLOR_BUFFER_BIT);
-  // set drawmode
-  GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-  glDrawBuffers(4, DrawBuffers);
-
-  // Only the geometry pass updates the depth buffer
-  glDepthMask(GL_TRUE);
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glEnable(GL_DEPTH_TEST);
-
   for (auto &e : meshes) {
     Rendermesh(e.second, checkedTexture);
   }
   Rendermesh(*desertM, sandTexture);
 
   // RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-  //Enviroment::RenderSky();
+  // Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
   ProcessLines();
-
-  // When we get here the depth buffer is already populated and the stencil pass
-  // depends on it, but it does not write to it.
-  glDepthMask(GL_FALSE);
- 
 }
 
-
 bool Graphics::Render() {
- // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  BeginOpaque();
+  DrawScene();
+  EndOpaque();
+
+  BeginTransparent();
+  EndTransparent();
+
+  BeginPost();
+  EndPost();
+  // RenderMirror(mirror);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  DrawScene();
-
-//RenderMirror(mirror);
-
-  //DSLightPass();
-  DSLightPassDebug2();
-
-  DSFinalPass();
-  DrawUI();
+  if (showUI) {
+    DrawUI();
+  }
   return true;
 }
 

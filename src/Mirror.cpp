@@ -146,7 +146,7 @@ void RenderMirror(mesh &mirror) {
       gfx->activeCam = &gfx->cam;
     }
     // end render
-    glBindFramebuffer(GL_FRAMEBUFFER, gfx->fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
 
   // render texture onto plane

@@ -32,31 +32,10 @@ using namespace graphics_framework;
 
 class Graphics {
 public:
-  //deferred rendering
-  enum GBUFFER_TEXTURE_TYPE {
-    GBUFFER_TEXTURE_TYPE_POSITION,
-    GBUFFER_TEXTURE_TYPE_DIFFUSE,
-    GBUFFER_TEXTURE_TYPE_NORMAL,
-    GBUFFER_TEXTURE_TYPE_TEXCOORD,
-    GBUFFER_NUM_TEXTURES
-  };
-  GLuint fbo;
-  GLuint fbo_textures[GBUFFER_NUM_TEXTURES];
-  GLuint fbo_depthTexture;
-  GLuint fbo_finalTexture;
-
   bool Render();
   bool Update(float delta_time);
   bool Load_content();
   bool Initialise();
-  void DSLightPass();
-  void DSLightPassDebug();
-  void DSLightPassDebug2();
-  void DSFinalPass();
-
-  void DSStencilPass(unsigned int PointLightIndex);
-
-  void DSPointLightPass(unsigned int PointLightIndex);
 
   Graphics();
   ~Graphics();
@@ -88,13 +67,12 @@ public:
   effect geoPassEffect;
   effect nullEffect;
   effect pointLightPassEffect;
-  effect df_lighttest;
 
   mesh *desertM;
   mesh mirror;
   mesh goodsand;
   mesh sphereMesh;
-  geometry plane;
+  geometry planegeo;
 
 
   // Light stuff
@@ -113,13 +91,11 @@ public:
 
 
   std::vector<const glm::vec3> linebuffer;
-
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
   void DrawCross(const glm::vec3 &p1, const float size);
   void ProcessLines();
   void MakeGyroscope();
   void UpdateGyroscope(float delta_time);
-  bool createMRT();
   void Rendermesh(mesh &m, texture &t);
   // Renders a mesh with a bump map
   void RendermeshB(mesh &m, const texture &t, const texture &tb, const float scale);
