@@ -226,10 +226,6 @@ bool Graphics::Load_content() {
   nullEffect.add_shader("shaders\\null.frag", GL_FRAGMENT_SHADER);
   nullEffect.build();
 
-  pointLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
-  pointLightPassEffect.add_shader("shaders\\point_light_pass.frag", GL_FRAGMENT_SHADER);
-  pointLightPassEffect.build();
-
   sphereMesh = mesh(geometry_builder::create_sphere(16, 16, vec3(1.0f, 1.0f, 1.0f)));
   std::vector<vec2> v = {vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, 1), vec2(1, -1), vec2(-1, -1)};
   planegeo.add_buffer(v, 0);
@@ -252,7 +248,7 @@ bool Graphics::Load_content() {
   gimbal = new Gimbal(16);
   SetupMirror();
 
-  SetMode(DEFFERED,DEBUG_PASSTHROUGH);
+  SetMode(DEFFERED,NORMAL);
   return true;
 }
 

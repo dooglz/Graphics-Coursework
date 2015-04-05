@@ -54,6 +54,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -76,6 +77,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -312,6 +314,17 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\res\shaders\df_lighttest.frag">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)/%(Filename);%(Outputs)shaders\</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename);%(Outputs)shaders\</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\res\shaders\dir_light_pass.frag">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>

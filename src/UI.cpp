@@ -4,6 +4,7 @@
 #include "imgui_impl_glfw_gl3.h"
 #include <GLFW/glfw3.h>
 #include "Enviroment.h"
+#include "Rendering.h"
 
 static bool showMenu;
 
@@ -32,7 +33,7 @@ static void Menu(){
     static float speed = false;
 
     bool opened;
-    if (!ImGui::Begin("Menu", &opened, ImVec2(550, 680)))
+    if (!ImGui::Begin("Menu", &opened, ImGuiWindowFlags_AlwaysAutoResize))
     {
       // Early out if the window is collapsed, as an optimization.
       ImGui::End();
@@ -52,6 +53,26 @@ static void Menu(){
         ImGui::SameLine();
         if (ImGui::Button("Reset")) speed = 0;
         ImGui::Text("Dayscale: %f , %i", Enviroment::dayscale, Enviroment::daymode);
+    }
+    if (ImGui::CollapsingHeader("Rendering"))
+    {
+      static int rm = getRM();
+      static int dm = getDM();
+
+      bool b = 0;
+      b |= ImGui::RadioButton("FORWARD", &rm, FORWARD);
+      ImGui::SameLine();
+      b |= ImGui::RadioButton("DEFFERED", &rm, DEFFERED);
+      if (rm){
+        b |= ImGui::RadioButton("DEBUG_PASSTHROUGH", &dm, DEBUG_PASSTHROUGH);
+        ImGui::SameLine();
+        b |= ImGui::RadioButton("DEBUG_COMBINE", &dm, DEBUG_COMBINE);
+        ImGui::SameLine();
+        b |= ImGui::RadioButton("NORMAL", &dm, NORMAL);
+      }
+      if (b){
+        SetMode((RenderMode)rm, (DefferedMode)dm);
+      }
     }
 
     if (showTestWindow) ImGui::ShowTestWindow();

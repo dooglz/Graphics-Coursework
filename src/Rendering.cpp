@@ -4,18 +4,110 @@
 #include "libENUgraphics\effect.h"
 #include "libENUgraphics\renderer.h"
 #include <glm\glm.hpp>
+#include <glm\gtx\transform.hpp>
 
 using namespace glm;
-
-static RenderMode renderMode;
-static DefferedMode defMode;
 static GLuint fbo = -1;
 static GLuint fbo_textures[GBUFFER_NUM_TEXTURES];
 static GLuint fbo_depthTexture = -1;
 static GLuint fbo_finalTexture = -1;
+static RenderMode renderMode;
+static DefferedMode defMode;
 
-//combines all buffers to one buffer
+RenderMode getRM() { return renderMode; }
+DefferedMode getDM() { return defMode; }
+
+static const vec3 lightpositions[] = {vec3(15.0f, 3.0f, 0.0f),   vec3(-15.0f, 3.0f, 0.0f),  vec3(0.0f, 3.0f, 15.0f),
+                                      vec3(0.0f, 3.0f, -15.0f),  vec3(15.0f, 3.0f, 15.0f),  vec3(-15.0f, 3.0f, 15.0f),
+                                      vec3(15.0f, 3.0f, -15.0f), vec3(-15.0f, 3.0f, -15.0f)};
+
+static const float lightScale = 10.0f;
+static const vec3 lightcolour = vec3(0.2f, 1.0f, 0.0f);
+static const vec3 lightcolour2 = vec3(1.0f, 0.0f, 0.0f);
+
+// combines all buffers to one buffer
 static graphics_framework::effect df_lighttest;
+
+static graphics_framework::effect pointLightPassEffect;
+static graphics_framework::effect directionalLightPassEffect;
+
+void SetMode(const RenderMode rm, const DefferedMode dm) {
+  renderMode = rm;
+  defMode = dm;
+  if (rm && fbo == -1) {
+    CreateDeferredFbo();
+  }
+}
+
+void BeginOpaque() {
+  if (renderMode) {
+    // Deferred, render to fbo
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+    // clear the final buffer
+    glDrawBuffer(FINALBUFFER);
+    glClearColor(0, 0, 0, 0.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+    glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+
+    // set drawmode
+    GLenum DrawBuffers[] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER};
+    glDrawBuffers(4, DrawBuffers);
+    // Only the geometry pass updates the depth buffer
+    glDepthMask(GL_TRUE);
+    // clear all buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
+  } else {
+    // forward, render to 0
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+  }
+}
+
+void EndOpaque() {
+
+  if (renderMode) {
+    // stencil pass nneds depth buffer, but doesn't write
+    // disable writing to depth
+    glDepthMask(GL_FALSE);
+
+    if (defMode == DEBUG_PASSTHROUGH) {
+      CombineToOuput();
+    } else if (defMode == DEBUG_COMBINE) {
+      if (df_lighttest.get_program() == NULL) {
+        df_lighttest.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
+        df_lighttest.add_shader("shaders\\df_lighttest.frag", GL_FRAGMENT_SHADER);
+        df_lighttest.build();
+      }
+      CombineToFinalBuffer();
+      FlipToOutput();
+
+    } else {
+      // NORMAL
+      glEnable(GL_STENCIL_TEST);
+      StencilPass();
+      PointLightPass();
+      // The directional light does not need a stencil test because its volume
+      // is unlimited and the final pass simply copies the texture.
+      glDisable(GL_STENCIL_TEST);
+      DirectionalLightPass();
+      // light pass
+      FlipToOutput();
+    }
+
+  } else {
+  }
+}
+
+void BeginTransparent() { return; }
+
+void EndTransparent() { return; }
+void BeginPost() { return; }
+void EndPost() { return; }
 
 void CreateDeferredFbo() {
   // Create the FBO
@@ -132,101 +224,30 @@ void FlipToOutput() {
   glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
-void SetMode(const RenderMode rm, const DefferedMode dm) {
-  renderMode = rm;
-  defMode = dm;
-  if (rm && fbo == -1) {
-    CreateDeferredFbo();
-  }
-}
-
-void BeginOpaque() {
-  if (renderMode) {
-    // Deferred, render to fbo
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-    // clear the final buffer
-    glDrawBuffer(FINALBUFFER);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // set drawmode
-    GLenum DrawBuffers[] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER};
-    glDrawBuffers(4, DrawBuffers);
-    // Only the geometry pass updates the depth buffer
-    glDepthMask(GL_TRUE);
-    // clear all buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-  } else {
-    // forward, render to 0
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDepthMask(GL_TRUE);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-  }
-}
-
-void EndOpaque() {
-
-  if (renderMode) {
-    // stencil pass nneds depth buffer, but doesn't write
-    // disable writing to depth
-    glDepthMask(GL_FALSE);
-
-    if (defMode == DEBUG_PASSTHROUGH) {
-      CombineToOuput();
-    } else if (defMode == DEBUG_COMBINE) {
-      if (df_lighttest.get_program() == NULL) {
-        df_lighttest.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
-        df_lighttest.add_shader("shaders\\df_lighttest.frag", GL_FRAGMENT_SHADER);
-        df_lighttest.build();
-      }
-      CombineToFinalBuffer();
-      FlipToOutput();
-
-    } else {
-      FlipToOutput();
-    }
-
-  } else {
-  }
-}
-
-void BeginTransparent() {}
-
-void EndTransparent() {}
-
-void BeginPost() {}
-
-void EndPost() {}
-
-
 // calculates the size of the bounding box for the specified light source
 float CalcPointLightBSphere(const point_light &Light) {
   float MaxChannel = fmax(fmax(Light.get_light_colour().x, Light.get_light_colour().y), Light.get_light_colour().z);
 
   float ret =
-    (-Light.get_linear_attenuation() +
-    sqrtf(Light.get_linear_attenuation() * Light.get_linear_attenuation() -
-    4 * Light.get_quadratic_attenuation() * (Light.get_quadratic_attenuation() - 256 * MaxChannel * 1.0f))) /
-    2 * Light.get_quadratic_attenuation();
+      (-Light.get_linear_attenuation() +
+       sqrtf(Light.get_linear_attenuation() * Light.get_linear_attenuation() -
+             4 * Light.get_quadratic_attenuation() * (Light.get_quadratic_attenuation() - 256 * MaxChannel * 1.0f))) /
+      2 * Light.get_quadratic_attenuation();
   return ret;
 }
 
-/*
-void DSStencilPass(unsigned int PointLightIndex) {
+void StencilPass() {
   // effect eff = nullEffect;
-  effect eff = simpleEffect;
+  effect eff = gfx->nullEffect;
   // Bind effect
   renderer::bind(eff);
 
   // Disable color/depth write and enable stencil
-  // glDrawBuffer(GL_NONE);
-  glDrawBuffer(FINALBUFFER);
+  glDrawBuffer(GL_NONE);
   glEnable(GL_DEPTH_TEST);
 
   glDisable(GL_CULL_FACE);
-
-  // glClear(GL_STENCIL_BUFFER_BIT);
+  glClear(GL_STENCIL_BUFFER_BIT);
 
   // We need the stencil test to be enabled but we want it
   // to succeed always. Only the depth test matters.
@@ -235,28 +256,35 @@ void DSStencilPass(unsigned int PointLightIndex) {
   glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
   glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
-  auto M = glm::scale(vec3(PLights[PointLightIndex]._range)) * glm::translate(PLights[PointLightIndex].get_position());
-  auto V = activeCam->get_view();
-  auto P = activeCam->get_projection();
-  auto MVP = P * V * M;
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  renderer::render(sphereMesh);
+  auto VP = gfx->activeCam->get_projection() * gfx->activeCam->get_view();
+  for (vec3 var : lightpositions) {
+    // render all the lights
+    auto M = glm::translate(var) * glm::scale(vec3(lightScale));
+    auto MVP = VP * M;
+    glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+    renderer::render(gfx->sphereMesh);
+  }
 }
 
-void DSPointLightPass(unsigned int PointLightIndex) {
+void PointLightPass() {
   glDrawBuffer(FINALBUFFER);
-
+  // bind the fbo textures as input textures
   for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
+  }
+
+  if (pointLightPassEffect.get_program() == NULL) {
+    pointLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
+    pointLightPassEffect.add_shader("shaders\\point_light_pass.frag", GL_FRAGMENT_SHADER);
+    pointLightPassEffect.build();
   }
 
   effect eff = pointLightPassEffect;
   // Bind effect
   renderer::bind(eff);
 
-  glUniform3fv(eff.get_uniform_location("gEyeWorldPos"), 1, &activeCam->get_position()[0]);
+  glUniform3fv(eff.get_uniform_location("gEyeWorldPos"), 1, &gfx->activeCam->get_position()[0]);
   glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
   glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
   glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
@@ -272,28 +300,73 @@ void DSPointLightPass(unsigned int PointLightIndex) {
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
 
-  point_light light = PLights[PointLightIndex];
-  glUniform3fv(eff.get_uniform_location("gPointLight.Base.Color"), 1, &light.get_light_colour()[0]);
-  glUniform1f(eff.get_uniform_location("gPointLight.Base.AmbientIntensity"), 1.0f);
-  glUniform1f(eff.get_uniform_location("gPointLight.Base.DiffuseIntensity"), 1.0f);
-  glUniform3fv(eff.get_uniform_location("gPointLight.Position"), 1, &light.get_position()[0]);
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), light.get_constant_attenuation());
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), light.get_linear_attenuation());
-  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), light.get_quadratic_attenuation());
-  //
+  glUniform3fv(eff.get_uniform_location("gPointLight.Base.Color"), 1, &lightcolour[0]);
+  glUniform1f(eff.get_uniform_location("gPointLight.Base.AmbientIntensity"), 0.3f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Base.DiffuseIntensity"), 0.7f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Constant"), 3.0f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Linear"), 3.0f);
+  glUniform1f(eff.get_uniform_location("gPointLight.Atten.Exp"), 1.0f);
 
-  auto M = glm::scale(vec3(light._range)) * glm::translate(light.get_position());
-  auto V = activeCam->get_view();
-  auto P = activeCam->get_projection();
-  auto MVP = P * V * M;
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  renderer::render(sphereMesh);
+  auto VP = gfx->activeCam->get_projection() * gfx->activeCam->get_view();
 
-  glCullFace(GL_BACK);
+  for (vec3 var : lightpositions) {
+    glUniform3fv(eff.get_uniform_location("gPointLight.Position"), 1, &var[0]);
+
+    // render all the lights
+    auto M = glm::translate(var) * glm::scale(vec3(lightScale));
+    auto MVP = VP * M;
+    glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+    renderer::render(gfx->sphereMesh);
+  }
   glDisable(GL_BLEND);
 }
 
+void DirectionalLightPass() {
+  glDrawBuffer(FINALBUFFER);
+  // bind the fbo textures as input textures
+  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
+    glActiveTexture(GL_TEXTURE0 + i);
+    glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
+  }
+
+  if (directionalLightPassEffect.get_program() == NULL) {
+    directionalLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
+    directionalLightPassEffect.add_shader("shaders\\dir_light_pass.frag", GL_FRAGMENT_SHADER);
+    directionalLightPassEffect.build();
+
+  }
+
+  effect eff = directionalLightPassEffect;
+  renderer::bind(eff);
+  glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
+  glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
+  glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
+  glUniform1i(eff.get_uniform_location("gNormalMap"), GBUFFER_TEXTURE_TYPE_NORMAL);
+
+  vec3 direction = vec3(0, 1.0, 0);
+  glUniform3fv(eff.get_uniform_location("gDirectionalLight.Direction"), 1, &direction[0]);
+  glUniform3fv(eff.get_uniform_location("gEyeWorldPos"), 1, &gfx->activeCam->get_position()[0]);
+  //
+  glUniform1f(eff.get_uniform_location("gMatSpecularIntensity"), 1.0f);
+  glUniform1f(eff.get_uniform_location("gSpecularPower"), 1.0f);
+  glUniform3fv(eff.get_uniform_location("gDirectionalLight.Base.Color"), 1, &lightcolour2[0]);
+  glUniform1f(eff.get_uniform_location("gDirectionalLight.Base.AmbientIntensity"), 0.3f);
+  glUniform1f(eff.get_uniform_location("gDirectionalLight.Base.DiffuseIntensity"), 0.7f);
+
+  glDisable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendEquation(GL_FUNC_ADD);
+  glBlendFunc(GL_ONE, GL_ONE);
+
+  // render fullscreen quad
+  auto MVP = mat4(1.0f);
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  graphics_framework::renderer::render(gfx->planegeo);
+
+  glDisable(GL_BLEND);
+}
+
+/*
 void DSLightPass() {
 
   // We need stencil to be enabled in the stencil pass to get the stencil buffer

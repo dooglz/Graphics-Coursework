@@ -159,5 +159,8 @@
     <CustomBuild Include="..\res\shaders\df_lighttest.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
+    <CustomBuild Include="..\res\shaders\dir_light_pass.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -6,22 +6,15 @@ struct BaseLight {
   float DiffuseIntensity;
 };
 
-struct Attenuation {
-  float Constant;
-  float Linear;
-  float Exp;
-};
-
-struct PointLight {
+struct DirectionalLight {
   BaseLight Base;
-  vec3 Position;
-  Attenuation Atten;
+  vec3 Direction;
 };
 
 uniform sampler2D gPositionMap;
 uniform sampler2D gColorMap;
 uniform sampler2D gNormalMap;
-uniform PointLight gPointLight;
+uniform DirectionalLight gDirectionalLight;
 uniform vec3 gEyeWorldPos;
 uniform float gMatSpecularIntensity;
 uniform float gSpecularPower;
@@ -45,25 +38,12 @@ vec4 CalcLightInternal(BaseLight Light, vec3 LightDirection, vec3 WorldPos, vec3
       SpecularColor = vec4(Light.Color, 1.0) * gMatSpecularIntensity * SpecularFactor;
     }
   }
-
+   return (AmbientColor + DiffuseColor);
  // return (AmbientColor + DiffuseColor + SpecularColor);
- return (AmbientColor + DiffuseColor);
 }
 
-
-vec4 CalcPointLight(vec3 WorldPos, vec3 Normal) {
-  vec3 LightDirection = WorldPos - gPointLight.Position;
-  float Distance = length(LightDirection);
-  LightDirection = normalize(LightDirection);
-
-  vec4 Color = CalcLightInternal(gPointLight.Base, LightDirection, WorldPos, Normal);
-
-  float Attenuation =
-      gPointLight.Atten.Constant + gPointLight.Atten.Linear * Distance + gPointLight.Atten.Exp * Distance * Distance;
-
-  Attenuation = max(1.0, Attenuation);
-
-  return Color / Attenuation;
+vec4 CalcDirectionalLight(vec3 WorldPos, vec3 Normal) {
+  return CalcLightInternal(gDirectionalLight.Base, gDirectionalLight.Direction, WorldPos, Normal);
 }
 
 vec2 CalcTexCoord() { return gl_FragCoord.xy / gScreenSize; }
@@ -77,7 +57,5 @@ void main() {
   vec3 Normal = texture(gNormalMap, TexCoord).xyz;
   Normal = normalize(Normal);
 
-  FragColor = vec4(Color, 1.0) * CalcPointLight(WorldPos, Normal);
-  //FragColor = vec4(0,1.0,0, 1.0);
-  FragColor = vec4(Color, 1.0);
+  FragColor = vec4(Color, 1.0) * CalcDirectionalLight(WorldPos, Normal);
 }

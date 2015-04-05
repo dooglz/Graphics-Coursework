@@ -23,13 +23,6 @@ using namespace graphics_framework;
 #define SCREENHEIGHT 720
 #define SCREENWIDTH 1280
 
-#define POSITIONBUFFER GL_COLOR_ATTACHMENT0
-#define DIFFUSEBUFFER GL_COLOR_ATTACHMENT1
-#define NORMALBUFFER GL_COLOR_ATTACHMENT2
-#define TEXCOORDBUFFER GL_COLOR_ATTACHMENT3
-#define DEPTHBUFFER GL_COLOR_ATTACHMENT4 //possibly should be GL_DEPTH_ATTACHMENT
-#define FINALBUFFER GL_COLOR_ATTACHMENT5
-
 class Graphics {
 public:
   bool Render();
@@ -66,7 +59,7 @@ public:
   effect texturedBumpEffect;
   effect geoPassEffect;
   effect nullEffect;
-  effect pointLightPassEffect;
+
 
   mesh *desertM;
   mesh mirror;

@@ -1,14 +1,14 @@
 #pragma once
-
-const static enum RenderMode{
+typedef enum RenderMode{
   FORWARD,
   DEFFERED
-};
-const static enum DefferedMode{
+}RenderMode;
+
+typedef enum DefferedMode{
   DEBUG_PASSTHROUGH,
   DEBUG_COMBINE,
   NORMAL
-};
+}DefferedMode;
 
 enum GBUFFER_TEXTURE_TYPE {
   GBUFFER_TEXTURE_TYPE_POSITION,
@@ -26,6 +26,8 @@ enum GBUFFER_TEXTURE_TYPE {
 #define FINALBUFFER GL_COLOR_ATTACHMENT4
 
 void SetMode(const RenderMode rm, const DefferedMode dm);
+RenderMode getRM();
+DefferedMode getDM();
 
 void BeginOpaque();
 void EndOpaque();
@@ -35,3 +37,11 @@ void EndTransparent();
 
 void BeginPost();
 void EndPost();
+
+static void CreateDeferredFbo();
+static void CombineToFinalBuffer();
+static void CombineToOuput();
+static void FlipToOutput();
+static void StencilPass();
+static void PointLightPass();
+static void DirectionalLightPass();
