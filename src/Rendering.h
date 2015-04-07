@@ -1,4 +1,6 @@
 #pragma once
+#include "libENUgraphics\point_light.h"
+
 typedef enum RenderMode{
   FORWARD,
   DEFFERED
@@ -22,8 +24,10 @@ enum GBUFFER_TEXTURE_TYPE {
 #define DIFFUSEBUFFER GL_COLOR_ATTACHMENT1
 #define NORMALBUFFER GL_COLOR_ATTACHMENT2
 #define TEXCOORDBUFFER GL_COLOR_ATTACHMENT3
-#define DEPTHBUFFER GL_DEPTH_ATTACHMENT //possibly should be GL_DEPTH_ATTACHMENT
 #define FINALBUFFER GL_COLOR_ATTACHMENT4
+#define INFOBUFFER GL_COLOR_ATTACHMENT5
+#define DEPTHBUFFER GL_DEPTH_ATTACHMENT
+
 
 void SetMode(const RenderMode rm, const DefferedMode dm);
 RenderMode getRM();
@@ -38,10 +42,12 @@ void EndTransparent();
 void BeginPost();
 void EndPost();
 
+void NewFrame();
+
 static void CreateDeferredFbo();
 static void CombineToFinalBuffer();
 static void CombineToOuput();
 static void FlipToOutput();
-static void StencilPass(unsigned int PointLightIndex);
-static void PointLightPass(unsigned int PointLightIndex);
+static void StencilPass(const graphics_framework::point_light& p);
+static void PointLightPass(const graphics_framework::point_light& p);
 static void DirectionalLightPass();

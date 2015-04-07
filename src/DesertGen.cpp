@@ -86,6 +86,7 @@ void create_plane2(const unsigned int &width, const unsigned int &depth, const f
   float amountWf = static_cast<float>(amountW);
   unsigned int amountQuads = static_cast<unsigned int>(pow(sqrt(amountD * amountW) - 1, 2));
 
+  //create all the points
   for (unsigned int x = 0; x < amountD; ++x) {
     float xf = static_cast<float>(x);
     for (unsigned int z = 0; z < amountW; ++z) {
@@ -111,7 +112,8 @@ void create_plane2(const unsigned int &width, const unsigned int &depth, const f
       normals.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
     }
   }
-  // make some triangles
+
+  // coonect the points, make some triangles
   int k = 0;
   unsigned int j = 0;
   for (unsigned int i = 0; i < amountQuads; ++i) {

@@ -14,6 +14,7 @@ struct DirectionalLight {
 uniform sampler2D gPositionMap;
 uniform sampler2D gColorMap;
 uniform sampler2D gNormalMap;
+uniform sampler2D gInfoMap;
 uniform DirectionalLight gDirectionalLight;
 uniform vec3 gEyeWorldPos;
 uniform float gMatSpecularIntensity;
@@ -38,8 +39,8 @@ vec4 CalcLightInternal(BaseLight Light, vec3 LightDirection, vec3 WorldPos, vec3
       SpecularColor = vec4(Light.Color, 1.0) * gMatSpecularIntensity * SpecularFactor;
     }
   }
-   return (AmbientColor + DiffuseColor);
- // return (AmbientColor + DiffuseColor + SpecularColor);
+  //return (AmbientColor + DiffuseColor);
+  return (AmbientColor + DiffuseColor + SpecularColor);
 }
 
 vec4 CalcDirectionalLight(vec3 WorldPos, vec3 Normal) {
@@ -56,6 +57,11 @@ void main() {
   vec3 Color = texture(gColorMap, TexCoord).xyz;
   vec3 Normal = texture(gNormalMap, TexCoord).xyz;
   Normal = normalize(Normal);
+  vec3 Info = texture(gInfoMap, TexCoord).xyz;
 
-  FragColor = vec4(Color, 1.0) * CalcDirectionalLight(WorldPos, Normal);
+  if(Info.x ==  1.0){
+    FragColor = vec4(Color, 1.0);
+  }else{
+    FragColor = vec4(Color, 1.0) * CalcDirectionalLight(WorldPos, Normal);
+  }
 }

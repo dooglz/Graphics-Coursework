@@ -3,8 +3,13 @@
 uniform vec3 sunPosition;
 
 layout(location = 0) in vec3 vWorldPosition;
-
 vec3 cameraPos = vec3(0.0, 0.0, 0.0);
+
+layout (location = 0) out vec3 WorldPosOut; 
+layout (location = 1) out vec3 DiffuseOut; 
+layout (location = 2) out vec3 NormalOut; 
+layout (location = 3) out vec3 TexCoordOut; 
+layout (location = 4) out vec3 InfoOut; 
 
 // uniform sampler2D sDiffuse;,
 // const float turbidity = 10.0;
@@ -179,7 +184,6 @@ void main() {
 
   vec3 retColor = pow(color, vec3(1.0 / (1.2 + (1.2 * sunfade))));
 
-  gl_FragColor.rgb = retColor;
-
-  gl_FragColor.a = 1.0;
+  DiffuseOut = retColor;
+  InfoOut = vec3(1.0,0,0.5); 
 }

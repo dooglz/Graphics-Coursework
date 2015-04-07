@@ -61,9 +61,9 @@ void Graphics::UpdateLights() {
     vector<S_Dlight> S_DLights;
     for (auto L : DLights) {
       S_Dlight sd;
-      sd.ambient_intensity = L.get_ambient_intensity();
-      sd.light_colour = L.get_light_colour();
-      sd.light_dir = vec4(L.get_direction(), 0);
+      sd.ambient_intensity = L->get_ambient_intensity();
+      sd.light_colour = L->get_light_colour();
+      sd.light_dir = vec4(L->get_direction(), 0);
       S_DLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
@@ -81,12 +81,12 @@ void Graphics::UpdateLights() {
     vector<S_Plight> S_PLights;
     for (auto L : PLights) {
       S_Plight sd;
-      sd.light_colour = L.get_light_colour();
-      sd.position = vec4(L.get_position(), 0);
+      sd.light_colour = L->get_light_colour();
+      sd.position = vec4(L->get_position(), 0);
       sd.falloff = vec4(0, 0, 0, 0);
-      sd.falloff.x = L.get_constant_attenuation();
-      sd.falloff.y = L.get_linear_attenuation();
-      sd.falloff.z = L.get_quadratic_attenuation();
+      sd.falloff.x = L->get_constant_attenuation();
+      sd.falloff.y = L->get_linear_attenuation();
+      sd.falloff.z = L->get_quadratic_attenuation();
       S_PLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
@@ -104,14 +104,14 @@ void Graphics::UpdateLights() {
     vector<S_Slight> S_SLights;
     for (auto L : SLights) {
       S_Slight sd;
-      sd.light_colour = L.get_light_colour();
-      sd.position = vec4(L.get_position(), 0);
-      sd.direction = vec4(L.get_direction(), 0);
+      sd.light_colour = L->get_light_colour();
+      sd.position = vec4(L->get_position(), 0);
+      sd.direction = vec4(L->get_direction(), 0);
       sd.falloff = vec4(0, 0, 0, 0);
-      sd.falloff.x = L.get_constant_attenuation();
-      sd.falloff.y = L.get_linear_attenuation();
-      sd.falloff.z = L.get_quadratic_attenuation();
-      sd.falloff.w = L.get_power();
+      sd.falloff.x = L->get_constant_attenuation();
+      sd.falloff.y = L->get_linear_attenuation();
+      sd.falloff.z = L->get_quadratic_attenuation();
+      sd.falloff.w = L->get_power();
       S_SLights.push_back(sd);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
@@ -130,19 +130,19 @@ bool Graphics::Load_content() {
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
   dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   dlight.set_direction(vec3(1.0f, 1.0f, -1.0f));
+  DLights.push_back(&dlight);
 
-  DLights.push_back(dlight);
   plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
   plight.set_range(40.0f);
   plight.set_position(vec3(30.0f, 15.0f, 30.0f));
-  PLights.push_back(plight);
+  PLights.push_back(&plight);
 
   slight.set_position(vec3(-25.0f, 10.0f, -15.0f));
   slight.set_light_colour(vec4(0.0f, 1.0f, 0.0f, 1.0f));
   slight.set_direction(normalize(vec3(1.0f, -1.0f, -1.0f)));
   slight.set_range(20.0f);
   slight.set_power(0.5f);
-  SLights.push_back(slight);
+  SLights.push_back(&slight);
 
   NumberOfLights = vec4(1, 1, 1, 0);
   // directional light SSBO
@@ -435,13 +435,14 @@ void Graphics::DrawScene() {
   Rendermesh(*desertM, sandTexture);
 
   // RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-   //Enviroment::RenderSky();
+  Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
   ProcessLines();
 }
 
 bool Graphics::Render() {
+  NewFrame();
   // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
   // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

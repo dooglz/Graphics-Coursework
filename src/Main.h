@@ -77,9 +77,9 @@ public:
   GLuint pLightSSBO;
   GLuint sLightSSBO;
   GLuint LightSSBO;
-  std::vector<directional_light> DLights;
-  std::vector<point_light> PLights;
-  std::vector<spot_light> SLights;
+  std::vector<directional_light*> DLights;
+  std::vector<point_light*> PLights;
+  std::vector<spot_light*> SLights;
 
 
 

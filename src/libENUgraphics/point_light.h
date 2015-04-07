@@ -19,9 +19,9 @@ private:
   // The quadratic factor of the attenuation
   float _quadratic;
   
-
-public:
   float _range;
+public:
+
   // Creates a point light with a default colour
   point_light()
       : _colour(glm::vec4(0.9f, 0.9f, 0.9f, 1.0f)), _position(glm::vec3(0.0f, 0.0f, 0.0f)), _constant(0.5f),
@@ -58,6 +58,7 @@ public:
     _linear = 2.0f / range;
     _quadratic = 1.0f / (powf(range, 2.0f));
   }
+  float GetRange() const { return _range; }
   // Moves the light by the given vector
   void move(const glm::vec3 &translation) { _position += translation; }
 };

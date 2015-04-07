@@ -21,6 +21,7 @@ struct PointLight {
 uniform sampler2D gPositionMap;
 uniform sampler2D gColorMap;
 uniform sampler2D gNormalMap;
+uniform sampler2D gInfoMap;
 uniform PointLight gPointLight;
 uniform vec3 gEyeWorldPos;
 uniform float gMatSpecularIntensity;
@@ -75,9 +76,15 @@ void main() {
   vec3 WorldPos = texture(gPositionMap, TexCoord).xyz;
   vec3 Color = texture(gColorMap, TexCoord).xyz;
   vec3 Normal = texture(gNormalMap, TexCoord).xyz;
+  vec3 Info = texture(gInfoMap, TexCoord).xyz;
   Normal = normalize(Normal);
-
-  FragColor = vec4(Color, 1.0) * CalcPointLight(WorldPos, Normal);
+  if(Info.x == 1.0){
+    FragColor = vec4(Color, 1.0);
+  }else{
+    FragColor = vec4(Color, 1.0) * CalcPointLight(WorldPos, Normal);
+	//FragColor = vec4(Info, 1.0);
+	//FragColor = vec4(0,1.0,0, 1.0);
+  }
   //FragColor = vec4(0,1.0,0, 1.0);
   //FragColor = vec4(Color, 1.0);
 }
