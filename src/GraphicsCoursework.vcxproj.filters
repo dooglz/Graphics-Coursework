@@ -154,12 +154,19 @@
     <CustomBuild Include="..\res\shaders\point_light_pass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\res\shaders\null.frag" />
-    <CustomBuild Include="..\res\shaders\null.vert" />
     <CustomBuild Include="..\res\shaders\df_lighttest.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\dir_light_pass.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\null.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\null.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\depthstencilvis.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
   </ItemGroup>

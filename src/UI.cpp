@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include "Enviroment.h"
 #include "Rendering.h"
+#include "Mirror.h"
 
 static bool showMenu;
 
@@ -40,10 +41,6 @@ static void Menu(){
       return;
     }
 
-    static float f = 0.0f;
-    ImGui::Text("Hello, world!");
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-    if (ImGui::Button("Test Window")) show_test_window ^= 1;
     if (ImGui::Button("Show Test Window")) showTestWindow ^= 1;
     
     if (ImGui::CollapsingHeader("Enviroment"))
@@ -73,6 +70,22 @@ static void Menu(){
       if (b){
         SetMode((RenderMode)rm, (DefferedMode)dm);
       }
+    }
+    if (ImGui::CollapsingHeader("Mirror"))
+    {
+      bool b = 0;
+      bool s = ShowMirror();
+      bool d = DebugMirror();
+      bool f = FreezeMirror();
+      b |= ImGui::Checkbox("Show Mirror", &s);
+      b |= ImGui::Checkbox("Freeze Mirror", &f);
+      b |= ImGui::Checkbox("Debug Mirror", &d);
+      if (b){
+        ShowMirror(s);
+        FreezeMirror(f);
+        DebugMirror(d);
+      }
+      
     }
 
     if (showTestWindow) ImGui::ShowTestWindow();

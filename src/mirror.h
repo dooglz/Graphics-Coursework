@@ -12,4 +12,10 @@ using namespace graphics_framework;
 // loads shaders and creates a FBO for reflected texture
 void SetupMirror();
 void RenderMirror(mesh &mesh);
+
 void FreezeMirror(bool b);
+bool FreezeMirror();
+void DebugMirror(bool b);
+bool DebugMirror();
+void ShowMirror(bool b);
+bool ShowMirror();

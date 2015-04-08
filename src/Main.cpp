@@ -255,7 +255,7 @@ bool Graphics::Load_content() {
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
-   counter += (delta_time * 0.09f);
+  //counter += (delta_time * 0.09f);
   //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
 
@@ -266,8 +266,8 @@ bool Graphics::Update(float delta_time) {
   }
   Enviroment::Update(delta_time);
   vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
-  dlight.set_direction(glm::rotateZ(rot, counter));
-
+ // dlight.set_direction(glm::rotateZ(rot, counter));
+  dlight.set_direction(vec3(0.0f, -1.0f, 0.0f));
   if (true) {
     dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), Enviroment::dayscale - 0.2f));
   } else {
@@ -450,6 +450,7 @@ bool Graphics::Render() {
 
   BeginOpaque();
   DrawScene();
+  RenderMirror(mirror);
   EndOpaque();
 
   BeginTransparent();
@@ -457,7 +458,7 @@ bool Graphics::Render() {
 
   BeginPost();
   EndPost();
-  // RenderMirror(mirror);
+
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   if (showUI) {
