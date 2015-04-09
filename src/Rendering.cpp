@@ -52,7 +52,7 @@ void BeginOpaque() {
     glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
 
     // set drawmode
-    GLenum DrawBuffers[] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER, INFOBUFFER };
+    GLenum DrawBuffers[] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER, INFOBUFFER};
     glDrawBuffers(5, DrawBuffers);
     // Only the geometry pass updates the depth buffer
     glDepthMask(GL_TRUE);
@@ -87,7 +87,7 @@ void EndOpaque() {
       FlipToOutput();
       */
       glEnable(GL_STENCIL_TEST);
-      for (point_light* p : gfx->PLights) {
+      for (point_light *p : gfx->PLights) {
         StencilPass(*p);
         PointLightPass(*p);
       }
@@ -100,7 +100,7 @@ void EndOpaque() {
       CombineToOuput();
     } else {
       glEnable(GL_STENCIL_TEST);
-      for (point_light* p : gfx->PLights) {
+      for (point_light *p : gfx->PLights) {
         StencilPass(*p);
         PointLightPass(*p);
       }
@@ -123,7 +123,7 @@ void EndTransparent() { return; }
 void BeginPost() { return; }
 void EndPost() { return; }
 
-void NewFrame(){
+void NewFrame() {
   if (renderMode) {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
     glDrawBuffer(INFOBUFFER);
@@ -151,7 +151,7 @@ void CreateDeferredFbo() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   }
-  //info texture
+  // info texture
   {
     glBindTexture(GL_TEXTURE_2D, fbo_infoTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
@@ -174,7 +174,7 @@ void CreateDeferredFbo() {
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, FINALBUFFER, GL_TEXTURE_2D, fbo_finalTexture, 0);
 
   // set drawmode
-  GLenum DrawBuffers[] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER, INFOBUFFER };
+  GLenum DrawBuffers[] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER, INFOBUFFER};
   glDrawBuffers(5, DrawBuffers);
 
   GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -204,7 +204,7 @@ void CombineToFinalBuffer() {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
   }
-  //info
+  // info
   glActiveTexture(GL_TEXTURE0 + 5);
   glBindTexture(GL_TEXTURE_2D, fbo_infoTexture);
 
@@ -223,10 +223,44 @@ void CombineToFinalBuffer() {
   glEnable(GL_CULL_FACE);
 }
 
+static GLuint dsView_depthtex = -1;
+static GLuint dsView_stenciltex = -1;
 void ShowDepthStencil() {
   if (!GLEW_ARB_stencil_texturing) {
     return;
   }
+
+  if (dsView_depthtex == -1) {
+    
+    glGenTextures(1, &dsView_depthtex);
+    glBindTexture(GL_TEXTURE_2D, dsView_depthtex);
+    glTextureView(dsView_depthtex, GL_TEXTURE_2D, fbo_depthTexture, GL_R32F, 0, 1, 0, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+
+    GLenum error = glGetError();
+    // If there is an error display message
+    if (error) {
+      // Display error
+      std::cerr << "texview failed " << gluErrorString(error) << std::endl;
+    }
+    printf("DONE \n");
+  }
+  /*
+  if (dsView_stenciltex == -1)
+  {
+    glGenTextures(1, &dsView_stenciltex);
+    glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
+    glTextureView(dsView_stenciltex, GL_TEXTURE_2D, fbo_depthTexture, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+
+   // unsigned char * pixels = new unsigned char[SCREENWIDTH * SCREENHEIGHT * 32];
+    //glGetTexImage(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &pixels);
+    //return;
+  }*/
+
+  // fuck this shit
+  // return;
   static GLuint depthtex;
   static GLuint stenciltex;
   if (depthVisFbo == -1) {
@@ -240,14 +274,9 @@ void ShowDepthStencil() {
     glBindTexture(GL_TEXTURE_2D, depthtex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, depthtex, 0);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    //
     glBindTexture(GL_TEXTURE_2D, stenciltex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, stenciltex, 0);
-   // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-   // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (Status != GL_FRAMEBUFFER_COMPLETE) {
@@ -255,42 +284,20 @@ void ShowDepthStencil() {
       assert(false);
     }
   }
+
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, depthVisFbo);
-  glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
-
-  /*{
-    enum texnames{ SOURCE, DEPTH, STENCIL };
-    GLuint texes[3];
-    glGenTextures(3, texes);
-
-    glBindTexture(GL_TEXTURE_2D, texes[SOURCE]);
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, SCREENWIDTH, SCREENHEIGHT);
-
-    glBindTexture(GL_TEXTURE_2D, texes[DEPTH]);
-    glTextureView(texes[DEPTH], GL_TEXTURE_2D, texes[SOURCE], GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-    glBindTexture(GL_TEXTURE_2D, texes[STENCIL]);
-    glTextureView(texes[STENCIL], GL_TEXTURE_2D, texes[SOURCE], GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
-    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-  }*/
-
 
   // set drawmode
-  GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+  GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
   glDrawBuffers(2, DrawBuffers);
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
 
-  //bind and read depth buffer from fbo
+  // bind and read depth buffer from fbo
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, fbo_depthTexture);
-  glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-  //glActiveTexture(GL_TEXTURE1);
-  //glBindTexture(GL_TEXTURE_2D, fbo_depthTexture); //not sure if this is allowed
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
- // glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+  glBindTexture(GL_TEXTURE_2D, dsView_depthtex);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
 
   if (depthstencilvisEffect.get_program() == NULL) {
     depthstencilvisEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
@@ -302,8 +309,8 @@ void ShowDepthStencil() {
   graphics_framework::renderer::bind(eff);
   glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
   glUniform1i(eff.get_uniform_location("depthTex"), 0);
-  glUniform1i(eff.get_uniform_location("stencilTex"), 1);  
-  //render!
+  glUniform1i(eff.get_uniform_location("stencilTex"), 1);
+  // render!
   auto MVP = mat4(1.0f);
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
@@ -319,10 +326,10 @@ void ShowDepthStencil() {
 // blits the buffers to 4 quadrants on the the 0 buffer
 void CombineToOuput() {
   ShowDepthStencil();
-  
+
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glDepthMask(GL_TRUE);
-  //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
 
@@ -332,36 +339,36 @@ void CombineToOuput() {
   const GLsizei QuaterHeight = (GLsizei)(SCREENHEIGHT / 4.0f);
   const GLsizei ThirdWidth = (GLsizei)(SCREENWIDTH / 3.0f);
   const GLsizei ThirdHeight = (GLsizei)(SCREENHEIGHT / 3.0f);
-  
-  const int amount = 6;
-  const int buffers[amount] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER, FINALBUFFER, INFOBUFFER };
 
-  const GLsizei positions[] = { 
-    0, 0, QuaterWidth, HalfHeight,
-    QuaterWidth, 0, 2 * QuaterWidth, HalfHeight,
-    2 * QuaterWidth, 0, 3 * QuaterWidth, HalfHeight,
-    //row2
-    0, HalfHeight, QuaterWidth, SCREENHEIGHT,
-    QuaterWidth, HalfHeight, 2 * QuaterWidth, SCREENHEIGHT,
-    2 * QuaterWidth, HalfHeight, 3*QuaterWidth, SCREENHEIGHT,
+  const int amount = 6;
+  const int buffers[amount] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, TEXCOORDBUFFER, FINALBUFFER, INFOBUFFER};
+
+  const GLsizei positions[] = {
+      0, 0, QuaterWidth, HalfHeight, QuaterWidth, 0, 2 * QuaterWidth, HalfHeight, 2 * QuaterWidth, 0, 3 * QuaterWidth,
+      HalfHeight,
+      // row2
+      0, HalfHeight, QuaterWidth, SCREENHEIGHT, QuaterWidth, HalfHeight, 2 * QuaterWidth, SCREENHEIGHT, 2 * QuaterWidth,
+      HalfHeight, 3 * QuaterWidth, SCREENHEIGHT,
   };
-  unsigned int i=0;
-  for (int buffer : buffers){
+  unsigned int i = 0;
+  for (int buffer : buffers) {
     glReadBuffer(buffer);
-    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, positions[i], positions[i+1], positions[i+2], positions[i+3], GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    i+=4;
+    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, positions[i], positions[i + 1], positions[i + 2],
+                      positions[i + 3], GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    i += 4;
   }
   if (GLEW_ARB_stencil_texturing) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, depthVisFbo);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
-    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 3 * QuaterWidth, 0, SCREENWIDTH, HalfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 3 * QuaterWidth, 0, SCREENWIDTH, HalfHeight, GL_COLOR_BUFFER_BIT,
+                      GL_LINEAR);
 
     glReadBuffer(GL_COLOR_ATTACHMENT1);
-    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 3 * QuaterWidth, HalfHeight, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    
-glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 3 * QuaterWidth, HalfHeight, SCREENWIDTH, SCREENHEIGHT,
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
-  
 }
 
 void FlipToOutput() {
@@ -384,7 +391,7 @@ float CalcPointLightBSphere(const point_light &Light) {
   return ret;
 }
 
-void StencilPass(const graphics_framework::point_light& p) {
+void StencilPass(const graphics_framework::point_light &p) {
   // effect eff = nullEffect;
   effect eff = gfx->nullEffect;
   // Bind effect
@@ -411,14 +418,14 @@ void StencilPass(const graphics_framework::point_light& p) {
   renderer::render(gfx->sphereMesh);
 }
 
-void PointLightPass(const graphics_framework::point_light& p) {
+void PointLightPass(const graphics_framework::point_light &p) {
   glDrawBuffer(FINALBUFFER);
   // bind the fbo textures as input textures
   for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
   }
-  //info
+  // info
   glActiveTexture(GL_TEXTURE0 + 5);
   glBindTexture(GL_TEXTURE_2D, fbo_infoTexture);
 
@@ -472,7 +479,7 @@ void DirectionalLightPass() {
     glActiveTexture(GL_TEXTURE0 + i);
     glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
   }
-  //info
+  // info
   glActiveTexture(GL_TEXTURE0 + 4);
   glBindTexture(GL_TEXTURE_2D, fbo_infoTexture);
 
@@ -506,7 +513,7 @@ void DirectionalLightPass() {
   auto MVP = mat4(1.0f);
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 
-  for (directional_light* d : gfx->DLights) {
+  for (directional_light *d : gfx->DLights) {
     glUniform1f(eff.get_uniform_location("gDirectionalLight.Base.AmbientIntensity"), 0.3f);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Direction"), 1, &(*d).get_direction()[0]);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Base.Color"), 1, &(*d).get_light_colour()[0]);

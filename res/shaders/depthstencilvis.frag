@@ -18,6 +18,7 @@ void main() {
 	//stencilCol = vec3(1.0,0,0);
 
 	float depth = texture2D(depthTex, TexCoord).x;
-	depthCol = vec3(depth * 100000.0 ,depth * 10000.0,depth * 1000.0);
+	depthCol = vec3(depth,depth,depth);
 	//depthCol = vec3(0,1.00,0);
+	//depthCol = vec3(1000,1000.00,1000);
 }
