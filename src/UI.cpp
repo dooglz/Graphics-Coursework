@@ -70,6 +70,12 @@ static void Menu(){
       if (b){
         SetMode((RenderMode)rm, (DefferedMode)dm);
       }
+      static bool swm = stencilworkaround();
+      b = ImGui::Checkbox("Stencil Fix", &swm);
+      if (b){
+        stencilworkaround(swm);
+      }
+
     }
     if (ImGui::CollapsingHeader("Mirror"))
     {

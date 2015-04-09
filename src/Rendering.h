@@ -29,6 +29,8 @@ enum GBUFFER_TEXTURE_TYPE {
 #define INFOBUFFER GL_COLOR_ATTACHMENT5
 #define DEPTH_STENCIL_BUFFER GL_DEPTH_STENCIL_ATTACHMENT
 
+void stencilworkaround(bool b);
+bool stencilworkaround();
 
 void SetMode(const RenderMode rm, const DefferedMode dm);
 RenderMode getRM();

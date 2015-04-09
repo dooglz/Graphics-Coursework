@@ -19,6 +19,8 @@ static GLuint fbo_finalTexture = -1;
 static RenderMode renderMode;
 static DefferedMode defMode;
 
+static bool stencilRenderWorkaround = false;
+
 RenderMode getRM() { return renderMode; }
 DefferedMode getDM() { return defMode; }
 
@@ -31,6 +33,9 @@ static graphics_framework::effect df_lighttest;
 static graphics_framework::effect depthstencilvisEffect;
 static graphics_framework::effect pointLightPassEffect;
 static graphics_framework::effect directionalLightPassEffect;
+
+void stencilworkaround(bool b){ stencilRenderWorkaround  = b;}
+bool stencilworkaround(){ return stencilRenderWorkaround ;}
 
 void SetMode(const RenderMode rm, const DefferedMode dm) {
   renderMode = rm;
@@ -163,8 +168,8 @@ void CreateDeferredFbo() {
   // depth
   {
     glBindTexture(GL_TEXTURE_2D, fbo_depthTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_STENCIL,
-                 GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL);
+  //  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, DEPTH_STENCIL_BUFFER, GL_TEXTURE_2D, fbo_depthTexture, 0);
   }
 
@@ -229,44 +234,49 @@ void ShowDepthStencil() {
   if (!GLEW_ARB_stencil_texturing) {
     return;
   }
+  glBindTexture(GL_TEXTURE_2D, 0);
 
+  //Create the texture views into the two components of fbo_depthTexture
   if (dsView_depthtex == -1) {
-    
     glGenTextures(1, &dsView_depthtex);
+    glTextureView(dsView_depthtex, GL_TEXTURE_2D, fbo_depthTexture, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
     glBindTexture(GL_TEXTURE_2D, dsView_depthtex);
-    glTextureView(dsView_depthtex, GL_TEXTURE_2D, fbo_depthTexture, GL_R32F, 0, 1, 0, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-
+    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
 
     GLenum error = glGetError();
     // If there is an error display message
     if (error) {
       // Display error
-      std::cerr << "texview failed " << gluErrorString(error) << std::endl;
+      std::cerr << "Depth texture view failed " << gluErrorString(error) << std::endl;
     }
-    printf("DONE \n");
+    printf("Depth view created\n");
   }
-  /*
+
   if (dsView_stenciltex == -1)
   {
     glGenTextures(1, &dsView_stenciltex);
-    glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
     glTextureView(dsView_stenciltex, GL_TEXTURE_2D, fbo_depthTexture, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
+    glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
     glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+    GLenum error = glGetError();
+    // If there is an error display message
+    if (error) {
+      // Display error
+      std::cerr << "stencil texture view failed " << gluErrorString(error) << std::endl;
+    }
+    printf("Stencil view created\n");
+  }
 
-   // unsigned char * pixels = new unsigned char[SCREENWIDTH * SCREENHEIGHT * 32];
-    //glGetTexImage(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &pixels);
-    //return;
-  }*/
-
-  // fuck this shit
-  // return;
+  //create an fbo to render to 
   static GLuint depthtex;
   static GLuint stenciltex;
   if (depthVisFbo == -1) {
     // Create the FBO
     glGenFramebuffers(1, &depthVisFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, depthVisFbo);
+
     // Create the textures
     glGenTextures(1, &depthtex);
     glGenTextures(1, &stenciltex);
@@ -277,7 +287,6 @@ void ShowDepthStencil() {
     glBindTexture(GL_TEXTURE_2D, stenciltex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, stenciltex, 0);
-
     GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (Status != GL_FRAMEBUFFER_COMPLETE) {
       printf("FB error, status: 0x%x\n", Status);
@@ -286,18 +295,17 @@ void ShowDepthStencil() {
   }
 
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, depthVisFbo);
-
   // set drawmode
   GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
   glDrawBuffers(2, DrawBuffers);
   glDisable(GL_DEPTH_TEST);
   glDisable(GL_CULL_FACE);
+  glDepthMask(GL_FALSE);
+  glDisable(GL_STENCIL_TEST);
 
   // bind and read depth buffer from fbo
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, dsView_depthtex);
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
 
   if (depthstencilvisEffect.get_program() == NULL) {
     depthstencilvisEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
@@ -309,18 +317,44 @@ void ShowDepthStencil() {
   graphics_framework::renderer::bind(eff);
   glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
   glUniform1i(eff.get_uniform_location("depthTex"), 0);
-  glUniform1i(eff.get_uniform_location("stencilTex"), 1);
+
+  if (!stencilRenderWorkaround) {
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
+    glUniform1i(eff.get_uniform_location("stencilTex"), 1);
+  }
   // render!
   auto MVP = mat4(1.0f);
   // Set MVP matrix uniform
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  // glDisable(GL_DEPTH_TEST);
-  // glDepthMask(GL_FALSE);
   graphics_framework::renderer::render(gfx->planegeo);
 
   // restore default FBO
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
+
+
+  if (stencilRenderWorkaround) {
+    // read stencil to ram, then blit it back.
+    unsigned char *pixels = new unsigned char[1280 * 720];
+    glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, &pixels[0]);
+    float *fpixels = new float[1280 * 720 * 3];
+    unsigned int j = 0;
+    for (unsigned int i = 0; i < (1280 * 720 * 3); i += 3) {
+      fpixels[i] = ((float)pixels[j]) / 1.0f;
+      fpixels[i + 1] = ((float)pixels[j]) / 2.0f;
+      fpixels[i + 2] = ((float)pixels[j]) / 10.0f;
+      j++;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, stenciltex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, SCREENWIDTH, SCREENHEIGHT, 0, GL_RGB, GL_FLOAT, fpixels);
+
+    delete[] pixels;
+    delete[] fpixels;
+  }
+
 }
 
 // blits the buffers to 4 quadrants on the the 0 buffer
