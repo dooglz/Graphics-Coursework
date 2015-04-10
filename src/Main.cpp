@@ -346,7 +346,7 @@ bool Graphics::Update(float delta_time) {
 }
 
 void Graphics::Rendermesh(mesh &m, texture &t) {
-  glCullFace(GL_BACK);
+
   effect eff = geoPassEffect;
   // Bind effect
   renderer::bind(eff);
@@ -435,7 +435,7 @@ void Graphics::DrawScene() {
   }
   Rendermesh(*desertM, sandTexture);
 
-  // RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
+  //RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
   Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
@@ -450,6 +450,7 @@ bool Graphics::Render() {
   //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   BeginOpaque();
+  glCullFace(GL_BACK);
   DrawScene();
   RenderMirror(mirror);
   EndOpaque();

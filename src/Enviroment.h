@@ -10,7 +10,8 @@ public:
 
   static float dayscale;
   static bool daymode;
-
+  static bool enabled;
+  static float speed;
 private:
 
 };

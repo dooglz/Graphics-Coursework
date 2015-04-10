@@ -94,10 +94,12 @@ void EndOpaque() {
       FlipToOutput();
       */
       glEnable(GL_STENCIL_TEST);
+      glStencilMask(0xFF);
       for (point_light *p : gfx->PLights) {
         StencilPass(*p);
         PointLightPass(*p);
       }
+      glStencilMask(0x00);
 
       // The directional light does not need a stencil test because its volume is unlimited
       // and the final pass simply copies the texture.
@@ -107,11 +109,12 @@ void EndOpaque() {
       CombineToOuput();
     } else {
       glEnable(GL_STENCIL_TEST);
+      glStencilMask(0xFF);
       for (point_light *p : gfx->PLights) {
         StencilPass(*p);
         PointLightPass(*p);
       }
-
+      glStencilMask(0x00);
       // The directional light does not need a stencil test because its volume is unlimited
       // and the final pass simply copies the texture.
       glDisable(GL_STENCIL_TEST);
@@ -435,7 +438,6 @@ void StencilPass(const graphics_framework::point_light &p) {
   // Disable color/depth write and enable stencil
   glDrawBuffer(GL_NONE);
   glEnable(GL_DEPTH_TEST);
-
   glDisable(GL_CULL_FACE);
   glClear(GL_STENCIL_BUFFER_BIT);
 
@@ -550,7 +552,7 @@ void DirectionalLightPass() {
 
   for (directional_light *d : gfx->DLights) {
     glUniform1f(eff.get_uniform_location("gDirectionalLight.Base.AmbientIntensity"), 0.3f);
-    printf("sun: (%f,%f,%f)\n", (*d).get_direction().x, (*d).get_direction().y, (*d).get_direction().z);
+    //printf("sun: (%f,%f,%f)\n", (*d).get_direction().x, (*d).get_direction().y, (*d).get_direction().z);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Direction"), 1, &(*d).get_direction()[0]);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Base.Color"), 1, &(*d).get_light_colour()[0]);
     graphics_framework::renderer::render(gfx->planegeo);

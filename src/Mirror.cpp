@@ -112,73 +112,75 @@ static void MakeWarpedProjMat(mat4 &projmat, mat4 &viewMat, const mat4 &playerVi
   projmat[3][2] = c.w;
 }
 
+
+void MirrorStencilPass(mesh &mirror){
+  // Read from depth
+  glEnable(GL_DEPTH_TEST);
+  //don't write to depth or colour
+  glDrawBuffer(GL_NONE);
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+  glDepthMask(GL_FALSE);
+  // write only to stencil
+  glEnable(GL_STENCIL_TEST);
+  glStencilMask(0xFF);
+  //clear stencil
+  glClear(GL_STENCIL_BUFFER_BIT);
+
+  //setup stencil functions
+  //don't comnpare to existing stencil data , just write
+  glStencilFunc(GL_ALWAYS, 0, 0);
+  //Write stencil for both front and back, set to zero if depth trest fails
+  glStencilOpSeparate(GL_BACK, GL_ZERO, GL_ZERO, GL_INCR);
+  //todo could use this for easy side detection and culling rather than a plane EQ
+  glStencilOpSeparate(GL_FRONT, GL_ZERO, GL_ZERO, GL_INCR);
+  glDisable(GL_CULL_FACE);
+
+  //do stencil
+  effect eff = gfx->nullEffect;
+  // Bind effect
+  renderer::bind(eff);
+  auto M = mirror.get_transform().get_transform_matrix();
+  auto V = gfx->activeCam->get_view();
+  auto P = gfx->activeCam->get_projection();
+  auto MVP = P * V * M;
+  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+
+  renderer::render(mirror);
+
+
+  // enable color and depth buffers.
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glDepthMask(GL_TRUE);
+  // glDisable(GL_BLEND);
+  //glDisable(GL_DEPTH_TEST);
+  //disable writing to stencil
+  glStencilMask(0x00);
+  glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+  GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT5 };
+  glDrawBuffers(5, DrawBuffers);
+
+  /*
+  //testing, render full quad to test stencil
+  glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+  //glDrawBuffer(GL_COLOR_ATTACHMENT1); //todo: remove this hack.
+  GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT5 };
+  glDrawBuffers(2, DrawBuffers);
+
+  renderer::bind(gfx->simpleEffect);
+  MVP = mat4(1.0f);
+  glUniformMatrix4fv(gfx->simpleEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
+  //glDisable(GL_CULL_FACE);
+  renderer::render(gfx->planegeo);
+  glEnable(GL_CULL_FACE);
+  glDisable(GL_STENCIL_TEST);*/
+}
+
 void RenderMirror(mesh &mirror) {
   if (!show) {
     return;
   }
-
-  //stencil pass
-  {
-    // Read from depth
-    glEnable(GL_DEPTH_TEST);
-    //don't write to depth or colour
-    glDrawBuffer(GL_NONE);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-    glDepthMask(GL_FALSE);
-    // write only to stencil
-    glEnable(GL_STENCIL_TEST);
-    glStencilMask(0xFF);
-    //clear stencil
-    glClear(GL_STENCIL_BUFFER_BIT);
-
-    //setup stencil functions
-    //don't comnpare to existing stencil data , just write
-    glStencilFunc(GL_ALWAYS, 0, 0);
-    //Write stencil for both front and back, set to zero if depth trest fails
-    glStencilOpSeparate(GL_BACK, GL_ZERO, GL_ZERO, GL_INCR);
-    //todo could use this for easy side detection and culling rather than a plane EQ
-    glStencilOpSeparate(GL_FRONT, GL_ZERO, GL_ZERO, GL_INCR);
-    glDisable(GL_CULL_FACE);
-
-    //do stencil
-    effect eff = gfx->nullEffect;
-    // Bind effect
-    renderer::bind(eff);
-    auto M = mirror.get_transform().get_transform_matrix();
-    auto V = gfx->activeCam->get_view();
-    auto P = gfx->activeCam->get_projection();
-    auto MVP = P * V * M;
-    glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-
-    renderer::render(mirror);
-
-
-    // enable color and depth buffers.
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    //glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
-    //disable writing to stencil
-    glStencilMask(0x00);
-
-    //testing, render full quad to test stencil
-    glStencilFunc(GL_NOTEQUAL, 0, 0xFF);  
-    //glDrawBuffer(GL_COLOR_ATTACHMENT1); //todo: remove this hack.
-    GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT5 };
-    glDrawBuffers(2, DrawBuffers);
-
-    renderer::bind(gfx->simpleEffect);
-    MVP = mat4(1.0f);
-    glUniformMatrix4fv(gfx->simpleEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-    //glDisable(GL_CULL_FACE);
-    renderer::render(gfx->planegeo);
-    glEnable(GL_CULL_FACE);
-    glDisable(GL_STENCIL_TEST);
-  }
-  return;
-
-
-  // render the reflected scene into a texture
+  
+  // render the reflected scene
   mat4 playerView;
 
   if (frozen) {
@@ -197,7 +199,9 @@ void RenderMirror(mesh &mirror) {
   mat4 viewMat;
   // reflected projmat
   mat4 projmat;
-  if (plneq > 0) {
+
+  if ( plneq > 0) {
+    MirrorStencilPass(mirror);
     // create intial unwarped projection
     bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
     projmat = bouncecam.get_projection();
@@ -209,56 +213,27 @@ void RenderMirror(mesh &mirror) {
     bouncecam.set_projection2(projmat);
     gfx->activeCam = &bouncecam;
 
-    // Rerender scene
-    //glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
+    glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+    glEnable(GL_STENCIL_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
     glCullFace(GL_FRONT);
     gfx->DrawScene();
-    glEnable(GL_CULL_FACE);
+
+    //revert rendering back to normal
     glCullFace(GL_BACK);
+
+    glDisable(GL_STENCIL_TEST);
+    glStencilMask(0xFF);
+    glClear(GL_STENCIL_BUFFER_BIT);
+    glStencilMask(0x00);
+
     gfx->activeCam = &gfx->cam;
   }
-  // end render
-  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  if (debug) {
-    /*return;
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, FramebufferName);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-
-    glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-    return;*/
-  }
-
-  // render texture onto plane
-  renderer::bind(waterEffect);
-
-  auto M = mirror.get_transform().get_transform_matrix();
-  auto V = gfx->activeCam->get_view();
-  auto P = gfx->activeCam->get_projection();
-  auto MVP = P * V * M;
-
-  auto RV = gfx->activeCam->get_view();
-  auto RP = gfx->activeCam->get_projection();
-  auto RMVP = RP * RV * M;
-
-  // Bind our texture in Texture Unit 0
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, renderedTexture);
-  // Set our "renderedTexture" sampler to user Texture Unit 0
-  glUniform1i(waterEffect.get_uniform_location("tex"), 0);
-
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(waterEffect.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  glUniformMatrix4fv(waterEffect.get_uniform_location("reflected_MVP"), 1, GL_FALSE, value_ptr(RMVP));
-  glDisable(GL_CULL_FACE);
-  renderer::render(mirror);
-  glEnable(GL_CULL_FACE);
-
-  // if forzen, show frustum
-  if (false && frozen) {
+  
+  // if frozen, show frustum
+  if (frozen) {
     vec4 fr[8] = {// near
                   vec4(-1, -1, -1, 1), vec4(1, -1, -1, 1), vec4(1, 1, -1, 1), vec4(-1, 1, -1, 1),
                   // far
