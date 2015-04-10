@@ -17,7 +17,7 @@ private:
 };
 
 Gimbal::Gimbal(const unsigned int num_rings) {
-  rings["torus0"] = mesh(geometry_builder::create_torus(32, 32, 0.5f, num_rings));
+  rings["torus0"] = mesh(geometry_builder::create_torus(42, 42, 0.5f, num_rings));
   rings["torus0"].get_transform().translate(vec3(10.0f, num_rings + 2.0f, -30.0f));
   for (unsigned int i = 1; i < num_rings; i++) {
     rings["torus" + std::to_string(i)] = mesh(geometry_builder::create_torus(20, 20, 0.5f, num_rings - i));
@@ -54,7 +54,7 @@ void Gimbal::Update(float delta_time) {
       rot = glm::vec3(0, -1, 0);
       break;
     }
-    rings["torus" + std::to_string(i)].get_transform().rotate((delta_time)*0.6f * rot);
+    rings["torus" + std::to_string(i)].get_transform().rotate((delta_time)*0.2f * rot);
   }
 }
 

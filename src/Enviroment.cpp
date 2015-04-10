@@ -1,10 +1,13 @@
 #include "Enviroment.h"
 #include "Main.h"
 #include "libENUgraphics\graphics_framework.h"
+#include <glm\glm.hpp>
+#include <glm\gtx\rotate_vector.hpp>
 using namespace std;
 using namespace graphics_framework;
 using namespace glm;
 
+static float EnviromentCounter = 0;
 effect skyeffect;
 mesh skygeo;
 
@@ -19,19 +22,32 @@ void Enviroment::Load(){
   daymode = false;
 }
 
-void Enviroment::Update(float delta_time)
-{
-
+void Enviroment::Update(float delta_time) {
+  EnviromentCounter += (delta_time * 0.08f);
+  if (EnviromentCounter > pi<float>()) {
+    EnviromentCounter = 0;
+  }
   // counter		0			          pi/2			        pi
   //            midday   Dusk   midnight  Dawn   Midday
-  // dayscale	  1.0			 0.5    0				   0.5   1.0
-  // sunscale   1.0      0      0          0     1.0
-  // daymode    0        0      0          1     1
-  const float oldd = dayscale;
-  dayscale = fabs(gfx->counter - half_pi<float>()) / half_pi<float>();
-  daymode = (dayscale > oldd);
+  // dayscale	  1.0			 0.5    0				   0.5    1.0
+  // sunscale   0.5      1      0          0      0.5
+  // daymode    0        0      0          1      1
 
-  //printf("%f\t\t%f\t\t%d\n", dayscale, daymode);
+  const float oldd = dayscale;
+  dayscale = fabs(EnviromentCounter - half_pi<float>()) / half_pi<float>();
+  daymode = (dayscale > oldd);
+  float sunscale = (daymode ? dayscale - 0.5f : 0.5f + (1.0f - dayscale));
+  sunscale = (sunscale > 1.0f ? 1.0f : sunscale);
+  sunscale = (sunscale < 0.0f ? 0.0f : sunscale);
+
+  //printf("dayscale %f\tsunscale %f\tdaymode %d\n", dayscale, sunscale, daymode);
+  gfx->dlight.set_direction(glm::rotateX(vec3(0, 0, 1.0), (1.0f - sunscale) * pi<float>()));
+ // gfx->dlight.set_direction(vec3(0.0f, -1.0f, 0.0f));
+
+  gfx->DrawCross(vec3(10, 6, 10), 2.0f);
+  gfx->DrawCross(vec3(10, 6, 10) + (gfx->dlight.get_direction() * 2.0f), 1.0f);
+  gfx->DrawLine(vec3(10, 6, 10), vec3(10, 6, 10) + (gfx->dlight.get_direction() * 2.0f));
+  gfx->dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), dayscale));
 
 }
 

@@ -168,9 +168,15 @@ bool Graphics::Load_content() {
 
   // Create scene
   meshes["box"] = mesh(geometry_builder::create_box());
+  meshes["box2"] = mesh(geometry_builder::create_box());
+  meshes["box3"] = mesh(geometry_builder::create_box());
   meshes["pyramid"] = mesh(geometry_builder::create_pyramid());
   meshes["box"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
   meshes["box"].get_transform().translate(vec3(0, 5.0f, 37.0f));
+  meshes["box2"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
+  meshes["box2"].get_transform().translate(vec3(-20, 5.0f, -37.0f));
+  meshes["box3"].get_transform().scale = vec3(5.0f, 5.0f, 5.0f);
+  meshes["box3"].get_transform().translate(vec3(20, 5.0f, -37.0f));
   meshes["pyramid"].get_transform().scale = vec3(8.0f, 100.0f, 8.0f);
   meshes["pyramid"].get_transform().translate(vec3(0, 50, 0));
   meshes["box"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -255,28 +261,22 @@ bool Graphics::Load_content() {
 bool Graphics::Update(float delta_time) {
   // torus heirarchy
   realtime += delta_time;
-  //counter += (delta_time * 0.09f);
+  counter += (delta_time * 0.08f);
   //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
+  Enviroment::Update(delta_time);
+  meshes["box2"].get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
+  meshes["box3"].get_transform().rotate(vec3(0, 0, delta_time*-0.2f));
 
   float s = sinf(counter);
   float c = cosf(counter);
   if (counter > pi<float>()) {
     counter = 0;
   }
-  Enviroment::Update(delta_time);
-  vec3 rot = glm::rotateZ(vec3(1.0f, 1.0f, -1.0f), counter);
- // dlight.set_direction(glm::rotateZ(rot, counter));
-  dlight.set_direction(vec3(0.0f, -1.0f, 0.0f));
-  if (true) {
-    dlight.set_light_colour(mix(vec4(0, 0, 0, 1.0f), vec4(0.8f, 0.8f, 0.8f, 1.0f), Enviroment::dayscale - 0.2f));
-  } else {
-    dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
-  }
+
   UpdateLights();
 
   { // Camera update
-    // The ratio of pixels to rotation - remember the fov
     static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
     static double ratio_height = (quarter_pi<float>() * (static_cast<float>(renderer::get_screen_height()) /
                                                          static_cast<float>(renderer::get_screen_width()))) /
@@ -346,6 +346,7 @@ bool Graphics::Update(float delta_time) {
 }
 
 void Graphics::Rendermesh(mesh &m, texture &t) {
+  glCullFace(GL_BACK);
   effect eff = geoPassEffect;
   // Bind effect
   renderer::bind(eff);
@@ -438,7 +439,7 @@ void Graphics::DrawScene() {
   Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
-  ProcessLines();
+  
 }
 
 bool Graphics::Render() {
@@ -461,6 +462,7 @@ bool Graphics::Render() {
 
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  ProcessLines();
   if (showUI) {
     DrawUI();
   }

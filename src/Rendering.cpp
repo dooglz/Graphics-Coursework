@@ -10,6 +10,8 @@
 #include <glm\gtx\transform.hpp>
 
 using namespace glm;
+static GLuint dsView_depthtex = -1;
+static GLuint dsView_stenciltex = -1;
 static GLuint depthVisFbo = -1;
 static GLuint fbo = -1;
 static GLuint fbo_textures[GBUFFER_NUM_TEXTURES];
@@ -228,8 +230,7 @@ void CombineToFinalBuffer() {
   glEnable(GL_CULL_FACE);
 }
 
-static GLuint dsView_depthtex = -1;
-static GLuint dsView_stenciltex = -1;
+
 void ShowDepthStencil() {
   if (!GLEW_ARB_stencil_texturing) {
     return;
@@ -549,6 +550,7 @@ void DirectionalLightPass() {
 
   for (directional_light *d : gfx->DLights) {
     glUniform1f(eff.get_uniform_location("gDirectionalLight.Base.AmbientIntensity"), 0.3f);
+    printf("sun: (%f,%f,%f)\n", (*d).get_direction().x, (*d).get_direction().y, (*d).get_direction().z);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Direction"), 1, &(*d).get_direction()[0]);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Base.Color"), 1, &(*d).get_light_colour()[0]);
     graphics_framework::renderer::render(gfx->planegeo);

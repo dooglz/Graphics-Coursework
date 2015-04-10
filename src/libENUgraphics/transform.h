@@ -54,6 +54,13 @@ struct transform {
   }
 
   // Gets the normal matrix representing the defined transform
-  glm::mat3 get_normal_matrix() { return glm::mat3_cast(orientation); }
+  glm::mat3 get_normal_matrix() { 
+    if (parent != nullptr) {
+      return parent->get_normal_matrix() * glm::mat3_cast(orientation);
+    } else{
+      return glm::mat3_cast(orientation); 
+    }
+
+  }
 };
 }
