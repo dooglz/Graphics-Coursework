@@ -1,4 +1,6 @@
-#version 440
+#version 430
+#extension GL_EXT_gpu_shader4 : enable    //Include support for this extension, which defines usampler2D
+
 
 uniform sampler2D depthTex;
 uniform usampler2D stencilTex;

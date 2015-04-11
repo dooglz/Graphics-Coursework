@@ -1,4 +1,4 @@
-#version 440
+#version 430
 
 // Incoming position
 layout(location = 0) in vec3 position;
