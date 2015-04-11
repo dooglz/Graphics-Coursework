@@ -1,4 +1,4 @@
-#version 440
+#version 430
 
 // Time passed since last frame
 uniform float delta_time;
