@@ -189,5 +189,11 @@
     <None Include="..\res\shaders\particle.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="..\res\shaders\fw_basic_lit.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\res\shaders\fw_basic_lit.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

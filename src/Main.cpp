@@ -350,7 +350,7 @@ bool Graphics::Update(float delta_time) {
 
 void Graphics::Rendermesh(mesh &m, texture &t) {
 
-  effect eff = geoPassEffect;
+  effect& eff = BasicEffect();
   // Bind effect
   renderer::bind(eff);
   // Create MVP matrix
@@ -439,8 +439,8 @@ void Graphics::DrawScene() {
   Rendermesh(*desertM, sandTexture);
 
   //RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-  Enviroment::RenderSky();
-  gimbal->Render();
+  //Enviroment::RenderSky();
+ // gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
   
 }

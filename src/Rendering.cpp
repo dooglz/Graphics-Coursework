@@ -30,7 +30,6 @@ static const float lightScale = 30.0f;
 static const vec3 lightcolour = vec3(0.2f, 1.0f, 0.0f);
 static const vec3 lightcolour2 = vec3(1.0f, 0.8f, 0.8f);
 
-// combines all buffers to one buffer
 static graphics_framework::effect df_lighttest;
 static graphics_framework::effect depthstencilvisEffect;
 static graphics_framework::effect pointLightPassEffect;
@@ -38,6 +37,18 @@ static graphics_framework::effect directionalLightPassEffect;
 
 void stencilworkaround(bool b){ stencilRenderWorkaround  = b;}
 bool stencilworkaround(){ return stencilRenderWorkaround ;}
+
+graphics_framework::effect& BasicEffect(){
+  if (renderMode) {
+    return gfx->geoPassEffect;
+  } else {
+    return gfx->phongEffect;
+  }
+}
+
+graphics_framework::effect& NormalEffect(){
+  return gfx->phongEffect;
+}
 
 void SetMode(const RenderMode rm, const DefferedMode dm) {
   renderMode = rm;

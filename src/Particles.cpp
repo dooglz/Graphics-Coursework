@@ -139,6 +139,10 @@ void UpdateParticles(const float delta_time) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   // Switch on rendering again
   glDisable(GL_RASTERIZER_DISCARD);
+
+  if (CHECK_GL_ERROR) {
+    std::cerr << "Particle Update program" << std::endl;
+  }
 }
 void RenderParticles() {
   // Bind the effect

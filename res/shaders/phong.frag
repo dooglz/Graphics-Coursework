@@ -65,7 +65,8 @@ void main()
 	// **********************************
 	// Calculate primary colour component
 	// **********************************
-	vec4 primary = mat.emissive + ambient + diffuse;
+	//vec4 primary = mat.emissive + ambient + diffuse;
+	vec4 primary  = vec4(0.5,0.5,0.5,0);
 	// **********************
 	// Calculate final colour
 	// - remember alpha

@@ -1,5 +1,8 @@
 #pragma once
 #include "libENUgraphics\point_light.h"
+namespace graphics_framework{
+  class effect;
+}
 
 typedef enum RenderMode{
   FORWARD,
@@ -29,24 +32,27 @@ enum GBUFFER_TEXTURE_TYPE {
 #define INFOBUFFER GL_COLOR_ATTACHMENT5
 #define DEPTH_STENCIL_BUFFER GL_DEPTH_STENCIL_ATTACHMENT
 
+//Mode setting
 void stencilworkaround(bool b);
 bool stencilworkaround();
-
 void SetMode(const RenderMode rm, const DefferedMode dm);
 RenderMode getRM();
 DefferedMode getDM();
 
+//
+graphics_framework::effect& BasicEffect();
+graphics_framework::effect& NormalEffect();
+
+//Render order funcs
 void BeginOpaque();
 void EndOpaque();
-
 void BeginTransparent();
 void EndTransparent();
-
 void BeginPost();
 void EndPost();
-
 void NewFrame();
 
+//internal funcs
 static void CreateDeferredFbo();
 static void CombineToFinalBuffer();
 static void CombineToOuput();
