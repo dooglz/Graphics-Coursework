@@ -6,6 +6,7 @@
 * Sam Serrels, Computer Graphics, 2015
 */
 #include "main.h"
+#include "Particles.h"
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
 #include <glm\gtx\rotate_vector.hpp>
@@ -255,6 +256,7 @@ bool Graphics::Load_content() {
   SetupMirror();
 
   SetMode(DEFFERED,NORMAL);
+  InitParticles();
   return true;
 }
 
@@ -342,6 +344,7 @@ bool Graphics::Update(float delta_time) {
   if (showUI) {
     UpdateUI();
   }
+  UpdateParticles(delta_time);
   return true;
 }
 
@@ -444,10 +447,6 @@ void Graphics::DrawScene() {
 
 bool Graphics::Render() {
   NewFrame();
-  // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   BeginOpaque();
   glCullFace(GL_BACK);
@@ -461,9 +460,9 @@ bool Graphics::Render() {
   BeginPost();
   EndPost();
 
-
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   ProcessLines();
+  RenderParticles();
   if (showUI) {
     DrawUI();
   }

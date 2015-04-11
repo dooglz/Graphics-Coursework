@@ -14,4 +14,6 @@ void main()
 	gl_Position = MVP * vec4(position, 1.0);
 	// Output colour to the fragment shader
 	out_colour = in_colour;
+	 gl_PointSize = 10.0f;
+
 }
