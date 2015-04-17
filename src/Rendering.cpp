@@ -30,6 +30,8 @@ static const float lightScale = 30.0f;
 static const vec3 lightcolour = vec3(0.2f, 1.0f, 0.0f);
 static const vec3 lightcolour2 = vec3(1.0f, 0.8f, 0.8f);
 
+static graphics_framework::effect fw_basic_lit;
+static graphics_framework::effect geoPassEffect;
 static graphics_framework::effect df_lighttest;
 static graphics_framework::effect depthstencilvisEffect;
 static graphics_framework::effect pointLightPassEffect;
@@ -40,9 +42,15 @@ bool stencilworkaround(){ return stencilRenderWorkaround ;}
 
 graphics_framework::effect& BasicEffect(){
   if (renderMode) {
-    return gfx->geoPassEffect;
+    if (geoPassEffect.get_program() == NULL){
+      geoPassEffect.create("shaders\\GeoPass.vert", "shaders\\GeoPass.frag");
+    }
+    return geoPassEffect;
   } else {
-    return gfx->phongEffect;
+    if (fw_basic_lit.get_program() == NULL){
+      fw_basic_lit.create("shaders\\fw_basic_lit.vert", "shaders\\fw_basic_lit.frag");
+    }
+    return fw_basic_lit;
   }
 }
 

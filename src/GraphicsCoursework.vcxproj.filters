@@ -181,19 +181,17 @@
     <CustomBuild Include="..\res\shaders\particle.geom">
       <Filter>Shaders</Filter>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\res\shaders\particle.vert">
+    <CustomBuild Include="..\res\shaders\fw_basic_lit.frag">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\res\shaders\particle.frag">
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\fw_basic_lit.vert">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\res\shaders\fw_basic_lit.vert">
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\particle.frag">
       <Filter>Shaders</Filter>
-    </None>
-    <None Include="..\res\shaders\fw_basic_lit.frag">
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\particle.vert">
       <Filter>Shaders</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
 </Project>

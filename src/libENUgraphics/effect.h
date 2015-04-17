@@ -27,6 +27,10 @@ public:
   void add_shader(const std::string &filename, GLenum type);
   // Adds a collection of shaders of a given type to the effect
   void add_shader(const std::vector<std::string> &filenames, GLenum type);
+  //Adds a vertex and fragment shader from supplied names, then builds
+  void create(const std::string &VSfilename, const std::string &FSfilename);
+  //Adds a vertex, geometry and fragment shader from supplied names, then builds
+  void create(const std::string &VSfilename, const std::string &GSfilename,const std::string &FSfilename);
   // Builds the effect object
   void build() throw(...);
   // Gets the location of the uniform in the shader

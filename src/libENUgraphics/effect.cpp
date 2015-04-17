@@ -270,4 +270,19 @@ GLint effect::get_uniform_location(const std::string &name) const {
   // Return location
   return loc;
 }
+
+//Adds a vertex and fragment shader from supplied names, then builds
+void effect::create(const std::string &VSfilename, const std::string &FSfilename) {
+  add_shader(VSfilename, GL_VERTEX_SHADER);
+  add_shader(FSfilename, GL_FRAGMENT_SHADER);
+  build();
+}
+
+//Adds a vertex, geometry and fragment shader from supplied names, then builds
+void effect::create(const std::string &VSfilename, const std::string &GSfilename, const std::string &FSfilename) {
+  add_shader(VSfilename, GL_VERTEX_SHADER);
+  add_shader(GSfilename, GL_GEOMETRY_SHADER);
+  add_shader(FSfilename, GL_FRAGMENT_SHADER);
+  build();
+}
 }

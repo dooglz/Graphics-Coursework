@@ -66,6 +66,7 @@ void Graphics::UpdateLights() {
       sd.light_colour = L->get_light_colour();
       sd.light_dir = vec4(L->get_direction(), 0);
       S_DLights.push_back(sd);
+      printf("sun: (%f, %f, %f, %f)\n",sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
     // this might not be the best way to copy data, but it works.
@@ -130,7 +131,7 @@ bool Graphics::Load_content() {
   // Lights
   dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
   dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
-  dlight.set_direction(vec3(1.0f, 1.0f, -1.0f));
+  dlight.set_direction(vec3(1.0f, 1.0f, 1.0f));
   DLights.push_back(&dlight);
 
   plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
@@ -184,6 +185,14 @@ bool Graphics::Load_content() {
   meshes["box"].get_material().set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
   meshes["box"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["box"].get_material().set_shininess(25.0f);
+  meshes["box2"].get_material().set_emissive(vec4(1.0f, 0.0f, 0.0f, 1.0f));
+  meshes["box2"].get_material().set_diffuse(vec4(0.0f, 1.0f, 0.0f, 1.0f));
+  meshes["box2"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  meshes["box2"].get_material().set_shininess(25.0f);
+  meshes["box3"].get_material().set_emissive(vec4(0.0f, 0.0f, 1.0f, 1.0f));
+  meshes["box3"].get_material().set_diffuse(vec4(1.0f, 1.0f, 0.0f, 1.0f));
+  meshes["box3"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+  meshes["box3"].get_material().set_shininess(25.0f);
   meshes["pyramid"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   meshes["pyramid"].get_material().set_diffuse(vec4(0.0f, 0.0f, 1.0f, 1.0f));
   meshes["pyramid"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -224,10 +233,6 @@ bool Graphics::Load_content() {
   texturedEffect.add_shader("shaders\\simple_texture.vert", GL_VERTEX_SHADER);
   texturedEffect.add_shader("shaders\\simple_texture.frag", GL_FRAGMENT_SHADER);
   texturedEffect.build();
-
-  geoPassEffect.add_shader("shaders\\GeoPass.vert", GL_VERTEX_SHADER);
-  geoPassEffect.add_shader("shaders\\GeoPass.frag", GL_FRAGMENT_SHADER);
-  geoPassEffect.build();
 
   nullEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
   nullEffect.add_shader("shaders\\null.frag", GL_FRAGMENT_SHADER);
@@ -364,6 +369,20 @@ void Graphics::Rendermesh(mesh &m, texture &t) {
   glUniformMatrix4fv(eff.get_uniform_location("M"), 1, GL_FALSE, value_ptr(M));
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
+  GLint pos = eff.get_uniform_location("TextureScale");
+  if (pos != -1){
+    glUniform1f(pos, 1.0f);
+  }
+  // Set eye position
+  pos = eff.get_uniform_location("eye_pos");
+  if (pos != -1){
+    glUniform3fv(pos, 1, value_ptr(activeCam->get_position()));
+  }
+  pos = eff.get_uniform_location("sunnyD");
+  if (pos != -1){
+    glUniform3fv(pos, 1, value_ptr(dlight.get_direction()));
+  }
+  
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // Bind texture

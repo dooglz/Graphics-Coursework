@@ -57,7 +57,6 @@ public:
   effect phongEffect;
   effect texturedEffect;
   effect texturedBumpEffect;
-  effect geoPassEffect;
   effect nullEffect;
 
 

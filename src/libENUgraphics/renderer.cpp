@@ -343,6 +343,9 @@ void renderer::bind(const material &mat, const std::string &name) throw(...) {
   idx = _instance->_effect.get_uniform_location(name + ".shininess");
   if (idx != -1)
     glUniform1f(idx, mat.get_shininess());
+  if (idx == -1){
+    std::cerr << "Attempting to bind material data to shader with invalid material uniforms" << std::endl;
+  }
   // Check for error
   if (CHECK_GL_ERROR) {
     std::cerr << "ERROR - binding material to renderer" << std::endl;
