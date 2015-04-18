@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
-
+#define OGL_DEBUG_OTHER
 namespace graphics_framework {
 #if defined(DEBUG) | defined(_DEBUG)
 
@@ -37,6 +37,7 @@ inline bool get_GL_error(int line, const std::string &file) {
 }
 #define CHECK_GL_ERROR get_GL_error(__LINE__, __FILE__)
 #define SET_DEBUG set_debug()
+
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #else

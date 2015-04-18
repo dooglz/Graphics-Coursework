@@ -4,27 +4,22 @@
 struct directional_light {
   vec4 ambient_intensity;
   vec4 light_colour;
-  vec3 light_dir;
+  vec4 light_dir; // Light_dir is a vec3, padded in a vec4
 };
 
 // Point light information
 struct point_light {
   vec4 light_colour;
-  vec3 position;
-  float constant;
-  float linear;
-  float quadratic;
+  vec4 position; // position is a vec3, padded in a vec4
+  vec4 falloff;  //(constant, linear, quadratic, NULL)
 };
 
 // Spot light data
 struct spot_light {
   vec4 light_colour;
-  vec3 position;
-  vec3 direction;
-  float constant;
-  float linear;
-  float quadratic;
-  float power;
+  vec4 position;  // position is a vec3, padded in a vec4
+  vec4 direction; // direction is a vec3, padded in a vec4
+  vec4 falloff;   //(constant, linear, quadratic, power)
 };
 // A material structure
 struct material {
@@ -48,17 +43,19 @@ layout(location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 // Incoming texture coordinate
 layout (location = 2) in vec2 tex_coord;
+
 // Outgoing colour
 layout(location = 0) out vec4 colour;
 
-uniform directional_light DLights[20];
-uniform point_light PLights[20];
-uniform spot_light SLights[20];
-uniform vec4 lightNumbers;
+layout(std430, binding = 1) buffer DirectionalLights { directional_light DLights[]; };
+layout(std430, binding = 2) buffer PointsLights { point_light PLights[]; };
+layout(std430, binding = 3) buffer SpotLights { spot_light SLights[]; };
+// AMD cards can't do loops, so we pass the length data
+layout(std430, binding = 4) buffer LightStats { vec4 lightNumbers; };
 
 vec4 calculate_dir(in directional_light light, in vec3 position, in vec3 normal, in vec3 view_dir, in vec4 tex_colour) {
     //const vec3 light_dir = -sunnyD;//normalize(light.light_dir.xyz);
-    const vec3 light_dir = -light.light_dir;
+    const vec3 light_dir = -(light.light_dir.xyz);
 /*
   // Calculate ambient component
   vec4 ambient = mat.diffuse_reflection * light.ambient_intensity;
@@ -101,8 +98,7 @@ vec4 calculate_dir(in directional_light light, in vec3 position, in vec3 normal,
   }
   
   vec4 colour = (mat.emissive + ambient + diffuse) * tex_colour + specular;
- // colour = vec4 (position,0);
-  //colour.r = 0.8;
+  //colour.r = light.light_colour.r;
   //colour.g = light.light_colour.g;
   colour.a = 1.0;
   return colour;
@@ -113,7 +109,7 @@ vec4 calculate_point(in point_light point, in vec3 position, in vec3 normal, in 
   // Get distance between point light and vertex
   float d = distance(vec3(point.position), position);
   // Calculate attenuation factor
-  float attenuation = point.constant + (point.linear  * d) + (point.quadratic* d * d);
+  float attenuation = point.falloff.x + (point.falloff.y  * d) + (point.falloff.z* d * d);
   // Calculate light colour
   vec4 light_colour = point.light_colour / attenuation;
   light_colour.a = 1.0;
@@ -137,9 +133,9 @@ vec4 calculate_spot(in spot_light spot, in vec3 position, in vec3 normal, in vec
   // Calculate distance to light
   float d = distance(vec3(spot.position), position);
   // Calculate attenuation value
-  float attenuation = spot.constant  + spot.linear * d + spot.quadratic * d * d;
+  float attenuation = spot.falloff.x + spot.falloff.y * d + spot.falloff.z * d * d;
   // Calculate spot light intensity
-  float sp = pow(max(dot(light_dir, -vec3(spot.direction)), 0.0), spot.power);
+  float sp = pow(max(dot(light_dir, -vec3(spot.direction)), 0.0), spot.falloff.w);
   // Calculate light colour
   vec4 light_colour = (sp / attenuation) * spot.light_colour;
   // Now use standard phong shading but using calculated light colour and direction
@@ -171,12 +167,12 @@ void main() {
   // point light
   // for (int i = 0; i < PLights.length(); i++) {
   for (int i = 0; i < lightNumbers.y; i++) {
-    colour += calculate_point(PLights[i], position, normal, view_dir, tex_colour);
+  //  colour += calculate_point(PLights[i], position, normal, view_dir, tex_colour);
   }
   // spotlight
   // for (int i = 0; i < SLights.length(); i++)
   for (int i = 0; i < lightNumbers.z; i++) {
-    colour += calculate_spot(SLights[i], position, normal, view_dir, tex_colour);
+  //  colour += calculate_spot(SLights[i], position, normal, view_dir, tex_colour);
   }
   colour.r = clamp(colour.r,0,1.0);
   colour.g = clamp(colour.g,0,1.0);

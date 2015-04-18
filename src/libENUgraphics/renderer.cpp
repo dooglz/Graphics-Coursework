@@ -377,6 +377,46 @@ void renderer::bind(const directional_light &light, const std::string &name) thr
     throw std::runtime_error("Error using directional light with renderer");
   }
 }
+void renderer::bind(const std::vector<directional_light*> &directionals, const std::string &name) throw(...) {
+  //is this the fastest way to do this? who cares....
+  std::vector<directional_light> obj_directionals;
+  for (auto p : directionals){
+    obj_directionals.push_back(*p);
+  }
+  bind(obj_directionals, name);
+}
+// Binds a vector of point lights to the currently bound effect
+void renderer::bind(const std::vector<directional_light> &directionals, const std::string &name) throw(...) {
+  // Iterate through each light, setting values as required
+  unsigned int n = 0;
+  for (auto &p : directionals) {
+    std::stringstream stream;
+    stream << name << "[" << n << "]";
+    auto point_name = stream.str();
+    // Check for ambient intensity
+    auto idx = _instance->_effect.get_uniform_location(point_name + ".ambient_intensity");
+    if (idx != -1)
+      glUniform4fv(idx, 1, glm::value_ptr(p.get_ambient_intensity()));
+    // Check for light colour
+    idx = _instance->_effect.get_uniform_location(point_name + ".light_colour");
+    if (idx != -1)
+      glUniform4fv(idx, 1, glm::value_ptr(p.get_light_colour()));
+    // Check for light direction
+    idx = _instance->_effect.get_uniform_location(point_name + ".light_dir");
+    if (idx != -1)
+      glUniform3fv(idx, 1, glm::value_ptr(p.get_direction()));
+    // Increment light number
+    ++n;
+  }
+  // Check for error
+  if (CHECK_GL_ERROR) {
+    std::cerr << "ERROR - binding vector of directional lights to renderer" << std::endl;
+    std::cerr << "OpenGL could not set the uniforms" << std::endl;
+    // Throw exception
+    throw std::runtime_error("Error using directional light with renderer");
+  }
+}
+
 
 // Binds a point light to the currently bound effect
 void renderer::bind(const point_light &point, const std::string &name) throw(...) {
@@ -409,6 +449,14 @@ void renderer::bind(const point_light &point, const std::string &name) throw(...
   }
 }
 
+void renderer::bind(const std::vector<point_light*> &points, const std::string &name) throw(...) {
+   //is this the fastest way to do this? who cares....
+  std::vector<point_light> obj_points;
+  for (auto p : points){
+    obj_points.push_back(*p);
+  }
+  bind(obj_points, name);
+}
 // Binds a vector of point lights to the currently bound effect
 void renderer::bind(const std::vector<point_light> &points, const std::string &name) throw(...) {
   // Iterate through each light, setting values as required
@@ -488,6 +536,13 @@ void renderer::bind(const spot_light &spot, const std::string &name) throw(...) 
   }
 }
 
+void renderer::bind(const std::vector<spot_light*> &spots, const std::string &name) throw(...) {
+  std::vector<spot_light> obj_spots;
+  for (auto p : spots){
+    obj_spots.push_back(*p);
+  }
+  bind(obj_spots, name);
+}
 // Binds a vector of spot lights to the renderer
 void renderer::bind(const std::vector<spot_light> &spots, const std::string &name) throw(...) {
   // Iterate through each light, setting values as required

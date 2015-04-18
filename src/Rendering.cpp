@@ -22,6 +22,14 @@ static RenderMode renderMode;
 static DefferedMode defMode;
 
 static bool stencilRenderWorkaround = false;
+// ssbo stuff
+static bool ssbo = true;
+static glm::vec4 NumberOfLights; // Amd workaround
+static GLuint dLightSSBO = -1;
+static GLuint pLightSSBO = -1;
+static GLuint sLightSSBO = -1;
+static GLuint LightSSBO = -1;
+//----
 
 RenderMode getRM() { return renderMode; }
 DefferedMode getDM() { return defMode; }
@@ -31,31 +39,178 @@ static const vec3 lightcolour = vec3(0.2f, 1.0f, 0.0f);
 static const vec3 lightcolour2 = vec3(1.0f, 0.8f, 0.8f);
 
 static graphics_framework::effect fw_basic_lit;
+static graphics_framework::effect fw_basic_lit_SSBO;
 static graphics_framework::effect geoPassEffect;
 static graphics_framework::effect df_lighttest;
 static graphics_framework::effect depthstencilvisEffect;
 static graphics_framework::effect pointLightPassEffect;
 static graphics_framework::effect directionalLightPassEffect;
 
-void stencilworkaround(bool b){ stencilRenderWorkaround  = b;}
-bool stencilworkaround(){ return stencilRenderWorkaround ;}
+void stencilworkaround(bool b) { stencilRenderWorkaround = b; }
+bool stencilworkaround() { return stencilRenderWorkaround; }
+void EnableSSBO(bool b) {
+  ssbo = b;
+  if (b) {
+    CreateSSBOs();
+  }
+}
+bool EnableSSBO() { return ssbo; }
 
-graphics_framework::effect& BasicEffect(){
+graphics_framework::effect &BasicEffect() {
   if (renderMode) {
-    if (geoPassEffect.get_program() == NULL){
+    if (geoPassEffect.get_program() == NULL) {
       geoPassEffect.create("shaders\\GeoPass.vert", "shaders\\GeoPass.frag");
     }
     return geoPassEffect;
   } else {
-    if (fw_basic_lit.get_program() == NULL){
-      fw_basic_lit.create("shaders\\fw_basic_lit.vert", "shaders\\fw_basic_lit.frag");
+    if (ssbo) {
+      if (fw_basic_lit_SSBO.get_program() == NULL) {
+        fw_basic_lit_SSBO.create("shaders\\fw_basic_lit.vert", "shaders\\fw_basic_lit_SSBO.frag");
+      }
+      return fw_basic_lit_SSBO;
+    } else {
+      if (fw_basic_lit.get_program() == NULL) {
+        fw_basic_lit.create("shaders\\fw_basic_lit.vert", "shaders\\fw_basic_lit.frag");
+      }
+      return fw_basic_lit;
     }
-    return fw_basic_lit;
   }
 }
 
-graphics_framework::effect& NormalEffect(){
-  return gfx->phongEffect;
+graphics_framework::effect &NormalEffect() { return gfx->phongEffect; }
+
+void UpdateLights() {
+  if (renderMode) {
+    return;
+  }
+  if (ssbo) {
+    UpdateLights_SSBO();
+  } else {
+    // stupid dumb AMD cards not supporting 4.4 when they say they do...
+    // now we have to bind light data to every possible forward shader.
+    NumberOfLights = vec4(gfx->DLights.size(), gfx->PLights.size(), gfx->SLights.size(), 0);
+
+
+    effect& eff = BasicEffect();
+    renderer::bind(eff);
+    GLint pos = eff.get_uniform_location("lightNumbers");
+    if (pos != -1){
+      glUniform4fv(pos, 1, value_ptr(NumberOfLights));
+    }
+    renderer::bind(gfx->DLights, "DLights");
+    renderer::bind(gfx->PLights, "PLights");
+    renderer::bind(gfx->SLights, "SLights");
+    //TODO: the same for normal shaders
+  }
+}
+
+void UpdateLights_SSBO() {
+  NumberOfLights = vec4(0, 0, 0, 0);
+  // Directional lights
+  {
+    struct S_Dlight {
+      vec4 ambient_intensity;
+      vec4 light_colour;
+      vec4 light_dir;
+    };
+    // squash down to an array
+    std::vector<S_Dlight> S_DLights;
+    for (auto L : gfx->DLights) {
+      S_Dlight sd;
+      sd.ambient_intensity = L->get_ambient_intensity();
+      sd.light_colour = L->get_light_colour();
+      sd.light_dir = vec4(L->get_direction(), 0);
+      S_DLights.push_back(sd);
+      // printf("sun: (%f, %f, %f, %f)\n", sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
+    // this might not be the best way to copy data, but it works.
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    NumberOfLights.x = S_DLights.size();
+  }
+  //  point lights
+  {
+    struct S_Plight {
+      vec4 light_colour;
+      vec4 position; // position is a vec3, padded in a vec4
+      vec4 falloff;  //(constant, linear, quadratic, NULL)
+    };
+    std::vector<S_Plight> S_PLights;
+    for (auto L : gfx->PLights) {
+      S_Plight sd;
+      sd.light_colour = L->get_light_colour();
+      sd.position = vec4(L->get_position(), 0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L->get_constant_attenuation();
+      sd.falloff.y = L->get_linear_attenuation();
+      sd.falloff.z = L->get_quadratic_attenuation();
+      S_PLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    NumberOfLights.y = S_PLights.size();
+  }
+  // spot lights
+  {
+    struct S_Slight {
+      vec4 light_colour;
+      vec4 position;  // position is a vec3, padded in a vec4
+      vec4 direction; // direction is a vec3, padded in a vec4
+      vec4 falloff;   //(constant, linear, quadratic, power)
+    };
+    std::vector<S_Slight> S_SLights;
+    for (auto L : gfx->SLights) {
+      S_Slight sd;
+      sd.light_colour = L->get_light_colour();
+      sd.position = vec4(L->get_position(), 0);
+      sd.direction = vec4(L->get_direction(), 0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L->get_constant_attenuation();
+      sd.falloff.y = L->get_linear_attenuation();
+      sd.falloff.z = L->get_quadratic_attenuation();
+      sd.falloff.w = L->get_power();
+      S_SLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    NumberOfLights.z = S_SLights.size();
+  }
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights), &NumberOfLights, GL_DYNAMIC_COPY);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void CreateSSBOs() {
+  NumberOfLights = vec4(0, 0, 0, 0);
+  assert(GL_SHADER_STORAGE_BUFFER);
+  assert(GL_ARB_shader_storage_buffer_object);
+  assert(GL_ARB_uniform_buffer_object);
+  if (dLightSSBO == -1) {
+    glGenBuffers(1, &dLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
+  }
+  if (pLightSSBO == -1) {
+    glGenBuffers(1, &pLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
+  }
+  if (sLightSSBO == -1) {
+    glGenBuffers(1, &sLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
+  }
+  if (LightSSBO == -1) {
+    glGenBuffers(1, &LightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, LightSSBO);
+  }
+  // UpdateLights();
+
+  GLenum error = glGetError();
+  if (error) {
+    std::cerr << "CreateSSBOs failed " << gluErrorString(error) << std::endl;
+  }
 }
 
 void SetMode(const RenderMode rm, const DefferedMode dm) {
@@ -63,6 +218,9 @@ void SetMode(const RenderMode rm, const DefferedMode dm) {
   defMode = dm;
   if (rm && fbo == -1) {
     CreateDeferredFbo();
+  }
+  if (!rm && ssbo) {
+    CreateSSBOs();
   }
 }
 
@@ -160,6 +318,11 @@ void NewFrame() {
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
   }
+  else{
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+  }
 }
 
 void CreateDeferredFbo() {
@@ -192,7 +355,8 @@ void CreateDeferredFbo() {
   // depth
   {
     glBindTexture(GL_TEXTURE_2D, fbo_depthTexture);
-  //  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL);
+    //  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT, 0, GL_DEPTH_STENCIL,
+    //  GL_FLOAT_32_UNSIGNED_INT_24_8_REV, NULL);
     glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH32F_STENCIL8, SCREENWIDTH, SCREENHEIGHT);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, DEPTH_STENCIL_BUFFER, GL_TEXTURE_2D, fbo_depthTexture, 0);
   }
@@ -252,14 +416,13 @@ void CombineToFinalBuffer() {
   glEnable(GL_CULL_FACE);
 }
 
-
 void ShowDepthStencil() {
   if (!GLEW_ARB_stencil_texturing) {
     return;
   }
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  //Create the texture views into the two components of fbo_depthTexture
+  // Create the texture views into the two components of fbo_depthTexture
   if (dsView_depthtex == -1) {
     glGenTextures(1, &dsView_depthtex);
     glTextureView(dsView_depthtex, GL_TEXTURE_2D, fbo_depthTexture, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
@@ -276,8 +439,7 @@ void ShowDepthStencil() {
     printf("Depth view created\n");
   }
 
-  if (dsView_stenciltex == -1)
-  {
+  if (dsView_stenciltex == -1) {
     glGenTextures(1, &dsView_stenciltex);
     glTextureView(dsView_stenciltex, GL_TEXTURE_2D, fbo_depthTexture, GL_DEPTH32F_STENCIL8, 0, 1, 0, 1);
     glBindTexture(GL_TEXTURE_2D, dsView_stenciltex);
@@ -292,7 +454,7 @@ void ShowDepthStencil() {
     printf("Stencil view created\n");
   }
 
-  //create an fbo to render to 
+  // create an fbo to render to
   static GLuint depthtex;
   static GLuint stenciltex;
   if (depthVisFbo == -1) {
@@ -356,7 +518,6 @@ void ShowDepthStencil() {
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-
   if (stencilRenderWorkaround) {
     // read stencil to ram, then blit it back.
     unsigned char *pixels = new unsigned char[1280 * 720];
@@ -377,7 +538,6 @@ void ShowDepthStencil() {
     delete[] pixels;
     delete[] fpixels;
   }
-
 }
 
 // blits the buffers to 4 quadrants on the the 0 buffer
@@ -571,7 +731,7 @@ void DirectionalLightPass() {
 
   for (directional_light *d : gfx->DLights) {
     glUniform1f(eff.get_uniform_location("gDirectionalLight.Base.AmbientIntensity"), 0.3f);
-    //printf("sun: (%f,%f,%f)\n", (*d).get_direction().x, (*d).get_direction().y, (*d).get_direction().z);
+    // printf("sun: (%f,%f,%f)\n", (*d).get_direction().x, (*d).get_direction().y, (*d).get_direction().z);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Direction"), 1, &(*d).get_direction()[0]);
     glUniform3fv(eff.get_uniform_location("gDirectionalLight.Base.Color"), 1, &(*d).get_light_colour()[0]);
     graphics_framework::renderer::render(gfx->planegeo);

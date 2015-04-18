@@ -79,14 +79,19 @@ public:
   static void bind(const material &mat, const std::string &name) throw(...);
   // Binds a directional light with the renderer
   static void bind(const directional_light &light, const std::string &name) throw(...);
+  // Binds a vector of directional lights to the renderer
+  static void bind(const std::vector<directional_light> &directionals, const std::string &name) throw(...);
+  static void bind(const std::vector<directional_light*> &directionals, const std::string &name) throw(...);
   // Binds a point light with the renderer
   static void bind(const point_light &point, const std::string &name) throw(...);
   // Binds a vector of point lights to the renderer
   static void bind(const std::vector<point_light> &points, const std::string &name) throw(...);
+  static void bind(const std::vector<point_light*> &points, const std::string &name) throw(...);
   // Binds a spot light with the renderer
   static void bind(const spot_light &spot, const std::string &name) throw(...);
   // Binds a vector of spot lights to the renderer
   static void bind(const std::vector<spot_light> &spots, const std::string &name) throw(...);
+  static void bind(const std::vector<spot_light*> &spots, const std::string &name) throw(...);
   // Renders a piece of geometry
   static void render(const geometry &geom) throw(...);
   // Renders a mesh object

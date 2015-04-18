@@ -71,16 +71,10 @@ public:
   directional_light dlight;
   point_light plight;
   spot_light slight;
-  glm::vec4 NumberOfLights; // Amd workaround
-  GLuint dLightSSBO;
-  GLuint pLightSSBO;
-  GLuint sLightSSBO;
-  GLuint LightSSBO;
+
   std::vector<directional_light*> DLights;
   std::vector<point_light*> PLights;
   std::vector<spot_light*> SLights;
-
-
 
   std::vector<const glm::vec3> linebuffer;
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);
@@ -93,8 +87,6 @@ public:
   void RendermeshB(mesh &m, const texture &t, const texture &tb, const float scale);
   void DrawScene();
   void RenderSky();
-  // Send all light data to SSBOs on the GPU
-  void UpdateLights();
   void UpdateTorus(float delta_time);
 };
 

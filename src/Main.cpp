@@ -51,80 +51,7 @@ bool Graphics::Initialise() {
 }
 
 // Send all light data to SSBOs on the GPU
-void Graphics::UpdateLights() {
-  // Directional lights
-  {
-    struct S_Dlight {
-      vec4 ambient_intensity;
-      vec4 light_colour;
-      vec4 light_dir;
-    };
-    vector<S_Dlight> S_DLights;
-    for (auto L : DLights) {
-      S_Dlight sd;
-      sd.ambient_intensity = L->get_ambient_intensity();
-      sd.light_colour = L->get_light_colour();
-      sd.light_dir = vec4(L->get_direction(), 0);
-      S_DLights.push_back(sd);
-      printf("sun: (%f, %f, %f, %f)\n",sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
-    // this might not be the best way to copy data, but it works.
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0], GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-  }
-  //  point lights
-  {
-    struct S_Plight {
-      vec4 light_colour;
-      vec4 position; // position is a vec3, padded in a vec4
-      vec4 falloff;  //(constant, linear, quadratic, NULL)
-    };
-    vector<S_Plight> S_PLights;
-    for (auto L : PLights) {
-      S_Plight sd;
-      sd.light_colour = L->get_light_colour();
-      sd.position = vec4(L->get_position(), 0);
-      sd.falloff = vec4(0, 0, 0, 0);
-      sd.falloff.x = L->get_constant_attenuation();
-      sd.falloff.y = L->get_linear_attenuation();
-      sd.falloff.z = L->get_quadratic_attenuation();
-      S_PLights.push_back(sd);
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-  }
-  // spot lights
-  {
-    struct S_Slight {
-      vec4 light_colour;
-      vec4 position;  // position is a vec3, padded in a vec4
-      vec4 direction; // direction is a vec3, padded in a vec4
-      vec4 falloff;   //(constant, linear, quadratic, power)
-    };
-    vector<S_Slight> S_SLights;
-    for (auto L : SLights) {
-      S_Slight sd;
-      sd.light_colour = L->get_light_colour();
-      sd.position = vec4(L->get_position(), 0);
-      sd.direction = vec4(L->get_direction(), 0);
-      sd.falloff = vec4(0, 0, 0, 0);
-      sd.falloff.x = L->get_constant_attenuation();
-      sd.falloff.y = L->get_linear_attenuation();
-      sd.falloff.z = L->get_quadratic_attenuation();
-      sd.falloff.w = L->get_power();
-      S_SLights.push_back(sd);
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-  }
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights), &NumberOfLights, GL_DYNAMIC_COPY);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
 
 Gimbal *gimbal;
 bool Graphics::Load_content() {
@@ -145,23 +72,6 @@ bool Graphics::Load_content() {
   slight.set_range(20.0f);
   slight.set_power(0.5f);
   SLights.push_back(&slight);
-
-  NumberOfLights = vec4(1, 1, 1, 0);
-  // directional light SSBO
-  {
-    assert(GL_SHADER_STORAGE_BUFFER);
-    assert(GL_ARB_shader_storage_buffer_object);
-    assert(GL_ARB_uniform_buffer_object);
-    glGenBuffers(1, &dLightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
-    glGenBuffers(1, &pLightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
-    glGenBuffers(1, &sLightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
-    glGenBuffers(1, &LightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, LightSSBO);
-    UpdateLights();
-  }
 
   mirror = mesh(geometry_builder::create_plane(100, 100, true));
   mirror.get_transform().translate(vec3(0.0f, 30.0f, 50.0f));
@@ -260,7 +170,8 @@ bool Graphics::Load_content() {
   gimbal = new Gimbal(16);
   SetupMirror();
 
-  SetMode(DEFFERED,NORMAL);
+  SetMode(FORWARD, NORMAL);
+  EnableSSBO(false);
   InitParticles();
   return true;
 }
@@ -281,7 +192,6 @@ bool Graphics::Update(float delta_time) {
     counter = 0;
   }
 
-  UpdateLights();
 
   { // Camera update
     static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
@@ -349,7 +259,9 @@ bool Graphics::Update(float delta_time) {
   if (showUI) {
     UpdateUI();
   }
-  UpdateParticles(delta_time);
+  UpdateLights();
+
+//  UpdateParticles(delta_time);
   return true;
 }
 
@@ -459,7 +371,7 @@ void Graphics::DrawScene() {
 
   //RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
   //Enviroment::RenderSky();
- // gimbal->Render();
+  gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
   
 }
@@ -470,7 +382,7 @@ bool Graphics::Render() {
   BeginOpaque();
   glCullFace(GL_BACK);
   DrawScene();
-  RenderMirror(mirror);
+ // RenderMirror(mirror);
   EndOpaque();
 
   BeginTransparent();
@@ -481,7 +393,7 @@ bool Graphics::Render() {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   ProcessLines();
-  RenderParticles();
+  //RenderParticles();
   if (showUI) {
     DrawUI();
   }

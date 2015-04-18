@@ -35,6 +35,8 @@ enum GBUFFER_TEXTURE_TYPE {
 //Mode setting
 void stencilworkaround(bool b);
 bool stencilworkaround();
+void EnableSSBO(bool b);
+bool EnableSSBO();
 void SetMode(const RenderMode rm, const DefferedMode dm);
 RenderMode getRM();
 DefferedMode getDM();
@@ -51,8 +53,11 @@ void EndTransparent();
 void BeginPost();
 void EndPost();
 void NewFrame();
+// Send all light data to on the GPU
+void UpdateLights();
 
 //internal funcs
+static void UpdateLights_SSBO();
 static void CreateDeferredFbo();
 static void CombineToFinalBuffer();
 static void CombineToOuput();
@@ -60,3 +65,4 @@ static void FlipToOutput();
 static void StencilPass(const graphics_framework::point_light& p);
 static void PointLightPass(const graphics_framework::point_light& p);
 static void DirectionalLightPass();
+static void CreateSSBOs();
