@@ -128,7 +128,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\res\shaders\GeoPass.frag">
+    <CustomBuild Include="..\res\shaders\df_GeoPass.frag">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>
@@ -137,7 +137,7 @@ call "$(ConfigurationName)Copyfiles.bat"</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)/%(Filename);%(Outputs)shaders\</Outputs>
     </CustomBuild>
-    <CustomBuild Include="..\res\shaders\GeoPass.vert">
+    <CustomBuild Include="..\res\shaders\df_GeoPass.vert">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy %(FullPath) $(TargetDir)shaders\ /y</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Copying %(FullPath) to $(TargetDir)shaders\</Message>

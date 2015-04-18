@@ -18,10 +18,10 @@ private:
   float _linear;
   // The quadratic factor of the attenuation
   float _quadratic;
-  
-  float _range;
-public:
 
+  float _range;
+
+public:
   // Creates a point light with a default colour
   point_light()
       : _colour(glm::vec4(0.9f, 0.9f, 0.9f, 1.0f)), _position(glm::vec3(0.0f, 0.0f, 0.0f)), _constant(0.5f),
@@ -58,7 +58,16 @@ public:
     _linear = 2.0f / range;
     _quadratic = 1.0f / (powf(range, 2.0f));
   }
-  float GetRange() const { return _range; }
+// calculates the size of the bounding box for the specified light source
+  float GetRange() const {
+    return 100.0f;
+    float MaxChannel = fmax(fmax(_colour.x, _colour.y), _colour.z);
+
+    float ret = (-_linear + sqrtf(_linear * _linear - 4 * _quadratic * (_quadratic - 256 * MaxChannel * 1.0f))) / 2 *
+                _quadratic;
+    return ret*10000.0f;
+    // return _range;
+  }
   // Moves the light by the given vector
   void move(const glm::vec3 &translation) { _position += translation; }
 };

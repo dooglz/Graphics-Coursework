@@ -148,12 +148,6 @@
     <CustomBuild Include="..\res\shaders\phong.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\res\shaders\GeoPass.vert">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\res\shaders\GeoPass.frag">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\shaders\df_lighttest.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
@@ -197,6 +191,12 @@
       <Filter>Shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\df_point_light_pass.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\df_GeoPass.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\df_GeoPass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
   </ItemGroup>
