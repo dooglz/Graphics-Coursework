@@ -1,4 +1,5 @@
 #include "Enviroment.h"
+#include "Rendering.h"
 #include "Main.h"
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
@@ -8,7 +9,8 @@ using namespace graphics_framework;
 using namespace glm;
 
 static float EnviromentCounter = 0;
-effect skyeffect;
+effect df_skyeffect;
+effect fw_skyeffect;
 mesh skygeo;
 
 float Enviroment::dayscale;
@@ -17,9 +19,8 @@ bool Enviroment::enabled;
 float Enviroment::speed;
 
 void Enviroment::Load() {
-  skyeffect.add_shader("shaders\\sky2.vert", GL_VERTEX_SHADER);
-  skyeffect.add_shader("shaders\\sky2.frag", GL_FRAGMENT_SHADER);
-  skyeffect.build();
+  df_skyeffect.create("shaders\\sky.vert", "shaders\\df_sky.frag");
+  fw_skyeffect.create("shaders\\sky.vert", "shaders\\fw_sky.frag");
   skygeo = mesh(geometry_builder::create_sphere(32, 15, vec3(2000.0f, 2000.0f, 2000.0f)));
   dayscale = 0;
   daymode = false;
@@ -58,7 +59,10 @@ void Enviroment::Update(float delta_time) {
 }
 
 void Enviroment::RenderSky() {
-
+  effect &skyeffect = df_skyeffect;
+  if (!getRM()) {
+    skyeffect = fw_skyeffect;
+  }
   renderer::bind(skyeffect);
   // vert uniforms
   mat4 modelMatrix = mat4(1.0f);

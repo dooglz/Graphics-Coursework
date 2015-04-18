@@ -148,25 +148,13 @@
     <CustomBuild Include="..\res\shaders\phong.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\res\shaders\sky2.frag">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\res\shaders\sky2.vert">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\shaders\GeoPass.vert">
       <Filter>Shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\GeoPass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
-    <CustomBuild Include="..\res\shaders\point_light_pass.frag">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
     <CustomBuild Include="..\res\shaders\df_lighttest.frag">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
-    <CustomBuild Include="..\res\shaders\dir_light_pass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\null.vert">
@@ -194,6 +182,21 @@
       <Filter>Shaders</Filter>
     </CustomBuild>
     <CustomBuild Include="..\res\shaders\fw_basic_lit.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\df_sky.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\fw_sky.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\sky.vert">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\df_dir_light_pass.frag">
+      <Filter>Shaders</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\res\shaders\df_point_light_pass.frag">
       <Filter>Shaders</Filter>
     </CustomBuild>
   </ItemGroup>

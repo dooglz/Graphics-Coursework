@@ -9,8 +9,7 @@ layout(location = 10) in vec2 tex_coord_in;
 layout(location = 0) out vec2 tex_coord_out;
 layout(location = 1) out vec3 positionOut;
 
-void main()
-{
+void main() {
   // Calculate screen position of vertex
   gl_Position = MVP * vec4(position, 1.0);
   positionOut = position;

@@ -8,6 +8,7 @@
 #include <glm\gtx\quaternion.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtc\matrix_access.hpp>
+#include "Rendering.h"
 #include "mirror.h"
 #include "main.h"
 #include "Math.h"
@@ -19,11 +20,6 @@ using namespace graphics_framework;
 using namespace glm;
 
 target_camera bouncecam;
-
-GLuint FramebufferName = 0;
-GLuint renderedTexture = 0;
-GLuint depthrenderbuffer = 0;
-effect waterEffect;
 static bool frozen = false;
 static bool debug = false;
 static bool show = false;
@@ -43,45 +39,6 @@ bool ShowMirror() { return show; }
 // loads shaders and creates a FBO for reflected texture
 void SetupMirror() {
   frozen = false;
-  waterEffect.add_shader("shaders\\water.vert", GL_VERTEX_SHADER);
-  waterEffect.add_shader("shaders\\water.frag", GL_FRAGMENT_SHADER);
-  waterEffect.build();
-
-  // Create the FBO
-  glGenFramebuffers(1, &FramebufferName);
-  // Bind to FBO
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FramebufferName);
-
-  // Create the textures in the fbo
-  glGenTextures(1, &renderedTexture);
-  // bind it
-  glBindTexture(GL_TEXTURE_2D, renderedTexture);
-  // set dimensions,  Give an empty image to OpenGL ( the last "0" )
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1280, 720, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-  // tex filtering
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  // unbind
-  glBindTexture(GL_TEXTURE_2D, 0);
-
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
-
-  // Do the same for depth, but use a renderbuffer rather than texture
-  glGenRenderbuffers(1, &depthrenderbuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-  // set dimensions, fill with undefined
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1280, 720);
-  // attach to fbo depth output
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
-
-  GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  if (Status != GL_FRAMEBUFFER_COMPLETE) {
-    printf("FB error, status: 0x%x\n", Status);
-    assert(false);
-  }
-
-  // unbind
-  glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
 static void MakeWarpedProjMat(mat4 &projmat, mat4 &viewMat, const mat4 &playerView, const vec3 &mirrorPos,
@@ -112,30 +69,29 @@ static void MakeWarpedProjMat(mat4 &projmat, mat4 &viewMat, const mat4 &playerVi
   projmat[3][2] = c.w;
 }
 
-
-void MirrorStencilPass(mesh &mirror){
+void MirrorStencilPass(mesh &mirror) {
   // Read from depth
   glEnable(GL_DEPTH_TEST);
-  //don't write to depth or colour
+  // don't write to depth or colour
   glDrawBuffer(GL_NONE);
   glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
   glDepthMask(GL_FALSE);
   // write only to stencil
   glEnable(GL_STENCIL_TEST);
   glStencilMask(0xFF);
-  //clear stencil
+  // clear stencil
   glClear(GL_STENCIL_BUFFER_BIT);
 
-  //setup stencil functions
-  //don't comnpare to existing stencil data , just write
+  // setup stencil functions
+  // don't comnpare to existing stencil data , just write
   glStencilFunc(GL_ALWAYS, 0, 0);
-  //Write stencil for both front and back, set to zero if depth trest fails
+  // Write stencil for both front and back, set to zero if depth trest fails
   glStencilOpSeparate(GL_BACK, GL_ZERO, GL_ZERO, GL_INCR);
-  //todo could use this for easy side detection and culling rather than a plane EQ
+  // todo could use this for easy side detection and culling rather than a plane EQ
   glStencilOpSeparate(GL_FRONT, GL_ZERO, GL_ZERO, GL_INCR);
   glDisable(GL_CULL_FACE);
 
-  //do stencil
+  // do stencil
   effect eff = gfx->nullEffect;
   // Bind effect
   renderer::bind(eff);
@@ -147,17 +103,21 @@ void MirrorStencilPass(mesh &mirror){
 
   renderer::render(mirror);
 
-
   // enable color and depth buffers.
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
   glDepthMask(GL_TRUE);
   // glDisable(GL_BLEND);
-  //glDisable(GL_DEPTH_TEST);
-  //disable writing to stencil
+  // glDisable(GL_DEPTH_TEST);
+  // disable writing to stencil
   glStencilMask(0x00);
   glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-  GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT5 };
-  glDrawBuffers(5, DrawBuffers);
+  if (getRM()) {
+    GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3,
+                            GL_COLOR_ATTACHMENT5};
+    glDrawBuffers(5, DrawBuffers);
+  } else {
+    glDrawBuffer(GL_BACK);
+  }
 
   /*
   //testing, render full quad to test stencil
@@ -179,7 +139,7 @@ void RenderMirror(mesh &mirror) {
   if (!show) {
     return;
   }
-  
+
   // render the reflected scene
   mat4 playerView;
 
@@ -200,20 +160,19 @@ void RenderMirror(mesh &mirror) {
   // reflected projmat
   mat4 projmat;
 
-  if ( plneq > 0) {
+  if (plneq > 0) {
     MirrorStencilPass(mirror);
     // create intial unwarped projection
     bouncecam.set_projection(quarter_pi<float>(), gfx->aspect, 2.414f, 2000.0f);
     projmat = bouncecam.get_projection();
-    //get reflected view, and warped projection
+    // get reflected view, and warped projection
     MakeWarpedProjMat(projmat, viewMat, playerView, mirrorPos, mirrorNormal);
 
-    //apply to camera
+    // apply to camera
     bouncecam.set_view(viewMat);
     bouncecam.set_projection2(projmat);
     gfx->activeCam = &bouncecam;
 
-    
     glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_CULL_FACE);
@@ -221,7 +180,7 @@ void RenderMirror(mesh &mirror) {
     glCullFace(GL_FRONT);
     gfx->DrawScene();
 
-    //revert rendering back to normal
+    // revert rendering back to normal
     glCullFace(GL_BACK);
 
     glDisable(GL_STENCIL_TEST);
@@ -231,13 +190,13 @@ void RenderMirror(mesh &mirror) {
 
     gfx->activeCam = &gfx->cam;
   }
-  
+
   // if frozen, show frustum
   if (frozen) {
     vec4 fr[8] = {// near
                   vec4(-1, -1, -1, 1), vec4(1, -1, -1, 1), vec4(1, 1, -1, 1), vec4(-1, 1, -1, 1),
                   // far
-                  vec4(-1, -1, 1, 1),  vec4(1, -1, 1, 1),  vec4(1, 1, 1, 1),  vec4(-1, 1, 1, 1)};
+                  vec4(-1, -1, 1, 1), vec4(1, -1, 1, 1), vec4(1, 1, 1, 1), vec4(-1, 1, 1, 1)};
 
     for (int i = 0; i < 8; i++) {
       fr[i] = inverse(projmat * viewMat) * fr[i];

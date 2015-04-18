@@ -34,7 +34,6 @@ struct material {
   float shininess;
 };
 
-uniform vec3 sunnyD;
 // Position of the camera
 uniform vec3 eye_pos;
 // Texture
@@ -45,9 +44,9 @@ uniform material mat;
 // Incoming position
 layout(location = 0) in vec3 position;
 // Incoming normal
-layout (location = 1) in vec3 normal;
+layout(location = 1) in vec3 normal;
 // Incoming texture coordinate
-layout (location = 2) in vec2 tex_coord;
+layout(location = 2) in vec2 tex_coord;
 // Outgoing colour
 layout(location = 0) out vec4 colour;
 
@@ -57,37 +56,16 @@ uniform spot_light SLights[20];
 uniform vec4 lightNumbers;
 
 vec4 calculate_dir(in directional_light light, in vec3 position, in vec3 normal, in vec3 view_dir, in vec4 tex_colour) {
-    //const vec3 light_dir = -sunnyD;//normalize(light.light_dir.xyz);
-    const vec3 light_dir = -light.light_dir;
-/*
-  // Calculate ambient component
+  const vec3 light_dir = -light.light_dir;
+
   vec4 ambient = mat.diffuse_reflection * light.ambient_intensity;
-  // Calculate diffuse component
-  vec4 diffuse = (mat.diffuse_reflection * light.light_colour) * max(dot(normal, light.light_dir), 0.0);
-  // Calculate half vector
-  vec3 half_vector = normalize(light.light_dir + view_dir);
-  // Calculate specular component
-  vec4 specular =
-      (mat.specular_reflection * light.light_colour) * pow(max(dot(normal, half_vector), 0.0), mat.shininess);
-  // Calculate colour to return - remember alpha = 1
-  vec4 colour = ((mat.emissive + ambient + diffuse) * tex_colour) + specular;
-  colour.a = 1.0;
-  // Return colour
-  return colour;
-*/
-  // Calculate ambient component
-  vec4 ambient = mat.diffuse_reflection * light.ambient_intensity;
-  // Calculate diffuse component
-  // ambient = vec4(1.0, 0.3, 0.3, 0);
-  ambient = vec4(0, 0, 0, 0);
   vec4 diffuse = vec4(0, 0, 0, 0);
   vec4 specular = vec4(0, 0, 0, 0);
 
   float DiffuseFactor = dot(normal, light_dir);
 
   if (DiffuseFactor > 0.0) {
-    //diffuse = (mat.diffuse_reflection * light.light_colour) * DiffuseFactor;
-    diffuse = mat.diffuse_reflection  * DiffuseFactor;
+    diffuse = (mat.diffuse_reflection * light.light_colour) * DiffuseFactor;
     // Calculate half vector
     vec3 half_vector = normalize(light_dir + view_dir);
 
@@ -95,15 +73,10 @@ vec4 calculate_dir(in directional_light light, in vec3 position, in vec3 normal,
     SpecularFactor = pow(SpecularFactor, mat.shininess);
     if (SpecularFactor > 0.0) {
       specular = (mat.specular_reflection * light.light_colour) * SpecularFactor;
-      // specular = (mat.specular_reflection * light.light_colour) * pow(max(dot(normal, half_vector), 0),
-      // mat.shininess);
     }
   }
-  
+
   vec4 colour = (mat.emissive + ambient + diffuse) * tex_colour + specular;
- // colour = vec4 (position,0);
-  //colour.r = 0.8;
-  //colour.g = light.light_colour.g;
   colour.a = 1.0;
   return colour;
 }
@@ -113,7 +86,7 @@ vec4 calculate_point(in point_light point, in vec3 position, in vec3 normal, in 
   // Get distance between point light and vertex
   float d = distance(vec3(point.position), position);
   // Calculate attenuation factor
-  float attenuation = point.constant + (point.linear  * d) + (point.quadratic* d * d);
+  float attenuation = point.constant + (point.linear * d) + (point.quadratic * d * d);
   // Calculate light colour
   vec4 light_colour = point.light_colour / attenuation;
   light_colour.a = 1.0;
@@ -137,7 +110,7 @@ vec4 calculate_spot(in spot_light spot, in vec3 position, in vec3 normal, in vec
   // Calculate distance to light
   float d = distance(vec3(spot.position), position);
   // Calculate attenuation value
-  float attenuation = spot.constant  + spot.linear * d + spot.quadratic * d * d;
+  float attenuation = spot.constant + spot.linear * d + spot.quadratic * d * d;
   // Calculate spot light intensity
   float sp = pow(max(dot(light_dir, -vec3(spot.direction)), 0.0), spot.power);
   // Calculate light colour
@@ -164,22 +137,17 @@ void main() {
   colour = vec4(0, 0, 0, 1);
 
   // for each directional light
-  // for (int i = 0; i < DLights.length() ; i++) {
   for (int i = 0; i < lightNumbers.x; i++) {
     colour += calculate_dir(DLights[i], position, normal, view_dir, tex_colour);
   }
   // point light
-  // for (int i = 0; i < PLights.length(); i++) {
   for (int i = 0; i < lightNumbers.y; i++) {
     colour += calculate_point(PLights[i], position, normal, view_dir, tex_colour);
   }
   // spotlight
-  // for (int i = 0; i < SLights.length(); i++)
   for (int i = 0; i < lightNumbers.z; i++) {
     colour += calculate_spot(SLights[i], position, normal, view_dir, tex_colour);
   }
-  colour.r = clamp(colour.r,0,1.0);
-  colour.g = clamp(colour.g,0,1.0);
-  colour.b = clamp(colour.b,0,1.0);
+
   colour.a = 1.0;
 }

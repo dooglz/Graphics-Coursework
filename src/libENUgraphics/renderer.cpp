@@ -40,8 +40,8 @@ bool renderer::initialise(const unsigned int screenX, const unsigned int screenY
   // Set window hints for GLFW
   glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   // glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-  //desired number of samples to use for multisampling. Zero = no multisampling. GLFW_DONT_CARE = no preference.  
-  glfwWindowHint(GLFW_SAMPLES, 0); 
+  // desired number of samples to use for multisampling. Zero = no multisampling. GLFW_DONT_CARE = no preference.
+  glfwWindowHint(GLFW_SAMPLES, 0);
   glfwWindowHint(GLFW_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
@@ -343,7 +343,7 @@ void renderer::bind(const material &mat, const std::string &name) throw(...) {
   idx = _instance->_effect.get_uniform_location(name + ".shininess");
   if (idx != -1)
     glUniform1f(idx, mat.get_shininess());
-  if (idx == -1){
+  if (idx == -1) {
     std::cerr << "Attempting to bind material data to shader with invalid material uniforms" << std::endl;
   }
   // Check for error
@@ -377,10 +377,10 @@ void renderer::bind(const directional_light &light, const std::string &name) thr
     throw std::runtime_error("Error using directional light with renderer");
   }
 }
-void renderer::bind(const std::vector<directional_light*> &directionals, const std::string &name) throw(...) {
-  //is this the fastest way to do this? who cares....
+void renderer::bind(const std::vector<directional_light *> &directionals, const std::string &name) throw(...) {
+  // is this the fastest way to do this? who cares....
   std::vector<directional_light> obj_directionals;
-  for (auto p : directionals){
+  for (auto p : directionals) {
     obj_directionals.push_back(*p);
   }
   bind(obj_directionals, name);
@@ -417,7 +417,6 @@ void renderer::bind(const std::vector<directional_light> &directionals, const st
   }
 }
 
-
 // Binds a point light to the currently bound effect
 void renderer::bind(const point_light &point, const std::string &name) throw(...) {
   // Check for light colour
@@ -449,10 +448,10 @@ void renderer::bind(const point_light &point, const std::string &name) throw(...
   }
 }
 
-void renderer::bind(const std::vector<point_light*> &points, const std::string &name) throw(...) {
-   //is this the fastest way to do this? who cares....
+void renderer::bind(const std::vector<point_light *> &points, const std::string &name) throw(...) {
+  // is this the fastest way to do this? who cares....
   std::vector<point_light> obj_points;
-  for (auto p : points){
+  for (auto p : points) {
     obj_points.push_back(*p);
   }
   bind(obj_points, name);
@@ -536,9 +535,9 @@ void renderer::bind(const spot_light &spot, const std::string &name) throw(...) 
   }
 }
 
-void renderer::bind(const std::vector<spot_light*> &spots, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<spot_light *> &spots, const std::string &name) throw(...) {
   std::vector<spot_light> obj_spots;
-  for (auto p : spots){
+  for (auto p : spots) {
     obj_spots.push_back(*p);
   }
   bind(obj_spots, name);

@@ -79,140 +79,6 @@ graphics_framework::effect &BasicEffect() {
 
 graphics_framework::effect &NormalEffect() { return gfx->phongEffect; }
 
-void UpdateLights() {
-  if (renderMode) {
-    return;
-  }
-  if (ssbo) {
-    UpdateLights_SSBO();
-  } else {
-    // stupid dumb AMD cards not supporting 4.4 when they say they do...
-    // now we have to bind light data to every possible forward shader.
-    NumberOfLights = vec4(gfx->DLights.size(), gfx->PLights.size(), gfx->SLights.size(), 0);
-
-
-    effect& eff = BasicEffect();
-    renderer::bind(eff);
-    GLint pos = eff.get_uniform_location("lightNumbers");
-    if (pos != -1){
-      glUniform4fv(pos, 1, value_ptr(NumberOfLights));
-    }
-    renderer::bind(gfx->DLights, "DLights");
-    renderer::bind(gfx->PLights, "PLights");
-    renderer::bind(gfx->SLights, "SLights");
-    //TODO: the same for normal shaders
-  }
-}
-
-void UpdateLights_SSBO() {
-  NumberOfLights = vec4(0, 0, 0, 0);
-  // Directional lights
-  {
-    struct S_Dlight {
-      vec4 ambient_intensity;
-      vec4 light_colour;
-      vec4 light_dir;
-    };
-    // squash down to an array
-    std::vector<S_Dlight> S_DLights;
-    for (auto L : gfx->DLights) {
-      S_Dlight sd;
-      sd.ambient_intensity = L->get_ambient_intensity();
-      sd.light_colour = L->get_light_colour();
-      sd.light_dir = vec4(L->get_direction(), 0);
-      S_DLights.push_back(sd);
-      // printf("sun: (%f, %f, %f, %f)\n", sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
-    // this might not be the best way to copy data, but it works.
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0], GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    NumberOfLights.x = S_DLights.size();
-  }
-  //  point lights
-  {
-    struct S_Plight {
-      vec4 light_colour;
-      vec4 position; // position is a vec3, padded in a vec4
-      vec4 falloff;  //(constant, linear, quadratic, NULL)
-    };
-    std::vector<S_Plight> S_PLights;
-    for (auto L : gfx->PLights) {
-      S_Plight sd;
-      sd.light_colour = L->get_light_colour();
-      sd.position = vec4(L->get_position(), 0);
-      sd.falloff = vec4(0, 0, 0, 0);
-      sd.falloff.x = L->get_constant_attenuation();
-      sd.falloff.y = L->get_linear_attenuation();
-      sd.falloff.z = L->get_quadratic_attenuation();
-      S_PLights.push_back(sd);
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    NumberOfLights.y = S_PLights.size();
-  }
-  // spot lights
-  {
-    struct S_Slight {
-      vec4 light_colour;
-      vec4 position;  // position is a vec3, padded in a vec4
-      vec4 direction; // direction is a vec3, padded in a vec4
-      vec4 falloff;   //(constant, linear, quadratic, power)
-    };
-    std::vector<S_Slight> S_SLights;
-    for (auto L : gfx->SLights) {
-      S_Slight sd;
-      sd.light_colour = L->get_light_colour();
-      sd.position = vec4(L->get_position(), 0);
-      sd.direction = vec4(L->get_direction(), 0);
-      sd.falloff = vec4(0, 0, 0, 0);
-      sd.falloff.x = L->get_constant_attenuation();
-      sd.falloff.y = L->get_linear_attenuation();
-      sd.falloff.z = L->get_quadratic_attenuation();
-      sd.falloff.w = L->get_power();
-      S_SLights.push_back(sd);
-    }
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    NumberOfLights.z = S_SLights.size();
-  }
-
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights), &NumberOfLights, GL_DYNAMIC_COPY);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-}
-
-void CreateSSBOs() {
-  NumberOfLights = vec4(0, 0, 0, 0);
-  assert(GL_SHADER_STORAGE_BUFFER);
-  assert(GL_ARB_shader_storage_buffer_object);
-  assert(GL_ARB_uniform_buffer_object);
-  if (dLightSSBO == -1) {
-    glGenBuffers(1, &dLightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
-  }
-  if (pLightSSBO == -1) {
-    glGenBuffers(1, &pLightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
-  }
-  if (sLightSSBO == -1) {
-    glGenBuffers(1, &sLightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
-  }
-  if (LightSSBO == -1) {
-    glGenBuffers(1, &LightSSBO);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, LightSSBO);
-  }
-  // UpdateLights();
-
-  GLenum error = glGetError();
-  if (error) {
-    std::cerr << "CreateSSBOs failed " << gluErrorString(error) << std::endl;
-  }
-}
-
 void SetMode(const RenderMode rm, const DefferedMode dm) {
   renderMode = rm;
   defMode = dm;
@@ -317,8 +183,7 @@ void NewFrame() {
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
-  }
-  else{
+  } else {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -647,7 +512,7 @@ void PointLightPass(const graphics_framework::point_light &p) {
 
   if (pointLightPassEffect.get_program() == NULL) {
     pointLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
-    pointLightPassEffect.add_shader("shaders\\point_light_pass.frag", GL_FRAGMENT_SHADER);
+    pointLightPassEffect.add_shader("shaders\\df_point_light_pass.frag", GL_FRAGMENT_SHADER);
     pointLightPassEffect.build();
   }
 
@@ -701,7 +566,7 @@ void DirectionalLightPass() {
 
   if (directionalLightPassEffect.get_program() == NULL) {
     directionalLightPassEffect.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
-    directionalLightPassEffect.add_shader("shaders\\dir_light_pass.frag", GL_FRAGMENT_SHADER);
+    directionalLightPassEffect.add_shader("shaders\\df_dir_light_pass.frag", GL_FRAGMENT_SHADER);
     directionalLightPassEffect.build();
   }
 
@@ -738,4 +603,137 @@ void DirectionalLightPass() {
   }
 
   glDisable(GL_BLEND);
+}
+
+void UpdateLights() {
+  if (renderMode) {
+    return;
+  }
+  if (ssbo) {
+    UpdateLights_SSBO();
+  } else {
+    // stupid dumb AMD cards not supporting 4.4 when they say they do...
+    // now we have to bind light data to every possible forward shader.
+    NumberOfLights = vec4(gfx->DLights.size(), gfx->PLights.size(), gfx->SLights.size(), 0);
+
+    effect &eff = BasicEffect();
+    renderer::bind(eff);
+    GLint pos = eff.get_uniform_location("lightNumbers");
+    if (pos != -1) {
+      glUniform4fv(pos, 1, value_ptr(NumberOfLights));
+    }
+    renderer::bind(gfx->DLights, "DLights");
+    renderer::bind(gfx->PLights, "PLights");
+    renderer::bind(gfx->SLights, "SLights");
+    // TODO: the same for normal shaders
+  }
+}
+
+void UpdateLights_SSBO() {
+  NumberOfLights = vec4(0, 0, 0, 0);
+  // Directional lights
+  {
+    struct S_Dlight {
+      vec4 ambient_intensity;
+      vec4 light_colour;
+      vec4 light_dir;
+    };
+    // squash down to an array
+    std::vector<S_Dlight> S_DLights;
+    for (auto L : gfx->DLights) {
+      S_Dlight sd;
+      sd.ambient_intensity = L->get_ambient_intensity();
+      sd.light_colour = L->get_light_colour();
+      sd.light_dir = vec4(L->get_direction(), 0);
+      S_DLights.push_back(sd);
+      // printf("sun: (%f, %f, %f, %f)\n", sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
+    // this might not be the best way to copy data, but it works.
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Dlight) * S_DLights.size(), &S_DLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    NumberOfLights.x = S_DLights.size();
+  }
+  //  point lights
+  {
+    struct S_Plight {
+      vec4 light_colour;
+      vec4 position; // position is a vec3, padded in a vec4
+      vec4 falloff;  //(constant, linear, quadratic, NULL)
+    };
+    std::vector<S_Plight> S_PLights;
+    for (auto L : gfx->PLights) {
+      S_Plight sd;
+      sd.light_colour = L->get_light_colour();
+      sd.position = vec4(L->get_position(), 0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L->get_constant_attenuation();
+      sd.falloff.y = L->get_linear_attenuation();
+      sd.falloff.z = L->get_quadratic_attenuation();
+      S_PLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    NumberOfLights.y = S_PLights.size();
+  }
+  // spot lights
+  {
+    struct S_Slight {
+      vec4 light_colour;
+      vec4 position;  // position is a vec3, padded in a vec4
+      vec4 direction; // direction is a vec3, padded in a vec4
+      vec4 falloff;   //(constant, linear, quadratic, power)
+    };
+    std::vector<S_Slight> S_SLights;
+    for (auto L : gfx->SLights) {
+      S_Slight sd;
+      sd.light_colour = L->get_light_colour();
+      sd.position = vec4(L->get_position(), 0);
+      sd.direction = vec4(L->get_direction(), 0);
+      sd.falloff = vec4(0, 0, 0, 0);
+      sd.falloff.x = L->get_constant_attenuation();
+      sd.falloff.y = L->get_linear_attenuation();
+      sd.falloff.z = L->get_quadratic_attenuation();
+      sd.falloff.w = L->get_power();
+      S_SLights.push_back(sd);
+    }
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    NumberOfLights.z = S_SLights.size();
+  }
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, LightSSBO);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(NumberOfLights), &NumberOfLights, GL_DYNAMIC_COPY);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void CreateSSBOs() {
+  NumberOfLights = vec4(0, 0, 0, 0);
+  assert(GL_SHADER_STORAGE_BUFFER);
+  assert(GL_ARB_shader_storage_buffer_object);
+  assert(GL_ARB_uniform_buffer_object);
+  if (dLightSSBO == -1) {
+    glGenBuffers(1, &dLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dLightSSBO);
+  }
+  if (pLightSSBO == -1) {
+    glGenBuffers(1, &pLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, pLightSSBO);
+  }
+  if (sLightSSBO == -1) {
+    glGenBuffers(1, &sLightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, sLightSSBO);
+  }
+  if (LightSSBO == -1) {
+    glGenBuffers(1, &LightSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, LightSSBO);
+  }
+  // UpdateLights();
+
+  GLenum error = glGetError();
+  if (error) {
+    std::cerr << "CreateSSBOs failed " << gluErrorString(error) << std::endl;
+  }
 }

@@ -59,22 +59,20 @@ public:
   effect texturedBumpEffect;
   effect nullEffect;
 
-
   mesh *desertM;
   mesh mirror;
   mesh goodsand;
   mesh sphereMesh;
   geometry planegeo;
 
-
   // Light stuff
   directional_light dlight;
   point_light plight;
   spot_light slight;
 
-  std::vector<directional_light*> DLights;
-  std::vector<point_light*> PLights;
-  std::vector<spot_light*> SLights;
+  std::vector<directional_light *> DLights;
+  std::vector<point_light *> PLights;
+  std::vector<spot_light *> SLights;
 
   std::vector<const glm::vec3> linebuffer;
   void DrawLine(const glm::vec3 &p1, const glm::vec3 &p2);

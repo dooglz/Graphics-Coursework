@@ -52,7 +52,6 @@ bool Graphics::Initialise() {
 
 // Send all light data to SSBOs on the GPU
 
-
 Gimbal *gimbal;
 bool Graphics::Load_content() {
   // Lights
@@ -183,15 +182,14 @@ bool Graphics::Update(float delta_time) {
   //  mirror.get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
   gimbal->Update(delta_time);
   Enviroment::Update(delta_time);
-  meshes["box2"].get_transform().rotate(vec3(delta_time*-0.2f, 0, 0.0f));
-  meshes["box3"].get_transform().rotate(vec3(0, 0, delta_time*-0.2f));
+  meshes["box2"].get_transform().rotate(vec3(delta_time * -0.2f, 0, 0.0f));
+  meshes["box3"].get_transform().rotate(vec3(0, 0, delta_time * -0.2f));
 
   float s = sinf(counter);
   float c = cosf(counter);
   if (counter > pi<float>()) {
     counter = 0;
   }
-
 
   { // Camera update
     static double ratio_width = quarter_pi<float>() / static_cast<float>(renderer::get_screen_width());
@@ -217,8 +215,7 @@ bool Graphics::Update(float delta_time) {
       cam.rotate(static_cast<float>(delta_x), static_cast<float>(delta_y));
       cursor_x = current_x;
       cursor_y = current_y;
-    }
-    else{
+    } else {
       cursor_x = current_x;
       cursor_y = current_y;
     }
@@ -247,11 +244,10 @@ bool Graphics::Update(float delta_time) {
 
     cam.move(translation * moveSpeed);
     cam.update(delta_time);
-
   }
   static int keystate;
   int newkeystate = glfwGetKey(renderer::get_window(), 'N');
-  if (newkeystate && newkeystate != keystate){
+  if (newkeystate && newkeystate != keystate) {
     showUI = !showUI;
   }
   keystate = newkeystate;
@@ -261,13 +257,13 @@ bool Graphics::Update(float delta_time) {
   }
   UpdateLights();
 
-//  UpdateParticles(delta_time);
+  //  UpdateParticles(delta_time);
   return true;
 }
 
 void Graphics::Rendermesh(mesh &m, texture &t) {
 
-  effect& eff = BasicEffect();
+  effect &eff = BasicEffect();
   // Bind effect
   renderer::bind(eff);
   // Create MVP matrix
@@ -282,19 +278,19 @@ void Graphics::Rendermesh(mesh &m, texture &t) {
   // Set N matrix uniform
   glUniformMatrix3fv(eff.get_uniform_location("N"), 1, GL_FALSE, value_ptr(m.get_transform().get_normal_matrix()));
   GLint pos = eff.get_uniform_location("TextureScale");
-  if (pos != -1){
+  if (pos != -1) {
     glUniform1f(pos, 1.0f);
   }
   // Set eye position
   pos = eff.get_uniform_location("eye_pos");
-  if (pos != -1){
+  if (pos != -1) {
     glUniform3fv(pos, 1, value_ptr(activeCam->get_position()));
   }
   pos = eff.get_uniform_location("sunnyD");
-  if (pos != -1){
+  if (pos != -1) {
     glUniform3fv(pos, 1, value_ptr(dlight.get_direction()));
   }
-  
+
   // Bind material
   renderer::bind(m.get_material(), "mat");
   // Bind texture
@@ -369,11 +365,10 @@ void Graphics::DrawScene() {
   }
   Rendermesh(*desertM, sandTexture);
 
-  //RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
-  //Enviroment::RenderSky();
+  // RendermeshB(goodsand, goodsandTexture, goodsandTextureBump, 10.0f);
+  Enviroment::RenderSky();
   gimbal->Render();
   DrawCross(vec3(0.0, 0.0, 0.0f), 10.0f);
-  
 }
 
 bool Graphics::Render() {
@@ -382,7 +377,7 @@ bool Graphics::Render() {
   BeginOpaque();
   glCullFace(GL_BACK);
   DrawScene();
- // RenderMirror(mirror);
+  RenderMirror(mirror);
   EndOpaque();
 
   BeginTransparent();
@@ -393,7 +388,7 @@ bool Graphics::Render() {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   ProcessLines();
-  //RenderParticles();
+  // RenderParticles();
   if (showUI) {
     DrawUI();
   }
