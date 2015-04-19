@@ -11,7 +11,6 @@ typedef enum RenderMode{
 
 typedef enum DefferedMode{
   DEBUG_PASSTHROUGH,
-  DEBUG_COMBINE,
   NORMAL
 }DefferedMode;
 
@@ -59,7 +58,6 @@ void UpdateLights();
 //internal funcs
 static void UpdateLights_SSBO();
 static void CreateDeferredFbo();
-static void CombineToFinalBuffer();
 static void CombineToOuput();
 static void FlipToOutput();
 static void StencilPass(const graphics_framework::point_light& p);

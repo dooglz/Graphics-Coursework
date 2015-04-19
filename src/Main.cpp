@@ -9,6 +9,7 @@
 #include "Particles.h"
 #include "libENUgraphics\graphics_framework.h"
 #include <glm\glm.hpp>
+#include <chrono>
 #include <glm\gtx\rotate_vector.hpp>
 #include <functional>
 #include "DesertGen.h"
@@ -53,9 +54,18 @@ bool Graphics::Initialise() {
 // Send all light data to SSBOs on the GPU
 
 Gimbal *gimbal;
+vec2 lposes[LIGHTS];
+default_random_engine drand(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+uniform_real_distribution<float> dist;
+
+float crand(){
+  return (float)rand() / (float)RAND_MAX;
+}
+
 bool Graphics::Load_content() {
   // Lights
-  dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+ // dlight.set_ambient_intensity(vec4(0.3f, 0.3f, 0.3f, 1.0f));
+  dlight.set_ambient_intensity(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   dlight.set_light_colour(vec4(0.8f, 0.8f, 0.8f, 1.0f));
   dlight.set_direction(vec3(1.0f, 1.0f, 1.0f));
   DLights.push_back(&dlight);
@@ -64,6 +74,18 @@ bool Graphics::Load_content() {
   plight.set_range(40.0f);
   plight.set_position(vec3(30.0f, 15.0f, 30.0f));
   PLights.push_back(&plight);
+
+
+  for (unsigned int i = 0; i < LIGHTS; i++)
+  {
+    point_light* p = new point_light();
+    float fi = (((float)i) / ((float)LIGHTS)) * 2.0f* pi<float>();
+    p->set_light_colour(vec4(0.5f + (cosf(fi)*0.5f), 0.5f + (-sinf(fi)*0.5f), 0.5f + (sinf(fi)*0.5f), 1.0f));
+    p->set_range(40.0f);
+    p->set_position(vec3((crand()* 400.0f) - 200.0f, 2.0f, (crand()* 400.0f) - 200.0f));
+    PLights.push_back(p);
+    lposes[i] = vec2(((crand()* 400.0f) - 200.0f, (crand()* 400.0f) - 200.0f));
+  }
 
   slight.set_position(vec3(-25.0f, 10.0f, -15.0f));
   slight.set_light_colour(vec4(0.0f, 1.0f, 0.0f, 1.0f));
@@ -90,27 +112,19 @@ bool Graphics::Load_content() {
   meshes["box3"].get_transform().translate(vec3(20, 5.0f, -37.0f));
   meshes["pyramid"].get_transform().scale = vec3(8.0f, 100.0f, 8.0f);
   meshes["pyramid"].get_transform().translate(vec3(0, 50, 0));
-  meshes["box"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   meshes["box"].get_material().set_diffuse(vec4(1.0f, 0.0f, 0.0f, 1.0f));
-  meshes["box"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["box"].get_material().set_shininess(25.0f);
-  meshes["box2"].get_material().set_emissive(vec4(1.0f, 0.0f, 0.0f, 1.0f));
   meshes["box2"].get_material().set_diffuse(vec4(0.0f, 1.0f, 0.0f, 1.0f));
-  meshes["box2"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["box2"].get_material().set_shininess(25.0f);
   meshes["box3"].get_material().set_emissive(vec4(0.0f, 0.0f, 1.0f, 1.0f));
   meshes["box3"].get_material().set_diffuse(vec4(1.0f, 1.0f, 0.0f, 1.0f));
-  meshes["box3"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["box3"].get_material().set_shininess(25.0f);
-  meshes["pyramid"].get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   meshes["pyramid"].get_material().set_diffuse(vec4(0.0f, 0.0f, 1.0f, 1.0f));
-  meshes["pyramid"].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   meshes["pyramid"].get_material().set_shininess(25.0f);
 
   goodsand = mesh(geometry_builder::create_disk(10, vec2(1.0, 1.0)));
   goodsand.get_transform().translate(vec3(0, 0.01f, 0));
   goodsand.get_transform().scale = vec3(300.0f, 1.0f, 300.0f);
-  goodsand.get_material().set_emissive(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   goodsand.get_material().set_diffuse(vec4(1.0f, 1.0f, 1.0f, 1.0f));
   goodsand.get_material().set_specular(vec4(0.0f, 0.0f, 0.0f, 1.0f));
   goodsand.get_material().set_shininess(1000.0f);
@@ -189,6 +203,17 @@ bool Graphics::Update(float delta_time) {
   float c = cosf(counter);
   if (counter > pi<float>()) {
     counter = 0;
+  }
+
+  for (unsigned int i = 0; i < PLights.size(); i++){
+    unsigned int j = i+1;
+    if (j == PLights.size()){j = 0;}
+    const vec3 target = vec3(lposes[i].x, 2.0f, lposes[i].y);
+    const vec3 dir = target - PLights[i]->get_position();
+    if (glm::length2(dir) < 25.0f){
+      lposes[i] = vec2((crand()* 400.0f) - 200.0f, (crand()* 400.0f) - 200.0f);
+    }
+    PLights[i]->set_position(normalize(dir)*10.0f* delta_time + PLights[i]->get_position());
   }
 
   { // Camera update

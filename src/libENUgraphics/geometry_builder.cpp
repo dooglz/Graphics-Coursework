@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "geometry_builder.h"
+#include <glm\gtx\rotate_vector.hpp>
 
 namespace graphics_framework {
 // Generates tangents and binormals for geometry
@@ -698,6 +699,11 @@ geometry geometry_builder::create_torus(const unsigned int stacks, const unsigne
       norms[3] = glm::normalize(glm::vec3(sin(a1) * c, cos(a1) * c, sin(b)));
       coords[3] = glm::vec2((static_cast<float>(i + 1) / static_cast<float>(stacks)) * outer_circ / glm::pi<float>(),
                             (static_cast<float>(j + 1) / static_cast<float>(slices)) * ring_circ / glm::pi<float>());
+
+      norms[0] = glm::normalize(glm::rotateX(norms[0], -glm::half_pi<float>()));
+      norms[1] = glm::normalize(glm::rotateX(norms[1], -glm::half_pi<float>()));
+      norms[2] = glm::normalize(glm::rotateX(norms[2], -glm::half_pi<float>()));
+      norms[3] = glm::normalize(glm::rotateX(norms[3], -glm::half_pi<float>()));
 
       // Recalculate minimal and maximal
       for (auto &v : verts) {

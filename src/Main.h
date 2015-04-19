@@ -22,7 +22,7 @@ using namespace graphics_framework;
 
 #define SCREENHEIGHT 720
 #define SCREENWIDTH 1280
-
+#define LIGHTS 120
 class Graphics {
 public:
   bool Render();

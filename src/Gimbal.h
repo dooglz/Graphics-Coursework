@@ -22,10 +22,9 @@ Gimbal::Gimbal(const unsigned int num_rings) {
   for (unsigned int i = 1; i < num_rings; i++) {
     rings["torus" + std::to_string(i)] = mesh(geometry_builder::create_torus(20, 20, 0.5f, num_rings - i));
     rings["torus" + std::to_string(i)].get_transform().parent = &rings["torus" + std::to_string(i - 1)].get_transform();
-    rings["torus" + std::to_string(i)].get_material().set_emissive(vec4(0.2f, 0.2f, 0.2f, 1.0f));
     rings["torus" + std::to_string(i)].get_material().set_diffuse(
         vec4(((i - 3) % 9) / 9.0f, (i % 9) / 9.0f, ((i - 6) % 9) / 9.0f, 1.0f));
-    rings["torus" + std::to_string(i)].get_material().set_specular(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    rings["torus" + std::to_string(i)].get_material().set_shininess(50.0f);
   }
 }
 

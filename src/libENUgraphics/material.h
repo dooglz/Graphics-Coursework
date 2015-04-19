@@ -20,7 +20,7 @@ private:
 public:
   // Creates a material object providing a default colour
   material()
-      : _emissive(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), _diffuse_reflection(glm::vec4(0.8f, 0.8f, 0.8f, 1.0f)),
+      : _emissive(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)), _diffuse_reflection(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)),
         _specular_reflection(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)), _shininess(10.0f) {}
   // Creates a material object by providing the colour properties
   material(const glm::vec4 &emissive, const glm::vec4 &diffuse, const glm::vec4 &specular, float shininess)

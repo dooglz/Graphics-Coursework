@@ -67,7 +67,7 @@ void main() {
   mat.shininess = Info.z;
   mat.emissive = vec4(0, 0, 0, 0);
   mat.diffuse_reflection = texture(gMaterialMap, TexCoord);
-  mat.specular_reflection = vec4(0, 0, 0, 0);
+  mat.specular_reflection = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
   if (Info.x == 1.0) {
     FragColor = vec4(Color, 1.0);

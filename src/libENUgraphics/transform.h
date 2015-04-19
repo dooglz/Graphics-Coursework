@@ -1,7 +1,6 @@
 #pragma once
 
 #include "stdafx.h"
-
 namespace graphics_framework {
 /*
 Utility class used to store transformation data
@@ -40,7 +39,7 @@ struct transform {
   }
   void setrotation(const glm::quat &q) { orientation = glm::normalize(q); }
 
-  // Gets the transformation matrix representing the defined transform
+  // Gets the transformation matrix representing the defined transform, respects parent
   glm::mat4 get_transform_matrix() {
     auto T = glm::translate(glm::mat4(1.0f), position);
     auto S = glm::scale(glm::mat4(1.0f), scale);
@@ -53,14 +52,16 @@ struct transform {
     return matrix;
   }
 
-  // Gets the normal matrix representing the defined transform
-  glm::mat3 get_normal_matrix() { 
+  // Gets the rotation, respects parent
+  glm::quat get_rotation(){
     if (parent != nullptr) {
-      return parent->get_normal_matrix() * glm::mat3_cast(orientation);
-    } else{
-      return glm::mat3_cast(orientation); 
+      return parent->get_rotation() * orientation;
     }
-
+    return orientation;
+  }
+  // Gets the normal matrix representing the defined transform, respects parent
+  glm::mat3 get_normal_matrix() { 
+    return  glm::mat3_cast(get_rotation());
   }
 };
 }

@@ -377,16 +377,16 @@ void renderer::bind(const directional_light &light, const std::string &name) thr
     throw std::runtime_error("Error using directional light with renderer");
   }
 }
-void renderer::bind(const std::vector<directional_light *> &directionals, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<directional_light *> &directionals, const std::string &name, const unsigned int MaxLights) throw(...) {
   // is this the fastest way to do this? who cares....
   std::vector<directional_light> obj_directionals;
   for (auto p : directionals) {
     obj_directionals.push_back(*p);
   }
-  bind(obj_directionals, name);
+  bind(obj_directionals, name, MaxLights);
 }
 // Binds a vector of point lights to the currently bound effect
-void renderer::bind(const std::vector<directional_light> &directionals, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<directional_light> &directionals, const std::string &name, const unsigned int MaxLights) throw(...) {
   // Iterate through each light, setting values as required
   unsigned int n = 0;
   for (auto &p : directionals) {
@@ -407,6 +407,7 @@ void renderer::bind(const std::vector<directional_light> &directionals, const st
       glUniform3fv(idx, 1, glm::value_ptr(p.get_direction()));
     // Increment light number
     ++n;
+    if (MaxLights >0 && n > MaxLights){break;}
   }
   // Check for error
   if (CHECK_GL_ERROR) {
@@ -448,16 +449,16 @@ void renderer::bind(const point_light &point, const std::string &name) throw(...
   }
 }
 
-void renderer::bind(const std::vector<point_light *> &points, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<point_light *> &points, const std::string &name, const unsigned int MaxLights) throw(...) {
   // is this the fastest way to do this? who cares....
   std::vector<point_light> obj_points;
   for (auto p : points) {
     obj_points.push_back(*p);
   }
-  bind(obj_points, name);
+  bind(obj_points, name, MaxLights);
 }
 // Binds a vector of point lights to the currently bound effect
-void renderer::bind(const std::vector<point_light> &points, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<point_light> &points, const std::string &name, const unsigned int MaxLights) throw(...) {
   // Iterate through each light, setting values as required
   unsigned int n = 0;
   for (auto &p : points) {
@@ -486,6 +487,7 @@ void renderer::bind(const std::vector<point_light> &points, const std::string &n
       glUniform1f(idx, p.get_quadratic_attenuation());
     // Increment light number
     ++n;
+    if (MaxLights >0 && n > MaxLights){ break; }
   }
   // Check for error
   if (CHECK_GL_ERROR) {
@@ -535,15 +537,15 @@ void renderer::bind(const spot_light &spot, const std::string &name) throw(...) 
   }
 }
 
-void renderer::bind(const std::vector<spot_light *> &spots, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<spot_light *> &spots, const std::string &name, const unsigned int MaxLights) throw(...) {
   std::vector<spot_light> obj_spots;
   for (auto p : spots) {
     obj_spots.push_back(*p);
   }
-  bind(obj_spots, name);
+  bind(obj_spots, name, MaxLights);
 }
 // Binds a vector of spot lights to the renderer
-void renderer::bind(const std::vector<spot_light> &spots, const std::string &name) throw(...) {
+void renderer::bind(const std::vector<spot_light> &spots, const std::string &name, const unsigned int MaxLights) throw(...) {
   // Iterate through each light, setting values as required
   unsigned int n = 0;
   for (auto &s : spots) {
@@ -580,6 +582,7 @@ void renderer::bind(const std::vector<spot_light> &spots, const std::string &nam
       glUniform1f(idx, s.get_power());
     // Increment light number
     ++n;
+    if (MaxLights >0 && n > MaxLights){ break; }
   }
   // Check for error
   if (CHECK_GL_ERROR) {

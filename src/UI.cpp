@@ -61,8 +61,6 @@ static void Menu() {
     if (rm) {
       b |= ImGui::RadioButton("DEBUG_PASSTHROUGH", &dm, DEBUG_PASSTHROUGH);
       ImGui::SameLine();
-      b |= ImGui::RadioButton("DEBUG_COMBINE", &dm, DEBUG_COMBINE);
-      ImGui::SameLine();
       b |= ImGui::RadioButton("NORMAL", &dm, NORMAL);
     }
     if (b) {
@@ -72,6 +70,11 @@ static void Menu() {
     b = ImGui::Checkbox("Stencil Fix", &swm);
     if (b) {
       stencilworkaround(swm);
+    }
+    static bool sbo = EnableSSBO();
+    b = ImGui::Checkbox("SSBO", &sbo);
+    if (b) {
+      EnableSSBO(sbo);
     }
   }
   if (ImGui::CollapsingHeader("Mirror")) {

@@ -9,6 +9,10 @@
 #include <glm\glm.hpp>
 #include <glm\gtx\transform.hpp>
 
+#define MAX_FW_DLIGHTS 19
+#define MAX_FW_PLIGHTS 19
+#define MAX_FW_SLIGHTS 19
+
 using namespace glm;
 static GLuint dsView_depthtex = -1;
 static GLuint dsView_stenciltex = -1;
@@ -41,7 +45,6 @@ static const vec3 lightcolour2 = vec3(1.0f, 0.8f, 0.8f);
 static graphics_framework::effect fw_basic_lit;
 static graphics_framework::effect fw_basic_lit_SSBO;
 static graphics_framework::effect geoPassEffect;
-static graphics_framework::effect df_lighttest;
 static graphics_framework::effect depthstencilvisEffect;
 static graphics_framework::effect pointLightPassEffect;
 static graphics_framework::effect directionalLightPassEffect;
@@ -102,7 +105,7 @@ void BeginOpaque() {
     glClearColor(0.0f, 1.0f, 1.0f, 1.0f);
 
     // set drawmode
-    GLenum DrawBuffers[] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, MATERIALBUFFER, INFOBUFFER };
+    GLenum DrawBuffers[] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, MATERIALBUFFER, INFOBUFFER};
     glDrawBuffers(5, DrawBuffers);
     // Only the geometry pass updates the depth buffer
     glDepthMask(GL_TRUE);
@@ -126,16 +129,6 @@ void EndOpaque() {
     glDepthMask(GL_FALSE);
 
     if (defMode == DEBUG_PASSTHROUGH) {
-      CombineToOuput();
-    } else if (defMode == DEBUG_COMBINE) {
-      /*if (df_lighttest.get_program() == NULL) {
-        df_lighttest.add_shader("shaders\\null.vert", GL_VERTEX_SHADER);
-        df_lighttest.add_shader("shaders\\df_lighttest.frag", GL_FRAGMENT_SHADER);
-        df_lighttest.build();
-      }
-      CombineToFinalBuffer();
-      FlipToOutput();
-      */
       glEnable(GL_STENCIL_TEST);
       glStencilMask(0xFF);
       for (point_light *p : gfx->PLights) {
@@ -232,7 +225,7 @@ void CreateDeferredFbo() {
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, FINALBUFFER, GL_TEXTURE_2D, fbo_finalTexture, 0);
 
   // set drawmode
-  GLenum DrawBuffers[] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, MATERIALBUFFER, INFOBUFFER };
+  GLenum DrawBuffers[] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, MATERIALBUFFER, INFOBUFFER};
   glDrawBuffers(5, DrawBuffers);
 
   GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -245,40 +238,6 @@ void CreateDeferredFbo() {
   // restore default FBO
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-// Combines the fbo textures in one shader, output to FINALBUFFER
-void CombineToFinalBuffer() {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-  const graphics_framework::effect &eff = df_lighttest;
-  // Bind effect
-  graphics_framework::renderer::bind(eff);
-
-  glDrawBuffer(FINALBUFFER);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_CULL_FACE);
-  for (unsigned int i = 0; i < GBUFFER_NUM_TEXTURES; i++) {
-    glActiveTexture(GL_TEXTURE0 + i);
-    glBindTexture(GL_TEXTURE_2D, fbo_textures[GBUFFER_TEXTURE_TYPE_POSITION + i]);
-  }
-  // info
-  glActiveTexture(GL_TEXTURE0 + 5);
-  glBindTexture(GL_TEXTURE_2D, fbo_infoTexture);
-
-  glUniform2f(eff.get_uniform_location("gScreenSize"), (float)SCREENWIDTH, (float)SCREENHEIGHT);
-  glUniform1i(eff.get_uniform_location("gPositionMap"), GBUFFER_TEXTURE_TYPE_POSITION);
-  glUniform1i(eff.get_uniform_location("gColorMap"), GBUFFER_TEXTURE_TYPE_DIFFUSE);
-  glUniform1i(eff.get_uniform_location("gNormalMap"), GBUFFER_TEXTURE_TYPE_NORMAL);
-  glUniform1i(eff.get_uniform_location("gInfoMap"), 5);
-
-  auto MVP = mat4(1.0f);
-  // Set MVP matrix uniform
-  glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
-  // glDisable(GL_DEPTH_TEST);
-  // glDepthMask(GL_FALSE);
-  graphics_framework::renderer::render(gfx->planegeo);
-  glEnable(GL_CULL_FACE);
 }
 
 void ShowDepthStencil() {
@@ -423,7 +382,7 @@ void CombineToOuput() {
   const GLsizei ThirdHeight = (GLsizei)(SCREENHEIGHT / 3.0f);
 
   const int amount = 6;
-  const int buffers[amount] = { POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, MATERIALBUFFER, FINALBUFFER, INFOBUFFER };
+  const int buffers[amount] = {POSITIONBUFFER, DIFFUSEBUFFER, NORMALBUFFER, MATERIALBUFFER, FINALBUFFER, INFOBUFFER};
 
   const GLsizei positions[] = {
       0, 0, QuaterWidth, HalfHeight, QuaterWidth, 0, 2 * QuaterWidth, HalfHeight, 2 * QuaterWidth, 0, 3 * QuaterWidth,
@@ -460,8 +419,6 @@ void FlipToOutput() {
 
   glBlitFramebuffer(0, 0, SCREENWIDTH, SCREENHEIGHT, 0, 0, SCREENWIDTH, SCREENHEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
-
-
 
 void StencilPass(const graphics_framework::point_light &p) {
   // effect eff = nullEffect;
@@ -573,7 +530,7 @@ void DirectionalLightPass() {
   glUniformMatrix4fv(eff.get_uniform_location("MVP"), 1, GL_FALSE, value_ptr(MVP));
 
   for (directional_light *d : gfx->DLights) {
-    renderer::bind(*d,"gDirectionalLight");
+    renderer::bind(*d, "gDirectionalLight");
     graphics_framework::renderer::render(gfx->planegeo);
   }
 
@@ -589,7 +546,8 @@ void UpdateLights() {
   } else {
     // stupid dumb AMD cards not supporting 4.4 when they say they do...
     // now we have to bind light data to every possible forward shader.
-    NumberOfLights = vec4(gfx->DLights.size(), gfx->PLights.size(), gfx->SLights.size(), 0);
+    NumberOfLights = vec4(min((int)gfx->DLights.size(), MAX_FW_DLIGHTS), min((int)gfx->PLights.size(), MAX_FW_PLIGHTS),
+                          min((int)gfx->SLights.size(), MAX_FW_SLIGHTS), 0);
 
     effect &eff = BasicEffect();
     renderer::bind(eff);
@@ -597,9 +555,9 @@ void UpdateLights() {
     if (pos != -1) {
       glUniform4fv(pos, 1, value_ptr(NumberOfLights));
     }
-    renderer::bind(gfx->DLights, "DLights");
-    renderer::bind(gfx->PLights, "PLights");
-    renderer::bind(gfx->SLights, "SLights");
+    renderer::bind(gfx->DLights, "DLights", MAX_FW_PLIGHTS);
+    renderer::bind(gfx->PLights, "PLights", MAX_FW_PLIGHTS);
+    renderer::bind(gfx->SLights, "SLights", MAX_FW_PLIGHTS);
     // TODO: the same for normal shaders
   }
 }
@@ -621,7 +579,8 @@ void UpdateLights_SSBO() {
       sd.light_colour = L->get_light_colour();
       sd.light_dir = vec4(L->get_direction(), 0);
       S_DLights.push_back(sd);
-      // printf("sun: (%f, %f, %f, %f)\n", sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
+      if (S_DLights.size() > MAX_FW_DLIGHTS){break;}
+      // printf("Praise the sun: (%f, %f, %f, %f)\n", sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
     // this might not be the best way to copy data, but it works.
@@ -646,6 +605,7 @@ void UpdateLights_SSBO() {
       sd.falloff.y = L->get_linear_attenuation();
       sd.falloff.z = L->get_quadratic_attenuation();
       S_PLights.push_back(sd);
+      if (S_PLights.size() > MAX_FW_PLIGHTS){ break; }
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
@@ -672,6 +632,7 @@ void UpdateLights_SSBO() {
       sd.falloff.z = L->get_quadratic_attenuation();
       sd.falloff.w = L->get_power();
       S_SLights.push_back(sd);
+      if (S_SLights.size() > MAX_FW_SLIGHTS){ break; }
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);
