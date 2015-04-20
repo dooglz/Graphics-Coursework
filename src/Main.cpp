@@ -70,12 +70,6 @@ bool Graphics::Load_content() {
   dlight.set_direction(vec3(1.0f, 1.0f, 1.0f));
   DLights.push_back(&dlight);
 
-  plight.set_light_colour(vec4(0.8f, 0.6f, 1.0f, 1.0f));
-  plight.set_range(40.0f);
-  plight.set_position(vec3(30.0f, 15.0f, 30.0f));
-  PLights.push_back(&plight);
-
-
   for (unsigned int i = 0; i < LIGHTS; i++)
   {
     point_light* p = new point_light();
@@ -422,7 +416,12 @@ bool Graphics::Render() {
 
 Graphics::Graphics() {}
 
-Graphics::~Graphics() {}
+Graphics::~Graphics() {
+  for (auto p : PLights)
+  {
+    delete(p);
+  }
+}
 
 void main() {
   // Create application
@@ -436,6 +435,8 @@ void main() {
 
   // Run application
   application.run();
+
+
   delete gimbal;
   delete gfx;
   gfx = nullptr;

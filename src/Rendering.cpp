@@ -127,35 +127,22 @@ void EndOpaque() {
   if (renderMode) {
     // stencil pass nneds depth buffer, but doesn't write disable writing to depth
     glDepthMask(GL_FALSE);
+    glEnable(GL_STENCIL_TEST);
+    glStencilMask(0xFF);
+    for (point_light *p : gfx->PLights) {
+      StencilPass(*p);
+      PointLightPass(*p);
+    }
+    glStencilMask(0x00);
+
+    // The directional light does not need a stencil test because its volume is unlimited
+    // and the final pass simply copies the texture.
+    glDisable(GL_STENCIL_TEST);
+    DirectionalLightPass();
 
     if (defMode == DEBUG_PASSTHROUGH) {
-      glEnable(GL_STENCIL_TEST);
-      glStencilMask(0xFF);
-      for (point_light *p : gfx->PLights) {
-        StencilPass(*p);
-        PointLightPass(*p);
-      }
-      glStencilMask(0x00);
-
-      // The directional light does not need a stencil test because its volume is unlimited
-      // and the final pass simply copies the texture.
-      glDisable(GL_STENCIL_TEST);
-      DirectionalLightPass();
-      // light pass
       CombineToOuput();
     } else {
-      glEnable(GL_STENCIL_TEST);
-      glStencilMask(0xFF);
-      for (point_light *p : gfx->PLights) {
-        StencilPass(*p);
-        PointLightPass(*p);
-      }
-      glStencilMask(0x00);
-      // The directional light does not need a stencil test because its volume is unlimited
-      // and the final pass simply copies the texture.
-      glDisable(GL_STENCIL_TEST);
-      DirectionalLightPass();
-      // light pass
       FlipToOutput();
     }
 
@@ -579,7 +566,9 @@ void UpdateLights_SSBO() {
       sd.light_colour = L->get_light_colour();
       sd.light_dir = vec4(L->get_direction(), 0);
       S_DLights.push_back(sd);
-      if (S_DLights.size() > MAX_FW_DLIGHTS){break;}
+      if (S_DLights.size() > MAX_FW_DLIGHTS) {
+        break;
+      }
       // printf("Praise the sun: (%f, %f, %f, %f)\n", sd.light_dir.x, sd.light_dir.y, sd.light_dir.z, sd.light_dir.w);
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, dLightSSBO);
@@ -605,7 +594,9 @@ void UpdateLights_SSBO() {
       sd.falloff.y = L->get_linear_attenuation();
       sd.falloff.z = L->get_quadratic_attenuation();
       S_PLights.push_back(sd);
-      if (S_PLights.size() > MAX_FW_PLIGHTS){ break; }
+      if (S_PLights.size() > MAX_FW_PLIGHTS) {
+        break;
+      }
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, pLightSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Plight) * S_PLights.size(), &S_PLights[0], GL_DYNAMIC_COPY);
@@ -632,7 +623,9 @@ void UpdateLights_SSBO() {
       sd.falloff.z = L->get_quadratic_attenuation();
       sd.falloff.w = L->get_power();
       S_SLights.push_back(sd);
-      if (S_SLights.size() > MAX_FW_SLIGHTS){ break; }
+      if (S_SLights.size() > MAX_FW_SLIGHTS) {
+        break;
+      }
     }
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sLightSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(S_Slight) * S_SLights.size(), &S_SLights[0], GL_DYNAMIC_COPY);

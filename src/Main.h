@@ -67,7 +67,6 @@ public:
 
   // Light stuff
   directional_light dlight;
-  point_light plight;
   spot_light slight;
 
   std::vector<directional_light *> DLights;
