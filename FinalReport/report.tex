@@ -226,34 +226,6 @@ For enabling and disabling features and for extra debugging information, a third
 {1.0}
 
 \subsection{Mirror}
-\subsection{Sky}
-
-Rendering the sky was achieved by rendering a single screen sized quad to the screen, set at a maximum depth to place it behind all the level elements. Calculations based on the players view matrix and the projection matrix, result in two values representing the top and bottom boundary of the players view. These values are a percentage between the horizontal horizon and vertical upwards view, this is used to calculate the colour of the sky at the bottom of the screen and the top. The colours are passed to the shader which interpolates between them, completing the illusion that the player is in a skydome.
-
-\begin{lstlisting}[ caption={Sky calculations}]
-  // verticle fov = 25.3125deg = 0.441786467 radians
-  float verticleFov = 0.2208932335f; // vfov/2 in radians
-
-  vec3 camview = normalize(cameraTarget - cameraposition);
-  vec3 camUp = normalize(cameraUP);
-
-  float r = atanf(verticleFov);
-
-  vec3 topOfScrnToPlayer = normalize((r * camUp) + camview);
-  vec3 bttmOfScrnToPlayer = normalize((-r * camUp) + camview);
-
-  float topDot = dot( topOfScrnToPlayer, vec3(0, 1.0, 0));
-  float bottomDot = dot( bttmOfScrnToPlayer, vec3(0, 1.0, 0));
-\end{lstlisting}
-
-
-\subsection{Terrain Generation}
-The distant sand dunes were created by first generating a flat grid of connected polygons, this was looped through and each vertex's y value(height) was modified based on a the output of simplex noise generator. Simplex noise is an optimised version of the Perlin noise generator, both were authored by Ken Perlin, the original Perlin in 1983 and Simplex in 2001.\\
-The generation happens at the start of the program and has many variables to alter the attributes of the generated terrain. As the sand dunes are far away, they are lighted with a simpler, per vertex gouraud model.
-
-\subsection{Water}
-
-Realistic water is made up of a multitude of components and render passes. At the simplest level, there is the reflected image from the water surface and the image of the area beneath the water surface. Each image will be combined and distorted based on the attributes of the water, the environment, and the position of the player.
 
 \paragraph{Reflection}
 At this stage in the project, only the reflection component of the water renderer has been completed, this results in the mirror effect currently in the scene. Rendering a reflection from a surface requires either using a reflection map for an approximate reflection, or re-rendering the scene from a different point, relative to the players view and position and orientation of the reflected object.
@@ -289,15 +261,33 @@ With the reflected image rendered to a texture, this image needs to be applied t
 This process is simple in theory, the section of the image that needs to be used is the same shape as the geometry in the non reflected view.
 To get this area, the positions of the geometry are transformed by the same matrices used to get the reflected view, and then this data is used as UV coordinates.
 
-\begin{lstlisting}[ caption={Fragment Shader Reflected UV calculations}]
-  vec4 reflectedPos = reflected_MVP * vec4(position.xyz, 1.0);
-  vec2 transformedUV;
-  transformedUV.x = reflectedPos.x/reflectedPos.w/2.0f + 0.5f;
-  transformedUV.y = reflectedPos.y/reflectedPos.w/2.0f + 0.5f;
-  vec4 reflectionTextureColor = texture2D (tex, transformedUV);
-\end{lstlisting}
+\paragraph{Reflected without a separate texture}
+Rendering to a separate frame buffer is a simple task in a forward rendering pipeline, however with a deferred pipeline the many buffers requires v causes a substantial memory overhead.
+If no specific post processing is needed on the reflected image, and the image is rendered at the same resolution as the main scene, the reflected image can be written directly to the main framebuffer.
+To do this a stencil pass is required to stop the reflected image from overwriting areas that are not covered by the mirror, this is done by simply rendering the mirror geometry to the stencil buffer, then the scene is rendered from with the reflection matrix using the stencil buffer to only render in the correct areas.
 
+\paragraph{Reflected lighting}
+There is no change in lighting for forward rendering, the scene is simply re-rendered with full lighting calculations form the perspective of the reflection camera. Deferred rendering could be easily modified to support reflections, the stencil pass of the light shape geometry would have to render using both the standard and the reflected projection matrix. This could be extended for many mirrors, all that is required is to keep track for the projection matrices and the stencil buffer for each mirror. Once this pass is completed, the deferred lighting is calculated like normal, this would produce significant performance increases in a scene that make heavy use of mirrors.
 
+\paragraph{Water reflections}
+Realistic water is made up of a multitude of components and render passes. At the simplest level, there is the reflected image from the water surface and the image of the area beneath the water surface. Each image will be combined and distorted based on the attributes of the water, the environment, and the position of the player.
+
+Extending the concept of mirrors to other reflective objects like water wouldn't be a large task, the primary difference would be surface effects which would require a separate processing stage, which could require multiple textures, a simple task for forward rendering, but not so simple for deferred.
+
+\subsection{Sky}
+\paragraph{Initial attempt}
+Initially rendering the sky was achieved by rendering a single screen sized quad to the screen, set at a maximum depth to place it behind all the level elements. Calculations based on the players view matrix and the projection matrix, result in two values representing the top and bottom boundary of the players view. These values are a percentage between the horizontal horizon and vertical upwards view, this is used to calculate the colour of the sky at the bottom of the screen and the top. The colours are passed to the shader which interpolates between them, completing the illusion that the player is in a skydome.
+The problems with this approach is converting back from a fragment coordiante to a real world position in the sky fragment shader, this requires a substantial amount of per pixel matrix multiplication.
+
+\paragraph{Skydome}
+A more traditional approach to rendering sky is using a large cube or sphere that encapsulates the scene, this is beneficial as it allows the fragment shader to use the interpolated position values, process by the vertex shader, the more vertices on the dome geometry, the more accurate the position data. As the sky is rendered behind all objects and is usually rendered as a flat colour, positional accuracy is not too important regarding scene quality.
+
+\paragraph{Sky shader and Scattering}
+Methods of rendering real-time atmospheric scattering were investigated during the development of this project, producing positive looking results, but with a large hit to performance. A simplified approximation method was chosen, by converting a pre-existing sky shader implementation. \cite{reliegh}
+
+\subsection{Terrain Generation}
+The distant sand dunes were created by first generating a flat grid of connected polygons, this was looped through and each vertex's y value(height) was modified based on a the output of simplex noise generator. Simplex noise is an optimised version of the Perlin noise generator, both were authored by Ken Perlin, the original Perlin in 1983 and Simplex in 2001.\\
+The generation happens at the start of the program and has many variables to alter the attributes of the generated terrain. As the sand dunes are far away, they are lighted with a simpler, per vertex gouraud model.
 
 \section{Future Work}
 
