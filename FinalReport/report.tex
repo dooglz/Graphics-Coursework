@@ -183,6 +183,16 @@ The most common form of anti-aliasing, Multi sampling(MSAA), require rendering a
 More advanced algorithms can use the stencil buffer and edge detection to only multi sample along the edges of objects, this was not attempted in this project.
 
 \paragraph{Issues}
+Deferred rendering relies on many more features of Opengl than a forward renderer, primarily the features of FrameBuffers and textures. The extra complexity in the render method simply means that there is more to go wrong. Each hardware vendor implements graphics memory differently and some areas of the OpenGl specification are left ambiguous for these implementations. This means that the produced results can be different across different hardware and operating systems. This project was developed on two systems, based on AMD and Intel graphics. There were many occasions where results would be wildly different on each system. Copying of individual textures form the deferred frame-buffer to the main display buffer caused a wild array of corruption on the Intel Gpu. 
+(See figure \ref{fig:intel})
+
+Investigations into the cause of this issues is likely to do with how the drivers store data in the buffers, resulting in a data incompatibility when copying from one to the other. Attempts to fix this involved researching through the Intel documentation an enabling and disabling specific Intel OpenGl extensions. This did produce some improvements, but the results were still unusable at the time the project finished 
+ 
+\figuremacroF
+{intel}
+{Image corruption}
+{Modern Intel GPU}
+{1.0}
 
 \subsection{Multiple Render pipelines}
 This project maintains both a forward and deferred render pipelines, that can be switched don the fly. A goal of this approach was to abstract as much rendering pipleine code form the main scene code. This was achieved by exposing timeline functions that the scene rendering code can use to specify when a the opaque items and when translucent items are being rendered, also when rendering is finished and post-process effects should be ran. using these hints, the pipeline code can setup the required buffers and preinitialise shaders determined by which render mode is selected.
@@ -208,6 +218,13 @@ During testing it was found that AMD graphics cards could not compile shaders th
 
 
 \subsection{User Interface}
+For enabling and disabling features and for extra debugging information, a third party user interface library as implemented. Two libraries were tested, LibRocket and IMgui. Librocket had many more features and used the html and css standard for layout, but the implementation cost was deemed to high for this project. IMgui is a simple "immediate mode" gui that was a perfect fit for the project, implementing it only required a thin rendering wrapper class.
+\figuremacroW
+{ui}
+{Image corruption}
+{Modern Intel GPU}
+{1.0}
+
 \subsection{Mirror}
 \subsection{Sky}
 
